@@ -1,0 +1,26 @@
+{
+	"dependencies": {
+		"drizzle-orm": "^0.38.3",
+		"zod": "^3.24.1"
+	},
+	"devDependencies": {
+		"typescript": "^5.7.2"
+	},
+	"exports": {
+		"./*": [
+			"./*.ts",
+			"./*"
+		]
+	},
+	"module": "types/common.types.ts",
+	"name": "@claude-manager/common",
+	"private": true,
+	"type": "module",
+	"typesVersions": {
+		"*": {
+			"*": [
+				"*"
+			]
+		}
+	}
+}

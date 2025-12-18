@@ -1,0 +1,231 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.3.8/schema.json",
+	"assist": {
+		"actions": {
+			"source": {
+				"organizeImports": "on",
+				"useSortedAttributes": "on",
+				"useSortedKeys": "on"
+			}
+		},
+		"enabled": true
+	},
+	"css": {
+		"parser": {
+			"cssModules": true,
+			"tailwindDirectives": true
+		}
+	},
+	"files": {
+		"ignoreUnknown": false,
+		"includes": [
+			"**",
+			"!bun.lock",
+			"!**/dist",
+			"!**/.svelte-kit",
+			"!**/.storybook",
+			"!**/storybook-static"
+		]
+	},
+	"formatter": {
+		"attributePosition": "auto",
+		"bracketSameLine": true,
+		"bracketSpacing": true,
+		"enabled": true,
+		"expand": "always",
+		"formatWithErrors": true,
+		"indentStyle": "tab",
+		"indentWidth": 2,
+		"lineEnding": "lf",
+		"lineWidth": 120,
+		"useEditorconfig": false
+	},
+	"javascript": {
+		"formatter": {
+			"arrowParentheses": "always",
+			"quoteProperties": "asNeeded",
+			"quoteStyle": "double",
+			"semicolons": "always",
+			"trailingCommas": "all"
+		},
+		"parser": {
+			"jsxEverywhere": false,
+			"unsafeParameterDecoratorsEnabled": true
+		}
+	},
+	"json": {
+		"formatter": {
+			"trailingCommas": "none"
+		},
+		"parser": {
+			"allowComments": true,
+			"allowTrailingCommas": true
+		}
+	},
+	"linter": {
+		"enabled": true,
+		"includes": [
+			"**",
+			"!**/examples/**",
+			"!**/*.example.ts",
+			"!**/*.config.ts",
+			"!**/*.config.js",
+			"!**/svelte.config.js",
+			"!**/vite.config.ts",
+			"!**/drizzle.config.ts"
+		],
+		"rules": {
+			"a11y": {
+				"noNoninteractiveElementInteractions": "error"
+			},
+			"complexity": {
+				"noBannedTypes": "off",
+				"noForEach": "error",
+				"noImplicitCoercions": "error",
+				"useSimplifiedLogicExpression": "error",
+				"useWhile": "error"
+			},
+			"correctness": {
+				"noGlobalDirnameFilename": "error",
+				"noProcessGlobal": "error",
+				"noUnusedFunctionParameters": "error",
+				"noUnusedImports": "error",
+				"noUnusedVariables": "error",
+				"useJsonImportAttributes": "error",
+				"useSingleJsDocAsterisk": "error"
+			},
+			"nursery": {
+				"noFloatingPromises": "info",
+				"noImportCycles": "off",
+				"noShadow": "warn",
+				"noUselessUndefined": "off",
+				"useExhaustiveSwitchCases": "warn",
+				"useExplicitType": "off"
+			},
+			"performance": {
+				"noAccumulatingSpread": "error",
+				"noBarrelFile": "off",
+				"noDelete": "warn",
+				"noDynamicNamespaceImportAccess": "error",
+				"noReExportAll": "off",
+				"useTopLevelRegex": "error"
+			},
+			"recommended": true,
+			"security": {
+				"noBlankTarget": "error",
+				"noDangerouslySetInnerHtml": "warn",
+				"noDangerouslySetInnerHtmlWithChildren": "warn",
+				"noGlobalEval": "error",
+				"noSecrets": "off"
+			},
+			"style": {
+				"noCommonJs": "error",
+				"noDefaultExport": "info",
+				"noEnum": "off",
+				"noInferrableTypes": "off",
+				"noParameterProperties": "warn",
+				"noShoutyConstants": "error",
+				"noSubstr": "error",
+				"noUselessElse": "error",
+				"noYodaExpression": "error",
+				"useConsistentObjectDefinitions": "error",
+				"useExportsLast": "info",
+				"useGroupedAccessorPairs": "error",
+				"useNumericSeparators": "info",
+				"useObjectSpread": "error",
+				"useSymbolDescription": "error",
+				"useUnifiedTypeSignatures": "error"
+			},
+			"suspicious": {
+				"noConstantBinaryExpressions": "error",
+				"noThenProperty": "off",
+				"noTsIgnore": "error",
+				"noUnassignedVariables": "warn",
+				"noUselessEscapeInString": "error",
+				"useIterableCallbackReturn": "error",
+				"useStaticResponseMethods": "error"
+			}
+		}
+	},
+	"overrides": [
+		{
+			"includes": [
+				"**/utils.ts"
+			],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noExplicitAny": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": [
+				"eslint-rules/**",
+				"eslint.config.js"
+			],
+			"linter": {
+				"rules": {
+					"performance": {
+						"useTopLevelRegex": "off"
+					},
+					"security": {
+						"noSecrets": "off"
+					},
+					"style": {
+						"noDefaultExport": "off"
+					}
+				}
+			}
+		},
+		{
+			"assist": {
+				"actions": {
+					"source": {
+						"organizeImports": "off"
+					}
+				}
+			},
+			"includes": [
+				"**/*.svelte"
+			],
+			"linter": {
+				"rules": {
+					"correctness": {
+						"noUnusedImports": "off",
+						"noUnusedVariables": "off"
+					},
+					"style": {
+						"useConst": "off",
+						"useImportType": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": [
+				"**/*.stories.svelte"
+			],
+			"linter": {
+				"rules": {
+					"correctness": {
+						"noUnusedVariables": "off"
+					},
+					"security": {
+						"noSecrets": "off"
+					},
+					"style": {
+						"noDefaultExport": "off",
+						"useExportsLast": "off"
+					}
+				}
+			}
+		}
+	],
+	"vcs": {
+		"clientKind": "git",
+		"enabled": true,
+		"useIgnoreFile": false
+	}
+}

@@ -1,0 +1,35 @@
+{
+	"devDependencies": {
+		"@biomejs/biome": "^2.3.8",
+		"@eslint/js": "^9.39.1",
+		"@types/bun": "latest",
+		"eslint": "^9.39.1",
+		"eslint-plugin-svelte": "^3.13.0",
+		"globals": "^16.5.0",
+		"svelte-check": "^4.3.4",
+		"svelte-eslint-parser": "^1.4.1",
+		"typescript": "^5.7.2",
+		"typescript-eslint": "^8.48.1"
+	},
+	"name": "claude-manager",
+	"private": true,
+	"scripts": {
+		"backend:dev": "bun run --filter '@claude-manager/backend' dev",
+		"build": "bun run --filter '*' build",
+		"check": "bun run --filter '*' check",
+		"dev": "bun run --filter '*' dev",
+		"frontend:dev": "bun run --filter '@claude-manager/frontend' dev",
+		"lint": "bunx @biomejs/biome check . && bun run lint:svelte && bun run lint:svelte-check",
+		"lint:biome": "bunx @biomejs/biome check .",
+		"lint:fix": "bunx @biomejs/biome check --write . && bunx eslint --fix '**/*.svelte'",
+		"lint:svelte": "bunx eslint --no-warn-ignored '**/*.svelte'",
+		"lint:svelte-check": "bunx svelte-check --workspace apps/frontend",
+		"pre:commit": "bun run typecheck && bun run lint",
+		"test": "bun run --filter '*' test",
+		"typecheck": "bun run tsc --noEmit"
+	},
+	"type": "module",
+	"workspaces": [
+		"apps/*"
+	]
+}
