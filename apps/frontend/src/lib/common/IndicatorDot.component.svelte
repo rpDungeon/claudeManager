@@ -7,11 +7,7 @@ description: Small colored status indicator dot with optional glow and pulse ani
 usage: Display status in headers, status bars, and list items
 -->
 <script lang="ts">
-import {
-	IndicatorDotColor,
-	indicatorDotColorMap,
-	indicatorDotGlowMap,
-} from "./indicatorDot.lib";
+import { IndicatorDotColor, indicatorDotColorMap, indicatorDotGlowMap } from "./indicatorDot.lib";
 
 interface Props {
 	color?: IndicatorDotColor;
@@ -20,12 +16,7 @@ interface Props {
 	size?: "sm" | "md";
 }
 
-let {
-	color = IndicatorDotColor.Green,
-	glow = false,
-	pulse = false,
-	size = "sm",
-}: Props = $props();
+let { color = IndicatorDotColor.Green, glow = false, pulse = false, size = "sm" }: Props = $props();
 
 const sizeClass = $derived(size === "sm" ? "size-1" : "size-1.5");
 const colorClass = $derived(indicatorDotColorMap[color]);

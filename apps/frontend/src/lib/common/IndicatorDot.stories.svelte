@@ -21,7 +21,10 @@ const { Story } = defineMeta({
 		size: {
 			control: "radio",
 			description: "Dot size",
-			options: ["sm", "md"],
+			options: [
+				"sm",
+				"md",
+			],
 		},
 	},
 	component: IndicatorDot,
@@ -29,12 +32,20 @@ const { Story } = defineMeta({
 		backgrounds: {
 			default: "surface",
 			values: [
-				{ name: "surface", value: "#111111" },
-				{ name: "void", value: "#0a0a0a" },
+				{
+					name: "surface",
+					value: "#111111",
+				},
+				{
+					name: "void",
+					value: "#0a0a0a",
+				},
 			],
 		},
 	},
-	tags: ["autodocs"],
+	tags: [
+		"autodocs",
+	],
 	title: "Common/IndicatorDot",
 });
 </script>
