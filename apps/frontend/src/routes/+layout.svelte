@@ -1,4 +1,5 @@
 <script lang="ts">
+import "$lib/assets/fonts/ibm-plex-mono.css";
 import "./layout.css";
 import favicon from "$lib/assets/favicon.svg";
 
@@ -7,12 +8,6 @@ let { children } = $props();
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
-	<link rel="preconnect" href="https://fonts.googleapis.com" />
-	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-	<link
-		href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&display=swap"
-		rel="stylesheet"
-	/>
 </svelte:head>
 
 {@render children()}
