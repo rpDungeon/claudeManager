@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Manager - Floating Panels</title>
+    <style>
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #131824;
+            --bg-tertiary: #1a2030;
+            --glass-bg: rgba(26, 32, 48, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent-primary: #6366f1;
+            --accent-secondary: #8b5cf6;
+            --accent-tertiary: #ec4899;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-tertiary: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
+            --shadow-xl: 0 12px 48px rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-primary) 100%);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(circle at 20% 30%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            animation: ambientGlow 15s ease-in-out infinite;
+        }
+
+        @keyframes ambientGlow {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 0.8; }
+        }
+
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 56px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 1000;
+            box-shadow: var(--shadow-md);
+        }
+
+        .top-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 16px;
+            letter-spacing: -0.02em;
+        }
+
+        .logo-icon {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+        }
+
+        .project-selector {
+            position: relative;
+        }
+
+        .project-selector-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 8px 14px;
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .project-selector-button:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--accent-primary);
+        }
+
+        .top-bar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .icon-button {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .icon-button:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--accent-primary);
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 18px;
+            height: 18px;
+            background: var(--danger);
+            border-radius: 50%;
+            font-size: 11px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--bg-primary);
+        }
+
+        .desktop {
+            position: fixed;
+            top: 56px;
+            left: 0;
+            right: 0;
+            bottom: 64px;
+            overflow: hidden;
+        }
+
+        .snap-zones {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 500;
+        }
+
+        .snap-zone {
+            position: absolute;
+            background: rgba(99, 102, 241, 0.2);
+            border: 2px dashed var(--accent-primary);
+            border-radius: 12px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .snap-zone.active {
+            opacity: 1;
+        }
+
+        .snap-zone.left { top: 20px; left: 20px; width: 48%; height: calc(100% - 40px); }
+        .snap-zone.right { top: 20px; right: 20px; width: 48%; height: calc(100% - 40px); }
+        .snap-zone.top { top: 20px; left: 20px; right: 20px; height: 48%; }
+        .snap-zone.bottom { bottom: 20px; left: 20px; right: 20px; height: 48%; }
+
+        .window {
+            position: absolute;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            box-shadow: var(--shadow-xl);
+            display: flex;
+            flex-direction: column;
+            min-width: 400px;
+            min-height: 300px;
+            transition: box-shadow 0.2s ease;
+        }
+
+        .window.dragging {
+            box-shadow: var(--shadow-xl), 0 0 0 2px var(--accent-primary);
+            opacity: 0.9;
+        }
+
+        .window.minimized {
+            display: none;
+        }
+
+        .window-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--glass-border);
+            cursor: move;
+            user-select: none;
+        }
+
+        .window-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .window-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .window-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .window-control {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .window-control:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .window-control.minimize:hover { background: rgba(245, 158, 11, 0.2); }
+        .window-control.maximize:hover { background: rgba(16, 185, 129, 0.2); }
+        .window-control.close:hover { background: rgba(239, 68, 68, 0.2); }
+
+        .window-content {
+            flex: 1;
+            padding: 16px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .terminal-output {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'SF Mono', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #a8b2c1;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .terminal-output::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .terminal-output::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .terminal-output::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        .terminal-output::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .terminal-line {
+            margin-bottom: 4px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .terminal-prompt { color: var(--accent-primary); }
+        .terminal-success { color: var(--success); }
+        .terminal-error { color: var(--danger); }
+        .terminal-warning { color: var(--warning); }
+
+        .resize-handle {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            width: 20px;
+            height: 20px;
+            cursor: nwse-resize;
+            background: linear-gradient(135deg, transparent 50%, rgba(99, 102, 241, 0.3) 50%);
+            border-bottom-right-radius: 12px;
+        }
+
+        .dock {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 64px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px) saturate(180%);
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 0 20px;
+            z-index: 1000;
+            box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .dock-separator {
+            width: 1px;
+            height: 32px;
+            background: var(--glass-border);
+            margin: 0 8px;
+        }
+
+        .dock-item {
+            position: relative;
+            height: 48px;
+            padding: 0 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 13px;
+            max-width: 200px;
+        }
+
+        .dock-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+        }
+
+        .dock-item.active {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: var(--accent-primary);
+        }
+
+        .dock-item.active::before {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 24px;
+            height: 3px;
+            background: var(--accent-primary);
+            border-radius: 2px 2px 0 0;
+        }
+
+        .dock-item-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .dock-item-title {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .add-button {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 24px;
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .add-button:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+        }
+
+        .notification-panel {
+            position: fixed;
+            top: 56px;
+            right: -400px;
+            width: 380px;
+            height: calc(100vh - 120px);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px 0 0 12px;
+            box-shadow: var(--shadow-xl);
+            z-index: 1001;
+            transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .notification-panel.open {
+            right: 0;
+        }
+
+        .notification-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .notification-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .notification-subtitle {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .notification-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        .notification-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .notification-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--accent-primary);
+        }
+
+        .notification-item-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .notification-item-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .notification-item-title {
+            font-size: 14px;
+            font-weight: 500;
+            flex: 1;
+        }
+
+        .notification-item-time {
+            font-size: 11px;
+            color: var(--text-tertiary);
+        }
+
+        .notification-item-body {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        @media (max-width: 768px) {
+            .top-bar {
+                padding: 0 12px;
+            }
+
+            .window {
+                min-width: 280px;
+            }
+
+            .dock {
+                padding: 0 12px;
+                gap: 8px;
+            }
+
+            .dock-item {
+                padding: 0 12px;
+                max-width: 120px;
+            }
+
+            .notification-panel {
+                width: 100%;
+                right: -100%;
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <div class="top-bar-left">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <path d="M3 9h18M9 3v18"/>
+                    </svg>
+                </div>
+                <span>Claude Manager</span>
+            </div>
+            <div class="project-selector">
+                <button class="project-selector-button">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    </svg>
+                    <span>Personal Projects</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="top-bar-right">
+            <button class="icon-button">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="m21 21-4.35-4.35"/>
+                </svg>
+            </button>
+            <button class="icon-button" onclick="toggleNotifications()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
+                <div class="notification-badge">3</div>
+            </button>
+            <button class="icon-button">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="desktop">
+        <div class="snap-zones">
+            <div class="snap-zone left"></div>
+            <div class="snap-zone right"></div>
+            <div class="snap-zone top"></div>
+            <div class="snap-zone bottom"></div>
+        </div>
+
+        <div class="window" id="window-1" style="top: 80px; left: 60px; width: 600px; height: 400px; z-index: 3;">
+            <div class="window-header">
+                <div class="window-title">
+                    <div class="window-status"></div>
+                    <span>Terminal 1 - ~/projects/claude-manager</span>
+                </div>
+                <div class="window-controls">
+                    <div class="window-control minimize" onclick="minimizeWindow('window-1')">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                    </div>
+                    <div class="window-control maximize">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        </svg>
+                    </div>
+                    <div class="window-control close">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <div class="window-content">
+                <div class="terminal-output">
+                    <div class="terminal-line"><span class="terminal-prompt">$</span> bun install</div>
+                    <div class="terminal-line"><span class="terminal-success">✓</span> Installed 247 packages in 1.2s</div>
+                    <div class="terminal-line"></div>
+                    <div class="terminal-line"><span class="terminal-prompt">$</span> bun run dev</div>
+                    <div class="terminal-line"><span class="terminal-success">✓</span> Backend running on http://localhost:3000</div>
+                    <div class="terminal-line"><span class="terminal-success">✓</span> Frontend running on http://localhost:5173</div>
+                    <div class="terminal-line"></div>
+                    <div class="terminal-line"><span class="terminal-prompt">$</span> █</div>
+                </div>
+            </div>
+            <div class="resize-handle"></div>
+        </div>
+
+        <div class="window" id="window-2" style="top: 140px; left: 320px; width: 650px; height: 450px; z-index: 2;">
+            <div class="window-header">
+                <div class="window-title">
+                    <div class="window-status"></div>
+                    <span>Terminal 2 - ~/projects/web-app</span>
+                </div>
+                <div class="window-controls">
+                    <div class="window-control minimize" onclick="minimizeWindow('window-2')">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                    </div>
+                    <div class="window-control maximize">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        </svg>
+                    </div>
+                    <div class="window-control close">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <div class="window-content">
+                <div class="terminal-output">
+                    <div class="terminal-line"><span class="terminal-prompt">$</span> git status</div>
+                    <div class="terminal-line">On branch feature/auth-flow</div>
+                    <div class="terminal-line">Your branch is up to date with 'origin/feature/auth-flow'.</div>
+                    <div class="terminal-line"></div>
+                    <div class="terminal-line">Changes not staged for commit:</div>
+                    <div class="terminal-line">  modified:   src/auth/login.ts</div>
+                    <div class="terminal-line">  modified:   src/auth/register.ts</div>
+                    <div class="terminal-line"></div>
+                    <div class="terminal-line"><span class="terminal-prompt">$</span> npm test</div>
+                    <div class="terminal-line">Running tests...</div>
+                    <div class="terminal-line"><span class="terminal-success">✓</span> auth.test.ts (12 tests) 324ms</div>
+                    <div class="terminal-line"><span class="terminal-success">✓</span> user.test.ts (8 tests) 189ms</div>
+                    <div class="terminal-line"></div>
+                    <div class="terminal-line"><span class="terminal-success">All tests passed!</span></div>
+                    <div class="terminal-line"></div>
+                    <div class="terminal-line"><span class="terminal-prompt">$</span> █</div>
+                </div>
+            </div>
+            <div class="resize-handle"></div>
+        </div>
+
+        <div class="window" id="window-3" style="top: 200px; left: 680px; width: 580px; height: 380px; z-index: 1;">
+            <div class="window-header">
+                <div class="window-title">
+                    <div class="window-status"></div>
+                    <span>Terminal 3 - ~/projects/api-server</span>
+                </div>
+                <div class="window-controls">
+                    <div class="window-control minimize" onclick="minimizeWindow('window-3')">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                    </div>
+                    <div class="window-control maximize">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        </svg>
+                    </div>
+                    <div class="window-control close">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <div class="window-content">
+                <div class="terminal-output">
+                    <div class="terminal-line"><span class="terminal-prompt">$</span> docker-compose up -d</div>
+                    <div class="terminal-line">Creating network "api-server_default" with the default driver</div>
+                    <div class="terminal-line">Creating postgres ... <span class="terminal-success">done</span></div>
+                    <div class="terminal-line">Creating redis    ... <span class="terminal-success">done</span></div>
+                    <div class="terminal-line">Creating api      ... <span class="terminal-success">done</span></div>
+                    <div class="terminal-line"></div>
+                    <div class="terminal-line"><span class="terminal-prompt">$</span> npm run migrate</div>
+                    <div class="terminal-line"><span class="terminal-success">✓</span> Migration completed successfully</div>
+                    <div class="terminal-line">Applied 3 migrations</div>
+                    <div class="terminal-line"></div>
+                    <div class="terminal-line"><span class="terminal-prompt">$</span> npm start</div>
+                    <div class="terminal-line"><span class="terminal-success">Server listening on port 8080</span></div>
+                    <div class="terminal-line"></div>
+                    <div class="terminal-line"><span class="terminal-prompt">$</span> █</div>
+                </div>
+            </div>
+            <div class="resize-handle"></div>
+        </div>
+    </div>
+
+    <div class="dock">
+        <div class="dock-item active" onclick="focusWindow('window-1')">
+            <div class="dock-item-icon">T1</div>
+            <div class="dock-item-title">claude-manager</div>
+        </div>
+        <div class="dock-item" onclick="focusWindow('window-2')">
+            <div class="dock-item-icon">T2</div>
+            <div class="dock-item-title">web-app</div>
+        </div>
+        <div class="dock-item" onclick="focusWindow('window-3')">
+            <div class="dock-item-icon">T3</div>
+            <div class="dock-item-title">api-server</div>
+        </div>
+        <div class="dock-separator"></div>
+        <button class="add-button">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+        </button>
+    </div>
+
+    <div class="notification-panel" id="notification-panel">
+        <div class="notification-header">
+            <div class="notification-title">Notifications</div>
+            <div class="notification-subtitle">3 unread</div>
+        </div>
+        <div class="notification-list">
+            <div class="notification-item">
+                <div class="notification-item-header">
+                    <div class="notification-item-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                    </div>
+                    <div class="notification-item-title">Build Complete</div>
+                    <div class="notification-item-time">2m ago</div>
+                </div>
+                <div class="notification-item-body">
+                    Terminal 1: Build finished successfully in 12.3s
+                </div>
+            </div>
+            <div class="notification-item">
+                <div class="notification-item-header">
+                    <div class="notification-item-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="12"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                    </div>
+                    <div class="notification-item-title">Warning</div>
+                    <div class="notification-item-time">15m ago</div>
+                </div>
+                <div class="notification-item-body">
+                    Terminal 2: 3 deprecated dependencies found. Run 'npm audit' for details.
+                </div>
+            </div>
+            <div class="notification-item">
+                <div class="notification-item-header">
+                    <div class="notification-item-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                            <polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                    </div>
+                    <div class="notification-item-title">Tests Passed</div>
+                    <div class="notification-item-time">1h ago</div>
+                </div>
+                <div class="notification-item-body">
+                    Terminal 2: All 20 tests passed (512ms)
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let highestZIndex = 3;
+        let isDragging = false;
+        let currentWindow = null;
+        let offsetX, offsetY;
+
+        document.querySelectorAll('.window').forEach(window => {
+            const header = window.querySelector('.window-header');
+            const resizeHandle = window.querySelector('.resize-handle');
+
+            header.addEventListener('mousedown', startDragging);
+            resizeHandle.addEventListener('mousedown', startResizing);
+
+            window.addEventListener('mousedown', () => {
+                bringToFront(window);
+            });
+        });
+
+        function startDragging(e) {
+            if (e.target.closest('.window-controls')) return;
+
+            isDragging = true;
+            currentWindow = e.target.closest('.window');
+            const rect = currentWindow.getBoundingClientRect();
+            offsetX = e.clientX - rect.left;
+            offsetY = e.clientY - rect.top;
+
+            currentWindow.classList.add('dragging');
+            document.body.style.cursor = 'move';
+
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', stopDragging);
+        }
+
+        function drag(e) {
+            if (!isDragging || !currentWindow) return;
+
+            const x = e.clientX - offsetX;
+            const y = e.clientY - offsetY;
+
+            currentWindow.style.left = x + 'px';
+            currentWindow.style.top = y + 'px';
+        }
+
+        function stopDragging() {
+            if (currentWindow) {
+                currentWindow.classList.remove('dragging');
+            }
+            isDragging = false;
+            currentWindow = null;
+            document.body.style.cursor = 'default';
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('mouseup', stopDragging);
+        }
+
+        let isResizing = false;
+        let resizingWindow = null;
+
+        function startResizing(e) {
+            e.stopPropagation();
+            isResizing = true;
+            resizingWindow = e.target.closest('.window');
+
+            document.addEventListener('mousemove', resize);
+            document.addEventListener('mouseup', stopResizing);
+        }
+
+        function resize(e) {
+            if (!isResizing || !resizingWindow) return;
+
+            const rect = resizingWindow.getBoundingClientRect();
+            const width = Math.max(400, e.clientX - rect.left);
+            const height = Math.max(300, e.clientY - rect.top);
+
+            resizingWindow.style.width = width + 'px';
+            resizingWindow.style.height = height + 'px';
+        }
+
+        function stopResizing() {
+            isResizing = false;
+            resizingWindow = null;
+            document.removeEventListener('mousemove', resize);
+            document.removeEventListener('mouseup', stopResizing);
+        }
+
+        function bringToFront(window) {
+            highestZIndex++;
+            window.style.zIndex = highestZIndex;
+
+            document.querySelectorAll('.dock-item').forEach(item => {
+                item.classList.remove('active');
+            });
+
+            const windowId = window.id;
+            const index = windowId.split('-')[1];
+            const dockItem = document.querySelectorAll('.dock-item')[index - 1];
+            if (dockItem) {
+                dockItem.classList.add('active');
+            }
+        }
+
+        function focusWindow(windowId) {
+            const window = document.getElementById(windowId);
+            if (window) {
+                if (window.classList.contains('minimized')) {
+                    window.classList.remove('minimized');
+                }
+                bringToFront(window);
+            }
+        }
+
+        function minimizeWindow(windowId) {
+            const window = document.getElementById(windowId);
+            if (window) {
+                window.classList.add('minimized');
+            }
+        }
+
+        function toggleNotifications() {
+            const panel = document.getElementById('notification-panel');
+            panel.classList.toggle('open');
+        }
+
+        document.addEventListener('click', (e) => {
+            const panel = document.getElementById('notification-panel');
+            const notificationButton = document.querySelector('.icon-button:has(.notification-badge)');
+
+            if (panel.classList.contains('open') &&
+                !panel.contains(e.target) &&
+                !notificationButton.contains(e.target)) {
+                panel.classList.remove('open');
+            }
+        });
+    </script>
+</body>
+</html>

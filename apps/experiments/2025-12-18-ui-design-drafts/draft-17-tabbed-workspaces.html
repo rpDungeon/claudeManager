@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Manager - Tabbed Workspaces</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@600;700&family=JetBrains+Mono:wght@400;500;600&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Base colors */
+            --color-bg-primary: #0a0a0a;
+            --color-bg-secondary: #121212;
+            --color-bg-tertiary: #1a1a1a;
+            --color-bg-elevated: #1f1f1f;
+            --color-bg-hover: #252525;
+
+            /* Text colors */
+            --color-text-primary: #e8e8e8;
+            --color-text-secondary: #a0a0a0;
+            --color-text-tertiary: #707070;
+            --color-text-dim: #505050;
+
+            /* Border colors */
+            --color-border-subtle: #2a2a2a;
+            --color-border-medium: #3a3a3a;
+            --color-border-strong: #4a4a4a;
+
+            /* Tab group colors - muted jewel tones */
+            --color-group-ruby: #8b3a52;
+            --color-group-ruby-dim: #4a2130;
+            --color-group-sapphire: #2d5a7b;
+            --color-group-sapphire-dim: #1a3447;
+            --color-group-emerald: #2d6b5a;
+            --color-group-emerald-dim: #1a3d33;
+            --color-group-amber: #8b6b2d;
+            --color-group-amber-dim: #4a3a1a;
+            --color-group-amethyst: #5a3d7b;
+            --color-group-amethyst-dim: #342347;
+
+            /* Terminal colors */
+            --color-terminal-cursor: #00ff88;
+            --color-terminal-selection: rgba(255, 255, 255, 0.15);
+
+            /* Typography */
+            --font-display: 'Crimson Pro', serif;
+            --font-sans: 'Public Sans', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+
+            /* Spacing */
+            --tab-height: 36px;
+            --tab-group-label-height: 20px;
+
+            /* Animations */
+            --transition-fast: 120ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-medium: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .app-header {
+            background: var(--color-bg-secondary);
+            border-bottom: 1px solid var(--color-border-subtle);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .project-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .project-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--color-group-sapphire), var(--color-group-amethyst));
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text-primary);
+        }
+
+        .project-details h1 {
+            font-family: var(--font-display);
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--color-text-primary);
+            letter-spacing: -0.02em;
+        }
+
+        .project-path {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--color-text-tertiary);
+            margin-top: 2px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            font-family: var(--font-sans);
+            font-size: 13px;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-secondary {
+            background: var(--color-bg-elevated);
+            color: var(--color-text-secondary);
+            border: 1px solid var(--color-border-medium);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-bg-hover);
+            color: var(--color-text-primary);
+            border-color: var(--color-border-strong);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--color-group-sapphire), var(--color-group-amethyst));
+            color: var(--color-text-primary);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(45, 90, 123, 0.3);
+        }
+
+        /* Tab Bar */
+        .tab-bar-container {
+            background: var(--color-bg-secondary);
+            border-bottom: 1px solid var(--color-border-subtle);
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .tab-bar {
+            display: flex;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            position: relative;
+        }
+
+        .tab-bar::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Tab Group */
+        .tab-group {
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .tab-group-label {
+            height: var(--tab-group-label-height);
+            padding: 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--font-sans);
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--color-text-tertiary);
+            background: var(--color-bg-tertiary);
+            border-right: 1px solid var(--color-border-subtle);
+        }
+
+        .tab-group-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+            opacity: 0.8;
+        }
+
+        .tab-group[data-group="backend"] .tab-group-indicator {
+            background: var(--color-group-ruby);
+        }
+
+        .tab-group[data-group="frontend"] .tab-group-indicator {
+            background: var(--color-group-sapphire);
+        }
+
+        .tab-group[data-group="tests"] .tab-group-indicator {
+            background: var(--color-group-emerald);
+        }
+
+        .tab-group[data-group="tools"] .tab-group-indicator {
+            background: var(--color-group-amber);
+        }
+
+        .tab-group-tabs {
+            display: flex;
+            border-right: 1px solid var(--color-border-subtle);
+        }
+
+        /* Tabs */
+        .tab {
+            height: var(--tab-height);
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--color-bg-tertiary);
+            border-right: 1px solid var(--color-border-subtle);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            position: relative;
+            min-width: 180px;
+            max-width: 240px;
+            flex-shrink: 0;
+        }
+
+        .tab::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: transparent;
+            transition: background var(--transition-fast);
+        }
+
+        .tab:hover {
+            background: var(--color-bg-elevated);
+        }
+
+        .tab.active {
+            background: var(--color-bg-primary);
+            border-right-color: var(--color-border-medium);
+        }
+
+        .tab.active::before {
+            background: currentColor;
+        }
+
+        .tab[data-group="backend"] {
+            color: var(--color-group-ruby);
+        }
+
+        .tab[data-group="frontend"] {
+            color: var(--color-group-sapphire);
+        }
+
+        .tab[data-group="tests"] {
+            color: var(--color-group-emerald);
+        }
+
+        .tab[data-group="tools"] {
+            color: var(--color-group-amber);
+        }
+
+        .tab[data-group="backend"].active {
+            box-shadow: inset 0 -2px 0 var(--color-group-ruby);
+        }
+
+        .tab[data-group="frontend"].active {
+            box-shadow: inset 0 -2px 0 var(--color-group-sapphire);
+        }
+
+        .tab[data-group="tests"].active {
+            box-shadow: inset 0 -2px 0 var(--color-group-emerald);
+        }
+
+        .tab[data-group="tools"].active {
+            box-shadow: inset 0 -2px 0 var(--color-group-amber);
+        }
+
+        .tab-icon {
+            width: 14px;
+            height: 14px;
+            opacity: 0.6;
+            transition: opacity var(--transition-fast);
+        }
+
+        .tab:hover .tab-icon,
+        .tab.active .tab-icon {
+            opacity: 1;
+        }
+
+        .tab-title {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 500;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: var(--color-text-secondary);
+            transition: color var(--transition-fast);
+        }
+
+        .tab:hover .tab-title,
+        .tab.active .tab-title {
+            color: var(--color-text-primary);
+        }
+
+        .tab-status {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--color-text-dim);
+            opacity: 0;
+            transition: opacity var(--transition-fast);
+        }
+
+        .tab[data-status="running"] .tab-status {
+            opacity: 1;
+            background: var(--color-terminal-cursor);
+            animation: pulse 2s infinite;
+        }
+
+        .tab[data-status="idle"] .tab-status {
+            opacity: 1;
+            background: var(--color-text-dim);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .tab-close {
+            width: 18px;
+            height: 18px;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: all var(--transition-fast);
+            color: var(--color-text-tertiary);
+        }
+
+        .tab:hover .tab-close,
+        .tab.active .tab-close {
+            opacity: 1;
+        }
+
+        .tab-close:hover {
+            background: var(--color-bg-hover);
+            color: var(--color-text-primary);
+        }
+
+        /* Ungrouped tabs */
+        .tab-group.ungrouped .tab-group-label {
+            display: none;
+        }
+
+        .tab-group.ungrouped {
+            flex-direction: row;
+        }
+
+        .tab-group.ungrouped .tab {
+            color: var(--color-text-secondary);
+        }
+
+        /* New Tab Button */
+        .new-tab-btn {
+            height: calc(var(--tab-height) + var(--tab-group-label-height));
+            width: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--color-bg-tertiary);
+            border: none;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            color: var(--color-text-tertiary);
+            flex-shrink: 0;
+        }
+
+        .new-tab-btn:hover {
+            background: var(--color-bg-elevated);
+            color: var(--color-text-primary);
+        }
+
+        /* Tab Preview Tooltip */
+        .tab-preview {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            background: var(--color-bg-elevated);
+            border: 1px solid var(--color-border-medium);
+            border-radius: 8px;
+            padding: 12px;
+            width: 320px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--transition-medium);
+            z-index: 100;
+        }
+
+        .tab:hover .tab-preview {
+            opacity: 1;
+            animation: slideUp 200ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(4px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .preview-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .preview-title {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--color-text-primary);
+        }
+
+        .preview-group-badge {
+            font-size: 9px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 2px 6px;
+            border-radius: 3px;
+            opacity: 0.8;
+        }
+
+        .preview-group-badge[data-group="backend"] {
+            background: var(--color-group-ruby-dim);
+            color: var(--color-group-ruby);
+        }
+
+        .preview-group-badge[data-group="frontend"] {
+            background: var(--color-group-sapphire-dim);
+            color: var(--color-group-sapphire);
+        }
+
+        .preview-group-badge[data-group="tests"] {
+            background: var(--color-group-emerald-dim);
+            color: var(--color-group-emerald);
+        }
+
+        .preview-group-badge[data-group="tools"] {
+            background: var(--color-group-amber-dim);
+            color: var(--color-group-amber);
+        }
+
+        .preview-content {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            line-height: 1.5;
+            color: var(--color-text-secondary);
+            background: var(--color-bg-primary);
+            border-radius: 4px;
+            padding: 8px;
+            max-height: 120px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .preview-content::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 24px;
+            background: linear-gradient(to bottom, transparent, var(--color-bg-primary));
+        }
+
+        /* Terminal Content */
+        .terminal-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--color-bg-primary);
+        }
+
+        .terminal-header {
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--color-bg-secondary);
+            border-bottom: 1px solid var(--color-border-subtle);
+        }
+
+        .terminal-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .terminal-session-id {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--color-text-tertiary);
+        }
+
+        .terminal-cwd {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--color-text-secondary);
+        }
+
+        .terminal-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .terminal-action-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
+            border: none;
+            background: transparent;
+            color: var(--color-text-tertiary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-fast);
+        }
+
+        .terminal-action-btn:hover {
+            background: var(--color-bg-elevated);
+            color: var(--color-text-primary);
+        }
+
+        .terminal-content {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--color-text-primary);
+        }
+
+        .terminal-line {
+            margin-bottom: 4px;
+            animation: terminalFadeIn 200ms ease-out backwards;
+        }
+
+        .terminal-line:nth-child(1) { animation-delay: 0ms; }
+        .terminal-line:nth-child(2) { animation-delay: 40ms; }
+        .terminal-line:nth-child(3) { animation-delay: 80ms; }
+        .terminal-line:nth-child(4) { animation-delay: 120ms; }
+        .terminal-line:nth-child(5) { animation-delay: 160ms; }
+        .terminal-line:nth-child(6) { animation-delay: 200ms; }
+
+        @keyframes terminalFadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(-8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .terminal-prompt {
+            color: var(--color-group-sapphire);
+        }
+
+        .terminal-path {
+            color: var(--color-group-emerald);
+        }
+
+        .terminal-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background: var(--color-terminal-cursor);
+            margin-left: 4px;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .terminal-output {
+            color: var(--color-text-secondary);
+        }
+
+        .terminal-success {
+            color: var(--color-group-emerald);
+        }
+
+        .terminal-error {
+            color: var(--color-group-ruby);
+        }
+
+        /* Scrollbar styling */
+        .terminal-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .terminal-content::-webkit-scrollbar-track {
+            background: var(--color-bg-primary);
+        }
+
+        .terminal-content::-webkit-scrollbar-thumb {
+            background: var(--color-border-medium);
+            border-radius: 4px;
+        }
+
+        .terminal-content::-webkit-scrollbar-thumb:hover {
+            background: var(--color-border-strong);
+        }
+
+        /* Empty state */
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            color: var(--color-text-tertiary);
+        }
+
+        .empty-state-icon {
+            width: 64px;
+            height: 64px;
+            opacity: 0.3;
+        }
+
+        .empty-state-text {
+            font-family: var(--font-sans);
+            font-size: 14px;
+            text-align: center;
+        }
+
+        /* Utility classes */
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="app-header">
+        <div class="project-info">
+            <div class="project-icon">CM</div>
+            <div class="project-details">
+                <h1>Claude Manager</h1>
+                <div class="project-path">/mnt/claude/personal/claudeManager</div>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-secondary">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M8 3V8M8 8V13M8 8H13M8 8H3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                New Session
+            </button>
+            <button class="btn btn-primary">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M2 8L6 12L14 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Save All
+            </button>
+        </div>
+    </header>
+
+    <!-- Tab Bar -->
+    <div class="tab-bar-container">
+        <div class="tab-bar">
+            <!-- Backend Group -->
+            <div class="tab-group" data-group="backend">
+                <div class="tab-group-label">
+                    <span class="tab-group-indicator"></span>
+                    <span>Backend</span>
+                </div>
+                <div class="tab-group-tabs">
+                    <div class="tab active" data-group="backend" data-status="running">
+                        <svg class="tab-icon" viewBox="0 0 16 16" fill="currentColor">
+                            <rect x="2" y="3" width="12" height="10" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                            <path d="M2 6H14" stroke="currentColor" stroke-width="1.5"/>
+                        </svg>
+                        <span class="tab-title">api-server.ts</span>
+                        <span class="tab-status"></span>
+                        <button class="tab-close">
+                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                <path d="M2 2L8 8M8 2L2 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                        </button>
+                        <div class="tab-preview">
+                            <div class="preview-header">
+                                <span class="preview-title">api-server.ts</span>
+                                <span class="preview-group-badge" data-group="backend">Backend</span>
+                            </div>
+                            <div class="preview-content">
+$ bun run dev<br>
+[ElysiaJS] Starting server on http://localhost:3000<br>
+[Database] Connected to SQLite<br>
+[WebSocket] PTY server ready<br>
+✓ Server running in 342ms
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab" data-group="backend" data-status="idle">
+                        <svg class="tab-icon" viewBox="0 0 16 16" fill="currentColor">
+                            <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                            <path d="M8 5V8L10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                        <span class="tab-title">db-migrations</span>
+                        <span class="tab-status"></span>
+                        <button class="tab-close">
+                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                <path d="M2 2L8 8M8 2L2 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Frontend Group -->
+            <div class="tab-group" data-group="frontend">
+                <div class="tab-group-label">
+                    <span class="tab-group-indicator"></span>
+                    <span>Frontend</span>
+                </div>
+                <div class="tab-group-tabs">
+                    <div class="tab" data-group="frontend" data-status="running">
+                        <svg class="tab-icon" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M4 3L2 8L4 13M12 3L14 8L12 13M9 2L7 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+                        </svg>
+                        <span class="tab-title">vite-dev-server</span>
+                        <span class="tab-status"></span>
+                        <button class="tab-close">
+                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                <path d="M2 2L8 8M8 2L2 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="tab" data-group="frontend" data-status="idle">
+                        <svg class="tab-icon" viewBox="0 0 16 16" fill="currentColor">
+                            <rect x="3" y="3" width="10" height="10" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                            <path d="M6 7L8 9L12 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                        </svg>
+                        <span class="tab-title">type-check</span>
+                        <span class="tab-status"></span>
+                        <button class="tab-close">
+                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                <path d="M2 2L8 8M8 2L2 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tests Group -->
+            <div class="tab-group" data-group="tests">
+                <div class="tab-group-label">
+                    <span class="tab-group-indicator"></span>
+                    <span>Tests</span>
+                </div>
+                <div class="tab-group-tabs">
+                    <div class="tab" data-group="tests" data-status="idle">
+                        <svg class="tab-icon" viewBox="0 0 16 16" fill="currentColor">
+                            <circle cx="8" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                            <path d="M6 8L7.5 9.5L10 6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                        </svg>
+                        <span class="tab-title">vitest-watch</span>
+                        <span class="tab-status"></span>
+                        <button class="tab-close">
+                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                <path d="M2 2L8 8M8 2L2 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tools Group -->
+            <div class="tab-group" data-group="tools">
+                <div class="tab-group-label">
+                    <span class="tab-group-indicator"></span>
+                    <span>Tools</span>
+                </div>
+                <div class="tab-group-tabs">
+                    <div class="tab" data-group="tools" data-status="idle">
+                        <svg class="tab-icon" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M3 5L8 2L13 5M3 5L8 8M3 5V11L8 14M13 5L8 8M13 5V11L8 14M8 8V14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                        </svg>
+                        <span class="tab-title">docker-compose</span>
+                        <span class="tab-status"></span>
+                        <button class="tab-close">
+                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                <path d="M2 2L8 8M8 2L2 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="tab" data-group="tools" data-status="idle">
+                        <svg class="tab-icon" viewBox="0 0 16 16" fill="currentColor">
+                            <rect x="2" y="4" width="12" height="8" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                            <circle cx="5" cy="8" r="1" fill="currentColor"/>
+                            <circle cx="8" cy="8" r="1" fill="currentColor"/>
+                            <circle cx="11" cy="8" r="1" fill="currentColor"/>
+                        </svg>
+                        <span class="tab-title">logs</span>
+                        <span class="tab-status"></span>
+                        <button class="tab-close">
+                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                <path d="M2 2L8 8M8 2L2 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ungrouped Tabs -->
+            <div class="tab-group ungrouped">
+                <div class="tab" data-status="idle">
+                    <svg class="tab-icon" viewBox="0 0 16 16" fill="currentColor">
+                        <rect x="2" y="3" width="12" height="10" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                        <path d="M5 7H11M5 10H9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <span class="tab-title">scratch</span>
+                    <span class="tab-status"></span>
+                    <button class="tab-close">
+                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                            <path d="M2 2L8 8M8 2L2 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- New Tab Button -->
+            <button class="new-tab-btn">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M8 3V8M8 8V13M8 8H13M8 8H3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Terminal Container -->
+    <div class="terminal-container">
+        <div class="terminal-header">
+            <div class="terminal-info">
+                <span class="terminal-session-id">SESSION: cs_7k2m9n4p</span>
+                <span class="terminal-cwd">~/claudeManager/apps/backend</span>
+            </div>
+            <div class="terminal-actions">
+                <button class="terminal-action-btn" title="Clear">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <button class="terminal-action-btn" title="Split">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <rect x="2" y="3" width="5" height="10" rx="0.5" stroke="currentColor" stroke-width="1.5"/>
+                        <rect x="9" y="3" width="5" height="10" rx="0.5" stroke="currentColor" stroke-width="1.5"/>
+                    </svg>
+                </button>
+                <button class="terminal-action-btn" title="Settings">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/>
+                        <path d="M8 2V4M8 12V14M14 8H12M4 8H2M12.5 12.5L11 11M5 5L3.5 3.5M12.5 3.5L11 5M5 11L3.5 12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="terminal-content">
+            <div class="terminal-line">
+                <span class="terminal-prompt">claudeManager</span>
+                <span class="terminal-path"> ~/apps/backend</span>
+                <span> $ bun run dev</span>
+            </div>
+            <div class="terminal-line terminal-output">
+                <span>$ bun --watch src/index.ts</span>
+            </div>
+            <div class="terminal-line terminal-success">
+                <span>✓ [ElysiaJS] Starting development server...</span>
+            </div>
+            <div class="terminal-line terminal-output">
+                <span>[Database] Connecting to SQLite: ./data/claude-manager.db</span>
+            </div>
+            <div class="terminal-line terminal-success">
+                <span>✓ [Database] Connected successfully</span>
+            </div>
+            <div class="terminal-line terminal-success">
+                <span>✓ [Server] Listening on http://localhost:3000</span>
+            </div>
+            <div class="terminal-line terminal-output">
+                <span>[WebSocket] PTY server initialized</span>
+            </div>
+            <div class="terminal-line terminal-success">
+                <span>✓ Ready in 342ms</span>
+            </div>
+            <div class="terminal-line">
+                <span class="terminal-prompt">claudeManager</span>
+                <span class="terminal-path"> ~/apps/backend</span>
+                <span> $ </span>
+                <span class="terminal-cursor"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab interactions
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                if (e.target.closest('.tab-close')) {
+                    // Close tab
+                    tab.style.animation = 'slideOut 200ms ease-out';
+                    setTimeout(() => {
+                        tab.remove();
+                    }, 200);
+                } else {
+                    // Switch to tab
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                }
+            });
+        });
+
+        // New tab button
+        document.querySelector('.new-tab-btn').addEventListener('click', () => {
+            console.log('New tab clicked');
+            // Would create new terminal session
+        });
+
+        // Terminal action buttons
+        document.querySelectorAll('.terminal-action-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const title = btn.getAttribute('title');
+                console.log(`${title} clicked`);
+            });
+        });
+
+        // Simulate terminal cursor
+        const cursor = document.querySelector('.terminal-cursor');
+        setInterval(() => {
+            cursor.style.opacity = cursor.style.opacity === '0' ? '1' : '0';
+        }, 530);
+
+        // Add slideOut animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideOut {
+                to {
+                    opacity: 0;
+                    transform: translateX(-20px);
+                    max-width: 0;
+                    padding: 0;
+                    margin: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

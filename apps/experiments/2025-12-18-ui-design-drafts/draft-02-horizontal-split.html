@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Manager - Horizontal Split</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Color System */
+            --bg-primary: #0a0e14;
+            --bg-secondary: #0f1419;
+            --bg-tertiary: #1a1f26;
+            --bg-elevated: #151a21;
+
+            --border-subtle: #1e252e;
+            --border-default: #2a3441;
+            --border-emphasis: #3d4856;
+
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-tertiary: #6e7681;
+
+            --accent-primary: #2f81f7;
+            --accent-hover: #4893ff;
+            --accent-active: #1c6cd3;
+
+            --success: #3fb950;
+            --warning: #d29922;
+            --danger: #f85149;
+
+            /* Spacing System */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 12px;
+            --space-lg: 16px;
+            --space-xl: 24px;
+
+            /* Typography */
+            --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+            --font-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+
+            --text-xs: 11px;
+            --text-sm: 12px;
+            --text-base: 14px;
+            --text-lg: 16px;
+
+            /* Effects */
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.5);
+            --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.6);
+
+            --transition-fast: 150ms ease-out;
+            --transition-base: 200ms ease-out;
+            --transition-slow: 300ms ease-out;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            font-size: var(--text-base);
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            height: 56px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 var(--space-lg);
+            flex-shrink: 0;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: var(--space-lg);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .logo-icon {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-hover));
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--text-xs);
+            font-weight: 700;
+            color: white;
+        }
+
+        .project-selector {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: var(--space-sm) var(--space-md);
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-default);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            font-size: var(--text-sm);
+            min-width: 180px;
+        }
+
+        .project-selector:hover {
+            background: var(--bg-elevated);
+            border-color: var(--border-emphasis);
+        }
+
+        .project-selector-icon {
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+        }
+
+        .project-name {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chevron {
+            font-size: var(--text-xs);
+            color: var(--text-secondary);
+            transition: transform var(--transition-fast);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .icon-button {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            position: relative;
+        }
+
+        .icon-button:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .icon-button:active {
+            transform: scale(0.95);
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 8px;
+            height: 8px;
+            background: var(--danger);
+            border-radius: 50%;
+            border: 2px solid var(--bg-secondary);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panes-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .pane {
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-secondary);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pane-top {
+            flex: 1;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .pane-bottom {
+            flex: 1;
+        }
+
+        /* Divider */
+        .divider {
+            height: 8px;
+            background: var(--bg-primary);
+            border-top: 1px solid var(--border-subtle);
+            border-bottom: 1px solid var(--border-subtle);
+            cursor: ns-resize;
+            position: relative;
+            flex-shrink: 0;
+            transition: background var(--transition-fast);
+        }
+
+        .divider:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 48px;
+            height: 4px;
+            background: var(--border-default);
+            border-radius: 2px;
+            transition: background var(--transition-fast);
+        }
+
+        .divider:hover::before {
+            background: var(--border-emphasis);
+        }
+
+        /* Tab Bar */
+        .tab-bar {
+            display: flex;
+            align-items: center;
+            background: var(--bg-elevated);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 0 var(--space-sm);
+            gap: var(--space-xs);
+            height: 40px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            flex-shrink: 0;
+        }
+
+        .tab-bar::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .tab-bar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .tab-bar::-webkit-scrollbar-thumb {
+            background: var(--border-default);
+            border-radius: 2px;
+        }
+
+        .tab {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: var(--space-sm) var(--space-md);
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+            white-space: nowrap;
+            user-select: none;
+            position: relative;
+        }
+
+        .tab:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            background: var(--bg-secondary);
+            border-color: var(--border-emphasis);
+            color: var(--text-primary);
+        }
+
+        .tab-icon {
+            font-size: var(--text-sm);
+            flex-shrink: 0;
+        }
+
+        .tab-title {
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tab-close {
+            opacity: 0;
+            transition: opacity var(--transition-fast);
+            padding: 2px;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tab:hover .tab-close,
+        .tab.active .tab-close {
+            opacity: 1;
+        }
+
+        .tab-close:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .tab-add {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            flex-shrink: 0;
+        }
+
+        .tab-add:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border-color: var(--border-default);
+        }
+
+        /* Terminal Content */
+        .terminal-content {
+            flex: 1;
+            background: var(--bg-primary);
+            padding: var(--space-lg);
+            overflow: auto;
+            font-family: var(--font-mono);
+            font-size: var(--text-sm);
+            line-height: 1.6;
+        }
+
+        .terminal-content::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .terminal-content::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        .terminal-content::-webkit-scrollbar-thumb {
+            background: var(--border-default);
+            border-radius: 4px;
+        }
+
+        .terminal-content::-webkit-scrollbar-thumb:hover {
+            background: var(--border-emphasis);
+        }
+
+        .terminal-line {
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .terminal-prompt {
+            color: var(--accent-primary);
+            margin-right: var(--space-sm);
+        }
+
+        .terminal-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background: var(--text-primary);
+            animation: blink 1s infinite;
+            margin-left: 2px;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        /* Notification Dropdown */
+        .notification-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            width: 360px;
+            max-height: 480px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            display: none;
+            flex-direction: column;
+            z-index: 1000;
+        }
+
+        .notification-dropdown.open {
+            display: flex;
+        }
+
+        .notification-header {
+            padding: var(--space-md) var(--space-lg);
+            border-bottom: 1px solid var(--border-subtle);
+            font-weight: 600;
+            font-size: var(--text-sm);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .notification-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .notification-item {
+            padding: var(--space-md) var(--space-lg);
+            border-bottom: 1px solid var(--border-subtle);
+            cursor: pointer;
+            transition: background var(--transition-fast);
+        }
+
+        .notification-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+
+        .notification-title {
+            font-size: var(--text-sm);
+            font-weight: 500;
+            margin-bottom: var(--space-xs);
+        }
+
+        .notification-body {
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+            margin-bottom: var(--space-xs);
+        }
+
+        .notification-time {
+            font-size: var(--text-xs);
+            color: var(--text-tertiary);
+        }
+
+        .notification-empty {
+            padding: var(--space-xl);
+            text-align: center;
+            color: var(--text-tertiary);
+            font-size: var(--text-sm);
+        }
+
+        /* Status Bar */
+        .status-bar {
+            height: 28px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 var(--space-lg);
+            font-size: var(--text-xs);
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+
+        .status-left,
+        .status-right {
+            display: flex;
+            align-items: center;
+            gap: var(--space-lg);
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+        }
+
+        .status-indicator {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--success);
+        }
+
+        /* Drag States */
+        .tab.dragging {
+            opacity: 0.5;
+        }
+
+        .tab-bar.drag-over {
+            background: var(--bg-tertiary);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .notification-dropdown.open {
+            animation: fadeIn var(--transition-base);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                padding: 0 var(--space-md);
+            }
+
+            .project-selector {
+                min-width: 120px;
+            }
+
+            .notification-dropdown {
+                width: 320px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <div class="logo">
+                <div class="logo-icon">CM</div>
+                <span>Claude Manager</span>
+            </div>
+            <div class="project-selector">
+                <span class="project-selector-icon">📁</span>
+                <span class="project-name">personal/claudeManager</span>
+                <span class="chevron">▾</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <button class="icon-button" title="Settings">
+                ⚙️
+            </button>
+            <button class="icon-button" id="notificationBtn" title="Notifications">
+                🔔
+                <span class="notification-badge"></span>
+            </button>
+            <div class="notification-dropdown" id="notificationDropdown">
+                <div class="notification-header">
+                    <span>Notifications</span>
+                    <button class="icon-button" style="width: 24px; height: 24px;" title="Mark all as read">
+                        ✓
+                    </button>
+                </div>
+                <div class="notification-list">
+                    <div class="notification-item">
+                        <div class="notification-title">Terminal 3 completed</div>
+                        <div class="notification-body">npm build finished successfully</div>
+                        <div class="notification-time">2 minutes ago</div>
+                    </div>
+                    <div class="notification-item">
+                        <div class="notification-title">Claude session started</div>
+                        <div class="notification-body">New session in project "claudeManager"</div>
+                        <div class="notification-time">15 minutes ago</div>
+                    </div>
+                    <div class="notification-item">
+                        <div class="notification-title">Terminal error</div>
+                        <div class="notification-body">Process exited with code 1 in Terminal 2</div>
+                        <div class="notification-time">1 hour ago</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="panes-container">
+            <!-- Top Pane -->
+            <div class="pane pane-top">
+                <div class="tab-bar">
+                    <div class="tab active" draggable="true">
+                        <span class="tab-icon">💻</span>
+                        <span class="tab-title">Terminal 1</span>
+                        <span class="tab-close">✕</span>
+                    </div>
+                    <div class="tab" draggable="true">
+                        <span class="tab-icon">🤖</span>
+                        <span class="tab-title">Claude Session</span>
+                        <span class="tab-close">✕</span>
+                    </div>
+                    <div class="tab" draggable="true">
+                        <span class="tab-icon">💻</span>
+                        <span class="tab-title">npm run dev</span>
+                        <span class="tab-close">✕</span>
+                    </div>
+                    <button class="tab-add" title="New tab">+</button>
+                </div>
+                <div class="terminal-content">
+                    <div class="terminal-line">
+                        <span class="terminal-prompt">➜</span>
+                        <span>~/personal/claudeManager</span>
+                    </div>
+                    <div class="terminal-line">
+                        <span class="terminal-prompt">➜</span>
+                        <span>git status</span>
+                    </div>
+                    <div class="terminal-line">On branch main</div>
+                    <div class="terminal-line">Your branch is up to date with 'origin/main'.</div>
+                    <div class="terminal-line"></div>
+                    <div class="terminal-line">Changes not staged for commit:</div>
+                    <div class="terminal-line">&nbsp;&nbsp;(use "git add &lt;file&gt;..." to update what will be committed)</div>
+                    <div class="terminal-line">&nbsp;&nbsp;(use "git restore &lt;file&gt;..." to discard changes in working directory)</div>
+                    <div class="terminal-line" style="color: var(--danger);">&nbsp;&nbsp;&nbsp;&nbsp;modified:   apps/backend/src/index.ts</div>
+                    <div class="terminal-line" style="color: var(--danger);">&nbsp;&nbsp;&nbsp;&nbsp;modified:   apps/frontend/src/routes/+page.svelte</div>
+                    <div class="terminal-line"></div>
+                    <div class="terminal-line">no changes added to commit (use "git add" and/or "git commit -a")</div>
+                    <div class="terminal-line">
+                        <span class="terminal-prompt">➜</span>
+                        <span>~/personal/claudeManager</span>
+                        <span class="terminal-cursor"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Divider -->
+            <div class="divider"></div>
+
+            <!-- Bottom Pane -->
+            <div class="pane pane-bottom">
+                <div class="tab-bar">
+                    <div class="tab" draggable="true">
+                        <span class="tab-icon">💻</span>
+                        <span class="tab-title">Terminal 4</span>
+                        <span class="tab-close">✕</span>
+                    </div>
+                    <div class="tab active" draggable="true">
+                        <span class="tab-icon">📝</span>
+                        <span class="tab-title">Logs</span>
+                        <span class="tab-close">✕</span>
+                    </div>
+                    <button class="tab-add" title="New tab">+</button>
+                </div>
+                <div class="terminal-content">
+                    <div class="terminal-line" style="color: var(--text-tertiary);">[12:34:56] Starting dev server...</div>
+                    <div class="terminal-line" style="color: var(--success);">[12:34:57] ✓ Backend ready on http://localhost:3000</div>
+                    <div class="terminal-line" style="color: var(--success);">[12:34:58] ✓ Frontend ready on http://localhost:5173</div>
+                    <div class="terminal-line"></div>
+                    <div class="terminal-line" style="color: var(--text-tertiary);">[12:35:02] GET /api/projects 200 4ms</div>
+                    <div class="terminal-line" style="color: var(--text-tertiary);">[12:35:03] GET /api/terminals 200 2ms</div>
+                    <div class="terminal-line"></div>
+                    <div class="terminal-line" style="color: var(--warning);">[12:35:10] ⚠ Slow query detected: fetchAllSessions (234ms)</div>
+                    <div class="terminal-line"></div>
+                    <div class="terminal-line" style="color: var(--text-tertiary);">[12:35:15] WebSocket connected: client_abc123</div>
+                    <div class="terminal-line" style="color: var(--text-tertiary);">[12:35:16] Terminal attached: terminal_xyz789</div>
+                    <div class="terminal-line">
+                        <span class="terminal-cursor"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <div class="status-left">
+            <div class="status-item">
+                <span class="status-indicator"></span>
+                <span>Connected</span>
+            </div>
+            <div class="status-item">
+                <span>4 terminals</span>
+            </div>
+            <div class="status-item">
+                <span>2 sessions</span>
+            </div>
+        </div>
+        <div class="status-right">
+            <div class="status-item">
+                <span>UTF-8</span>
+            </div>
+            <div class="status-item">
+                <span>bash</span>
+            </div>
+            <div class="status-item">
+                <span>Ln 24, Col 32</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Notification dropdown
+        const notificationBtn = document.getElementById('notificationBtn');
+        const notificationDropdown = document.getElementById('notificationDropdown');
+
+        notificationBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            notificationDropdown.classList.toggle('open');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!notificationDropdown.contains(e.target) && e.target !== notificationBtn) {
+                notificationDropdown.classList.remove('open');
+            }
+        });
+
+        // Tab drag and drop
+        let draggedTab = null;
+
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('dragstart', (e) => {
+                draggedTab = tab;
+                tab.classList.add('dragging');
+            });
+
+            tab.addEventListener('dragend', (e) => {
+                tab.classList.remove('dragging');
+            });
+        });
+
+        document.querySelectorAll('.tab-bar').forEach(tabBar => {
+            tabBar.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                tabBar.classList.add('drag-over');
+            });
+
+            tabBar.addEventListener('dragleave', (e) => {
+                tabBar.classList.remove('drag-over');
+            });
+
+            tabBar.addEventListener('drop', (e) => {
+                e.preventDefault();
+                tabBar.classList.remove('drag-over');
+
+                if (draggedTab && !tabBar.contains(draggedTab)) {
+                    // Move tab to new pane
+                    const addButton = tabBar.querySelector('.tab-add');
+                    tabBar.insertBefore(draggedTab, addButton);
+                }
+            });
+        });
+
+        // Pane resizing
+        const divider = document.querySelector('.divider');
+        const topPane = document.querySelector('.pane-top');
+        const bottomPane = document.querySelector('.pane-bottom');
+        let isResizing = false;
+
+        divider.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.body.style.cursor = 'ns-resize';
+            document.body.style.userSelect = 'none';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+
+            const container = document.querySelector('.panes-container');
+            const containerRect = container.getBoundingClientRect();
+            const newTopHeight = e.clientY - containerRect.top;
+            const totalHeight = containerRect.height - 8; // Subtract divider height
+            const topPercentage = (newTopHeight / totalHeight) * 100;
+            const bottomPercentage = 100 - topPercentage;
+
+            if (topPercentage > 20 && bottomPercentage > 20) {
+                topPane.style.flex = `${topPercentage}`;
+                bottomPane.style.flex = `${bottomPercentage}`;
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isResizing) {
+                isResizing = false;
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+            }
+        });
+
+        // Tab close buttons
+        document.querySelectorAll('.tab-close').forEach(closeBtn => {
+            closeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const tab = closeBtn.closest('.tab');
+                tab.style.opacity = '0';
+                tab.style.transform = 'scale(0.9)';
+                setTimeout(() => tab.remove(), 150);
+            });
+        });
+
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabBar = tab.closest('.tab-bar');
+                tabBar.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+            });
+        });
+
+        // New tab buttons
+        document.querySelectorAll('.tab-add').forEach(addBtn => {
+            addBtn.addEventListener('click', () => {
+                const tabBar = addBtn.closest('.tab-bar');
+                const newTab = document.createElement('div');
+                newTab.className = 'tab';
+                newTab.draggable = true;
+                newTab.innerHTML = `
+                    <span class="tab-icon">💻</span>
+                    <span class="tab-title">New Terminal</span>
+                    <span class="tab-close">✕</span>
+                `;
+
+                // Add event listeners to new tab
+                newTab.querySelector('.tab-close').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    newTab.style.opacity = '0';
+                    newTab.style.transform = 'scale(0.9)';
+                    setTimeout(() => newTab.remove(), 150);
+                });
+
+                newTab.addEventListener('click', () => {
+                    tabBar.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    newTab.classList.add('active');
+                });
+
+                tabBar.insertBefore(newTab, addBtn);
+
+                // Animate in
+                newTab.style.opacity = '0';
+                newTab.style.transform = 'scale(0.9)';
+                setTimeout(() => {
+                    newTab.style.transition = 'all 150ms ease-out';
+                    newTab.style.opacity = '1';
+                    newTab.style.transform = 'scale(1)';
+                }, 10);
+            });
+        });
+    </script>
+</body>
+</html>

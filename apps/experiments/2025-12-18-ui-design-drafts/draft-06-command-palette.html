@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Manager - Command Palette Design</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #13131a;
+            --bg-tertiary: #1a1a24;
+            --accent-cyan: #00f0ff;
+            --accent-cyan-dim: #0088a3;
+            --text-primary: #e8e8f0;
+            --text-secondary: #9898a8;
+            --text-dim: #5a5a6e;
+            --border-default: #2a2a38;
+            --border-focus: #00f0ff;
+            --shadow-glow: rgba(0, 240, 255, 0.15);
+            --terminal-green: #00ff88;
+            --terminal-red: #ff4466;
+            --terminal-yellow: #ffcc00;
+        }
+
+        body {
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            line-height: 1.5;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Top Bar - Minimal */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.875rem 1.5rem;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-default);
+            position: relative;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            color: var(--text-primary);
+        }
+
+        .logo-icon {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-cyan-dim));
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 0 20px var(--shadow-glow);
+        }
+
+        .top-bar-actions {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .palette-trigger {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-default);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 0.8125rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .palette-trigger:hover {
+            background: var(--bg-primary);
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+            box-shadow: 0 0 20px var(--shadow-glow);
+        }
+
+        .palette-trigger-icon {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            opacity: 0.6;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 8px;
+            height: 8px;
+            background: var(--terminal-red);
+            border-radius: 50%;
+            border: 2px solid var(--bg-secondary);
+            animation: pulse-notification 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-notification {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(0.9); }
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--terminal-green);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--terminal-green);
+            animation: pulse-status 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-status {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Main Content - Terminal */
+        .main-content {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .terminal-pane {
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .terminal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-default);
+        }
+
+        .terminal-tabs {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .terminal-tab {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.375rem 0.75rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-default);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .terminal-tab.active {
+            background: var(--bg-primary);
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .terminal-tab:hover:not(.active) {
+            border-color: var(--text-dim);
+            color: var(--text-primary);
+        }
+
+        .terminal-controls {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .terminal-control-btn {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: 1px solid var(--border-default);
+            border-radius: 4px;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-size: 0.875rem;
+        }
+
+        .terminal-control-btn:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+            background: var(--bg-tertiary);
+        }
+
+        .terminal-content {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            line-height: 1.6;
+        }
+
+        .terminal-line {
+            display: flex;
+            margin-bottom: 0.25rem;
+            opacity: 0;
+            animation: terminal-line-appear 0.3s ease forwards;
+        }
+
+        .terminal-line:nth-child(1) { animation-delay: 0.05s; }
+        .terminal-line:nth-child(2) { animation-delay: 0.1s; }
+        .terminal-line:nth-child(3) { animation-delay: 0.15s; }
+        .terminal-line:nth-child(4) { animation-delay: 0.2s; }
+        .terminal-line:nth-child(5) { animation-delay: 0.25s; }
+
+        @keyframes terminal-line-appear {
+            from { opacity: 0; transform: translateX(-4px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .terminal-prompt {
+            color: var(--accent-cyan);
+            margin-right: 0.5rem;
+            user-select: none;
+        }
+
+        .terminal-text {
+            color: var(--text-secondary);
+        }
+
+        .terminal-text.success {
+            color: var(--terminal-green);
+        }
+
+        .terminal-text.error {
+            color: var(--terminal-red);
+        }
+
+        .terminal-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background: var(--accent-cyan);
+            margin-left: 2px;
+            animation: cursor-blink 1s step-end infinite;
+        }
+
+        @keyframes cursor-blink {
+            50% { opacity: 0; }
+        }
+
+        /* Command Palette Overlay */
+        .palette-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 10, 15, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 20vh;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .palette-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .command-palette {
+            width: 100%;
+            max-width: 640px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-focus);
+            border-radius: 12px;
+            box-shadow:
+                0 0 0 1px rgba(0, 240, 255, 0.1),
+                0 20px 60px rgba(0, 0, 0, 0.5),
+                0 0 80px var(--shadow-glow);
+            overflow: hidden;
+            transform: translateY(-20px) scale(0.96);
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .palette-overlay.active .command-palette {
+            transform: translateY(0) scale(1);
+        }
+
+        .palette-search {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-default);
+        }
+
+        .palette-search-icon {
+            color: var(--accent-cyan);
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .palette-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-weight: 500;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .palette-input::placeholder {
+            color: var(--text-dim);
+        }
+
+        .palette-hint {
+            color: var(--text-dim);
+            font-size: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+            padding: 0.25rem 0.5rem;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+        }
+
+        .palette-results {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .palette-section {
+            padding: 0.75rem 0.5rem;
+        }
+
+        .palette-section-title {
+            font-size: 0.6875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            padding: 0 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .palette-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem 1rem;
+            margin: 0 0.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border: 1px solid transparent;
+        }
+
+        .palette-item:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--border-default);
+        }
+
+        .palette-item.selected {
+            background: var(--bg-tertiary);
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 1px var(--accent-cyan) inset;
+        }
+
+        .palette-item-icon {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-default);
+            border-radius: 6px;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .palette-item.selected .palette-item-icon {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .palette-item-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .palette-item-title {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 0.125rem;
+        }
+
+        .palette-item-subtitle {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .palette-item-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        .palette-item-badge {
+            padding: 0.25rem 0.5rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-default);
+            border-radius: 4px;
+            font-size: 0.6875rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-secondary);
+        }
+
+        .palette-item-shortcut {
+            display: flex;
+            gap: 0.25rem;
+            font-size: 0.6875rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-dim);
+        }
+
+        .palette-item-shortcut kbd {
+            padding: 0.125rem 0.375rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-default);
+            border-radius: 3px;
+            font-family: inherit;
+            font-size: inherit;
+        }
+
+        .palette-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.875rem 1.5rem;
+            background: var(--bg-primary);
+            border-top: 1px solid var(--border-default);
+        }
+
+        .palette-footer-hints {
+            display: flex;
+            gap: 1.5rem;
+            font-size: 0.6875rem;
+            color: var(--text-dim);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .palette-footer-hint {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+        }
+
+        .palette-footer-hint kbd {
+            padding: 0.125rem 0.375rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-default);
+            border-radius: 3px;
+            font-family: inherit;
+            font-size: inherit;
+            color: var(--text-secondary);
+        }
+
+        /* Scrollbar styling */
+        .palette-results::-webkit-scrollbar,
+        .terminal-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .palette-results::-webkit-scrollbar-track,
+        .terminal-content::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        .palette-results::-webkit-scrollbar-thumb,
+        .terminal-content::-webkit-scrollbar-thumb {
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+        }
+
+        .palette-results::-webkit-scrollbar-thumb:hover,
+        .terminal-content::-webkit-scrollbar-thumb:hover {
+            background: var(--border-default);
+        }
+
+        /* Status messages */
+        .status-message {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-focus);
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 40px var(--shadow-glow);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            z-index: 2000;
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .status-message.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .status-message-icon {
+            font-size: 1.25rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="logo">
+                <div class="logo-icon">CM</div>
+                <span>Claude Manager</span>
+            </div>
+            <div class="top-bar-actions">
+                <div class="status-indicator">
+                    <span class="status-dot"></span>
+                    <span>3 sessions active</span>
+                </div>
+                <button class="palette-trigger" onclick="togglePalette()">
+                    <span>Command Palette</span>
+                    <span class="palette-trigger-icon">⌘K</span>
+                    <div class="notification-badge"></div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content - Terminal View -->
+        <div class="main-content">
+            <div class="terminal-pane">
+                <div class="terminal-header">
+                    <div class="terminal-tabs">
+                        <div class="terminal-tab active">
+                            <span>~/project-alpha</span>
+                            <span style="opacity: 0.5;">×</span>
+                        </div>
+                        <div class="terminal-tab">
+                            <span>~/backend-api</span>
+                            <span style="opacity: 0.5;">×</span>
+                        </div>
+                        <div class="terminal-tab">
+                            <span>+</span>
+                        </div>
+                    </div>
+                    <div class="terminal-controls">
+                        <button class="terminal-control-btn" title="Split View">⫽</button>
+                        <button class="terminal-control-btn" title="Settings">⚙</button>
+                        <button class="terminal-control-btn" title="Clear">⌫</button>
+                    </div>
+                </div>
+                <div class="terminal-content">
+                    <div class="terminal-line">
+                        <span class="terminal-prompt">❯</span>
+                        <span class="terminal-text">claude chat start "Implement authentication system"</span>
+                    </div>
+                    <div class="terminal-line">
+                        <span class="terminal-prompt">│</span>
+                        <span class="terminal-text success">✓ Starting new Claude Code session...</span>
+                    </div>
+                    <div class="terminal-line">
+                        <span class="terminal-prompt">│</span>
+                        <span class="terminal-text success">✓ Session ID: cm_auth_20251218_143052</span>
+                    </div>
+                    <div class="terminal-line">
+                        <span class="terminal-prompt">│</span>
+                        <span class="terminal-text">Analyzing codebase structure...</span>
+                    </div>
+                    <div class="terminal-line">
+                        <span class="terminal-prompt">❯</span>
+                        <span class="terminal-cursor"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Command Palette Overlay -->
+        <div class="palette-overlay" id="paletteOverlay" onclick="if(event.target === this) togglePalette()">
+            <div class="command-palette">
+                <div class="palette-search">
+                    <span class="palette-search-icon">⌕</span>
+                    <input
+                        type="text"
+                        class="palette-input"
+                        placeholder="Type a command or search..."
+                        id="paletteInput"
+                        autofocus
+                    >
+                    <span class="palette-hint">ESC</span>
+                </div>
+
+                <div class="palette-results">
+                    <!-- Quick Actions -->
+                    <div class="palette-section">
+                        <div class="palette-section-title">Quick Actions</div>
+                        <div class="palette-item selected">
+                            <div class="palette-item-icon">➕</div>
+                            <div class="palette-item-content">
+                                <div class="palette-item-title">New Claude Session</div>
+                                <div class="palette-item-subtitle">Start a fresh chat in current project</div>
+                            </div>
+                            <div class="palette-item-meta">
+                                <div class="palette-item-shortcut">
+                                    <kbd>⌘</kbd><kbd>N</kbd>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="palette-item">
+                            <div class="palette-item-icon">📂</div>
+                            <div class="palette-item-content">
+                                <div class="palette-item-title">Switch Project</div>
+                                <div class="palette-item-subtitle">Navigate to different workspace</div>
+                            </div>
+                            <div class="palette-item-meta">
+                                <div class="palette-item-shortcut">
+                                    <kbd>⌘</kbd><kbd>P</kbd>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="palette-item">
+                            <div class="palette-item-icon">⫽</div>
+                            <div class="palette-item-content">
+                                <div class="palette-item-title">Toggle Split View</div>
+                                <div class="palette-item-subtitle">Show multiple terminals side-by-side</div>
+                            </div>
+                            <div class="palette-item-meta">
+                                <div class="palette-item-shortcut">
+                                    <kbd>⌘</kbd><kbd>\\</kbd>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="palette-item">
+                            <div class="palette-item-icon">🔍</div>
+                            <div class="palette-item-content">
+                                <div class="palette-item-title">Search Sessions</div>
+                                <div class="palette-item-subtitle">Find by message, session ID, or project</div>
+                            </div>
+                            <div class="palette-item-meta">
+                                <div class="palette-item-shortcut">
+                                    <kbd>⌘</kbd><kbd>F</kbd>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Sessions -->
+                    <div class="palette-section">
+                        <div class="palette-section-title">Recent Sessions</div>
+                        <div class="palette-item">
+                            <div class="palette-item-icon">💬</div>
+                            <div class="palette-item-content">
+                                <div class="palette-item-title">Implement authentication system</div>
+                                <div class="palette-item-subtitle">~/project-alpha • 5 min ago</div>
+                            </div>
+                            <div class="palette-item-meta">
+                                <div class="palette-item-badge">Active</div>
+                            </div>
+                        </div>
+                        <div class="palette-item">
+                            <div class="palette-item-icon">💬</div>
+                            <div class="palette-item-content">
+                                <div class="palette-item-title">Refactor database queries</div>
+                                <div class="palette-item-subtitle">~/backend-api • 2 hours ago</div>
+                            </div>
+                            <div class="palette-item-meta">
+                                <div class="palette-item-badge">Paused</div>
+                            </div>
+                        </div>
+                        <div class="palette-item">
+                            <div class="palette-item-icon">💬</div>
+                            <div class="palette-item-content">
+                                <div class="palette-item-title">Build API endpoints for user management</div>
+                                <div class="palette-item-subtitle">~/backend-api • Yesterday</div>
+                            </div>
+                            <div class="palette-item-meta">
+                                <div class="palette-item-badge">Completed</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Projects -->
+                    <div class="palette-section">
+                        <div class="palette-section-title">Projects</div>
+                        <div class="palette-item">
+                            <div class="palette-item-icon">📁</div>
+                            <div class="palette-item-content">
+                                <div class="palette-item-title">project-alpha</div>
+                                <div class="palette-item-subtitle">~/code/project-alpha</div>
+                            </div>
+                            <div class="palette-item-meta">
+                                <div class="palette-item-badge">3 sessions</div>
+                            </div>
+                        </div>
+                        <div class="palette-item">
+                            <div class="palette-item-icon">📁</div>
+                            <div class="palette-item-content">
+                                <div class="palette-item-title">backend-api</div>
+                                <div class="palette-item-subtitle">~/code/backend-api</div>
+                            </div>
+                            <div class="palette-item-meta">
+                                <div class="palette-item-badge">5 sessions</div>
+                            </div>
+                        </div>
+                        <div class="palette-item">
+                            <div class="palette-item-icon">📁</div>
+                            <div class="palette-item-content">
+                                <div class="palette-item-title">frontend-dashboard</div>
+                                <div class="palette-item-subtitle">~/code/frontend-dashboard</div>
+                            </div>
+                            <div class="palette-item-meta">
+                                <div class="palette-item-badge">2 sessions</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="palette-footer">
+                    <div class="palette-footer-hints">
+                        <div class="palette-footer-hint">
+                            <kbd>↑</kbd><kbd>↓</kbd>
+                            <span>navigate</span>
+                        </div>
+                        <div class="palette-footer-hint">
+                            <kbd>↵</kbd>
+                            <span>select</span>
+                        </div>
+                        <div class="palette-footer-hint">
+                            <kbd>ESC</kbd>
+                            <span>close</span>
+                        </div>
+                    </div>
+                    <div style="font-size: 0.6875rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace;">
+                        <span>Showing 12 results</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Message -->
+        <div class="status-message" id="statusMessage">
+            <span class="status-message-icon">✓</span>
+            <span>Session started successfully</span>
+        </div>
+    </div>
+
+    <script>
+        // Command Palette Toggle
+        function togglePalette() {
+            const overlay = document.getElementById('paletteOverlay');
+            const input = document.getElementById('paletteInput');
+
+            overlay.classList.toggle('active');
+
+            if (overlay.classList.contains('active')) {
+                setTimeout(() => input.focus(), 100);
+            } else {
+                input.value = '';
+            }
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Cmd/Ctrl + K to toggle palette
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                togglePalette();
+            }
+
+            // ESC to close palette
+            if (e.key === 'Escape') {
+                const overlay = document.getElementById('paletteOverlay');
+                if (overlay.classList.contains('active')) {
+                    togglePalette();
+                }
+            }
+
+            // Arrow key navigation
+            const overlay = document.getElementById('paletteOverlay');
+            if (overlay.classList.contains('active')) {
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    const items = Array.from(document.querySelectorAll('.palette-item'));
+                    const selected = document.querySelector('.palette-item.selected');
+                    const currentIndex = items.indexOf(selected);
+
+                    if (e.key === 'ArrowDown') {
+                        const nextIndex = (currentIndex + 1) % items.length;
+                        selected.classList.remove('selected');
+                        items[nextIndex].classList.add('selected');
+                        items[nextIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                    } else if (e.key === 'ArrowUp') {
+                        const prevIndex = (currentIndex - 1 + items.length) % items.length;
+                        selected.classList.remove('selected');
+                        items[prevIndex].classList.add('selected');
+                        items[prevIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                    }
+                }
+
+                // Enter to select
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const selected = document.querySelector('.palette-item.selected');
+                    if (selected) {
+                        selected.click();
+                    }
+                }
+            }
+        });
+
+        // Palette item click handlers
+        document.querySelectorAll('.palette-item').forEach(item => {
+            item.addEventListener('click', function() {
+                // Remove selection from all items
+                document.querySelectorAll('.palette-item').forEach(i => i.classList.remove('selected'));
+                // Select clicked item
+                this.classList.add('selected');
+
+                // Close palette after selection
+                setTimeout(() => {
+                    togglePalette();
+                    showStatusMessage(this.querySelector('.palette-item-title').textContent);
+                }, 150);
+            });
+
+            // Hover to select
+            item.addEventListener('mouseenter', function() {
+                document.querySelectorAll('.palette-item').forEach(i => i.classList.remove('selected'));
+                this.classList.add('selected');
+            });
+        });
+
+        // Status message
+        function showStatusMessage(message) {
+            const statusMsg = document.getElementById('statusMessage');
+            const textSpan = statusMsg.querySelector('span:last-child');
+            textSpan.textContent = message;
+
+            statusMsg.classList.add('show');
+
+            setTimeout(() => {
+                statusMsg.classList.remove('show');
+            }, 3000);
+        }
+
+        // Palette search filtering
+        const paletteInput = document.getElementById('paletteInput');
+        paletteInput.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const items = document.querySelectorAll('.palette-item');
+            const sections = document.querySelectorAll('.palette-section');
+
+            let visibleCount = 0;
+
+            items.forEach(item => {
+                const title = item.querySelector('.palette-item-title').textContent.toLowerCase();
+                const subtitle = item.querySelector('.palette-item-subtitle')?.textContent.toLowerCase() || '';
+
+                if (title.includes(searchTerm) || subtitle.includes(searchTerm)) {
+                    item.style.display = 'flex';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            // Hide empty sections
+            sections.forEach(section => {
+                const visibleItems = section.querySelectorAll('.palette-item[style="display: flex;"]').length;
+                section.style.display = visibleItems > 0 ? 'block' : 'none';
+            });
+
+            // Update result count
+            document.querySelector('.palette-footer div:last-child span').textContent =
+                `Showing ${visibleCount} result${visibleCount !== 1 ? 's' : ''}`;
+
+            // Auto-select first visible item
+            const firstVisible = document.querySelector('.palette-item[style="display: flex;"]');
+            if (firstVisible) {
+                items.forEach(i => i.classList.remove('selected'));
+                firstVisible.classList.add('selected');
+            }
+        });
+
+        // Terminal cursor blink effect enhancement
+        setInterval(() => {
+            const cursor = document.querySelector('.terminal-cursor');
+            if (cursor) {
+                cursor.style.boxShadow = Math.random() > 0.5 ? '0 0 8px var(--accent-cyan)' : 'none';
+            }
+        }, 500);
+
+        // Simulate typing in terminal
+        function simulateTerminalTyping() {
+            const terminal = document.querySelector('.terminal-content');
+            const messages = [
+                { prompt: '│', text: '📄 Reading src/auth/auth.service.ts...', type: 'normal' },
+                { prompt: '│', text: '✓ Found 3 authentication methods', type: 'success' },
+                { prompt: '│', text: '🔍 Analyzing security patterns...', type: 'normal' }
+            ];
+
+            let index = 0;
+            const interval = setInterval(() => {
+                if (index < messages.length) {
+                    const msg = messages[index];
+                    const line = document.createElement('div');
+                    line.className = 'terminal-line';
+                    line.innerHTML = `
+                        <span class="terminal-prompt">${msg.prompt}</span>
+                        <span class="terminal-text ${msg.type}">${msg.text}</span>
+                    `;
+
+                    // Insert before cursor line
+                    const cursorLine = terminal.querySelector('.terminal-line:last-child');
+                    terminal.insertBefore(line, cursorLine);
+
+                    // Scroll to bottom
+                    terminal.scrollTop = terminal.scrollHeight;
+
+                    index++;
+                } else {
+                    clearInterval(interval);
+                }
+            }, 2000);
+        }
+
+        // Start terminal simulation after page load
+        setTimeout(simulateTerminalTyping, 2000);
+    </script>
+</body>
+</html>

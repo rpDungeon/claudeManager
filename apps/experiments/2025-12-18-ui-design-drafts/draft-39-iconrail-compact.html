@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Manager - Icon Rail Compact</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --rail-width: 40px;
+            --topbar-height: 36px;
+            --bottombar-height: 24px;
+
+            --bg-deep: #0a0e14;
+            --bg-darker: #0d1117;
+            --bg-dark: #161b22;
+            --bg-medium: #1c2128;
+            --bg-light: #242b35;
+
+            --border-dark: #21262d;
+            --border-medium: #30363d;
+
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-muted: #6e7681;
+
+            --accent-cyan: #00d9ff;
+            --accent-green: #4ade80;
+            --accent-amber: #fbbf24;
+            --accent-pink: #f472b6;
+            --accent-purple: #a855f7;
+
+            --terminal-bg: #0a0e14;
+            --terminal-fg: #c9d1d9;
+            --terminal-cursor: #00d9ff;
+            --terminal-selection: rgba(0, 217, 255, 0.2);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            font-size: 12px;
+        }
+
+        /* Layout Structure */
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Icon Rail */
+        .icon-rail {
+            width: var(--rail-width);
+            background: var(--bg-darker);
+            border-right: 1px solid var(--border-dark);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 100;
+        }
+
+        .rail-header {
+            height: var(--topbar-height);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 1px solid var(--border-dark);
+            background: var(--bg-deep);
+        }
+
+        .rail-logo {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .rail-logo:hover {
+            transform: scale(1.1);
+            text-shadow: 0 0 10px var(--accent-cyan);
+        }
+
+        .rail-projects {
+            flex: 1;
+            padding: 8px 0;
+            overflow-y: auto;
+            overflow-x: visible;
+        }
+
+        .rail-projects::-webkit-scrollbar {
+            width: 3px;
+        }
+
+        .rail-projects::-webkit-scrollbar-thumb {
+            background: var(--border-medium);
+            border-radius: 3px;
+        }
+
+        .project-icon {
+            width: 32px;
+            height: 32px;
+            margin: 6px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-medium);
+            border: 1px solid var(--border-medium);
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            position: relative;
+            transition: all 0.15s;
+        }
+
+        .project-icon:hover {
+            background: var(--bg-light);
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+            transform: translateX(2px);
+        }
+
+        .project-icon.active {
+            background: var(--accent-cyan);
+            border-color: var(--accent-cyan);
+            color: var(--bg-deep);
+            box-shadow: 0 0 12px rgba(0, 217, 255, 0.4);
+        }
+
+        .project-icon.active::before {
+            content: '';
+            position: absolute;
+            left: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 16px;
+            background: var(--accent-cyan);
+            border-radius: 0 2px 2px 0;
+        }
+
+        /* Project Flyout */
+        .project-flyout {
+            position: fixed;
+            left: var(--rail-width);
+            background: var(--bg-dark);
+            border: 1px solid var(--border-medium);
+            border-radius: 6px;
+            padding: 8px;
+            min-width: 200px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s, transform 0.15s;
+            transform: translateX(-4px);
+        }
+
+        .project-icon:hover .project-flyout {
+            opacity: 1;
+            pointer-events: all;
+            transform: translateX(4px);
+        }
+
+        .flyout-header {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-primary);
+            padding: 4px 8px;
+            margin-bottom: 4px;
+        }
+
+        .flyout-path {
+            font-size: 10px;
+            color: var(--text-muted);
+            padding: 0 8px 8px;
+            font-family: 'JetBrains Mono', monospace;
+            border-bottom: 1px solid var(--border-dark);
+            margin-bottom: 4px;
+        }
+
+        .flyout-sessions {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .flyout-session {
+            padding: 6px 8px;
+            border-radius: 4px;
+            background: var(--bg-medium);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .flyout-session:hover {
+            background: var(--bg-light);
+            transform: translateX(2px);
+        }
+
+        .flyout-session.active {
+            background: rgba(0, 217, 255, 0.1);
+            border-left: 2px solid var(--accent-cyan);
+            padding-left: 6px;
+        }
+
+        .session-name {
+            font-size: 11px;
+            color: var(--text-primary);
+        }
+
+        .session-status {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            box-shadow: 0 0 6px var(--accent-green);
+        }
+
+        .flyout-actions {
+            padding: 4px;
+            margin-top: 4px;
+            border-top: 1px solid var(--border-dark);
+            display: flex;
+            gap: 4px;
+        }
+
+        .flyout-btn {
+            flex: 1;
+            padding: 4px 8px;
+            border: 1px solid var(--border-medium);
+            border-radius: 4px;
+            background: var(--bg-medium);
+            color: var(--text-secondary);
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .flyout-btn:hover {
+            background: var(--bg-light);
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .rail-footer {
+            padding: 8px 0;
+            border-top: 1px solid var(--border-dark);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .rail-action {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .rail-action:hover {
+            background: var(--bg-medium);
+            color: var(--accent-cyan);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            height: var(--topbar-height);
+            background: var(--bg-darker);
+            border-bottom: 1px solid var(--border-dark);
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 12px;
+        }
+
+        .dashboard-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: var(--bg-medium);
+            border: 1px solid var(--border-medium);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .dashboard-toggle:hover {
+            background: var(--bg-light);
+            border-color: var(--accent-cyan);
+        }
+
+        .toggle-icon {
+            width: 16px;
+            height: 16px;
+            color: var(--text-secondary);
+            transition: color 0.15s;
+        }
+
+        .dashboard-toggle:hover .toggle-icon {
+            color: var(--accent-cyan);
+        }
+
+        .toggle-text {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .project-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .project-name {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .project-path {
+            font-size: 10px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .top-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .top-btn {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .top-btn:hover {
+            background: var(--bg-medium);
+            color: var(--accent-cyan);
+        }
+
+        /* Terminal Workspace */
+        .terminal-workspace {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 0;
+            background: var(--bg-deep);
+            position: relative;
+        }
+
+        .terminal-pane {
+            background: var(--terminal-bg);
+            border: 1px solid var(--border-dark);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .terminal-pane:nth-child(1) {
+            border-right-width: 0.5px;
+            border-bottom-width: 0.5px;
+        }
+
+        .terminal-pane:nth-child(2) {
+            border-left-width: 0.5px;
+            border-bottom-width: 0.5px;
+        }
+
+        .terminal-pane:nth-child(3) {
+            border-right-width: 0.5px;
+            border-top-width: 0.5px;
+        }
+
+        .terminal-pane:nth-child(4) {
+            border-left-width: 0.5px;
+            border-top-width: 0.5px;
+        }
+
+        .terminal-header {
+            height: 28px;
+            background: var(--bg-darker);
+            border-bottom: 1px solid var(--border-dark);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10px;
+        }
+
+        .terminal-title {
+            font-size: 11px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .terminal-status {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            box-shadow: 0 0 6px var(--accent-green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .terminal-controls {
+            display: flex;
+            gap: 4px;
+        }
+
+        .terminal-control-btn {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 3px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.15s;
+            font-size: 10px;
+        }
+
+        .terminal-control-btn:hover {
+            background: var(--bg-medium);
+            color: var(--text-primary);
+        }
+
+        .terminal-body {
+            flex: 1;
+            padding: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--terminal-fg);
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* CRT Effect */
+        .terminal-body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                to bottom,
+                rgba(255, 255, 255, 0.015) 50%,
+                transparent 50%
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .terminal-body::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.3) 100%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .terminal-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .terminal-body::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .terminal-body::-webkit-scrollbar-track {
+            background: var(--bg-deep);
+        }
+
+        .terminal-body::-webkit-scrollbar-thumb {
+            background: var(--border-medium);
+            border-radius: 3px;
+        }
+
+        .terminal-line {
+            margin-bottom: 2px;
+        }
+
+        .prompt {
+            color: var(--accent-cyan);
+            text-shadow: 0 0 4px rgba(0, 217, 255, 0.4);
+        }
+
+        .command {
+            color: var(--text-primary);
+        }
+
+        .output {
+            color: var(--text-secondary);
+        }
+
+        .success {
+            color: var(--accent-green);
+        }
+
+        .error {
+            color: #ff6b6b;
+        }
+
+        .warning {
+            color: var(--accent-amber);
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background: var(--terminal-cursor);
+            animation: blink 1s infinite;
+            box-shadow: 0 0 8px var(--terminal-cursor);
+        }
+
+        @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+
+        /* Bottom Status Bar */
+        .bottom-bar {
+            height: var(--bottombar-height);
+            background: var(--bg-darker);
+            border-top: 1px solid var(--border-dark);
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 16px;
+            font-size: 10px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--text-muted);
+        }
+
+        .status-icon {
+            width: 12px;
+            height: 12px;
+            color: var(--text-muted);
+        }
+
+        .status-item.active {
+            color: var(--accent-cyan);
+        }
+
+        .status-item.active .status-icon {
+            color: var(--accent-cyan);
+        }
+
+        .status-separator {
+            width: 1px;
+            height: 12px;
+            background: var(--border-dark);
+        }
+
+        .status-sessions {
+            display: flex;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .status-session {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            background: var(--bg-medium);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .status-session:hover {
+            background: var(--bg-light);
+            color: var(--text-primary);
+        }
+
+        .status-session.active {
+            background: rgba(0, 217, 255, 0.1);
+            color: var(--accent-cyan);
+            border: 1px solid var(--accent-cyan);
+            padding: 1px 5px;
+        }
+
+        .session-dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: var(--accent-green);
+        }
+
+        /* Responsive Grid Resize Handles */
+        .resize-handle {
+            position: absolute;
+            background: transparent;
+            z-index: 10;
+            transition: background 0.15s;
+        }
+
+        .resize-handle:hover {
+            background: var(--accent-cyan);
+        }
+
+        .resize-handle.horizontal {
+            height: 3px;
+            left: 0;
+            right: 0;
+            cursor: row-resize;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .resize-handle.vertical {
+            width: 3px;
+            top: 0;
+            bottom: 0;
+            cursor: col-resize;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Icon Rail -->
+        <div class="icon-rail">
+            <div class="rail-header">
+                <div class="rail-logo">⌘</div>
+            </div>
+
+            <div class="rail-projects">
+                <!-- Active Project -->
+                <div class="project-icon active">
+                    CM
+                    <div class="project-flyout" style="top: 50px;">
+                        <div class="flyout-header">Claude Manager</div>
+                        <div class="flyout-path">~/personal/claudeManager</div>
+                        <div class="flyout-sessions">
+                            <div class="flyout-session active">
+                                <span class="session-name">Main Dev</span>
+                                <span class="session-status"></span>
+                            </div>
+                            <div class="flyout-session">
+                                <span class="session-name">Backend API</span>
+                                <span class="session-status"></span>
+                            </div>
+                            <div class="flyout-session">
+                                <span class="session-name">Frontend UI</span>
+                                <span class="session-status"></span>
+                            </div>
+                        </div>
+                        <div class="flyout-actions">
+                            <button class="flyout-btn">+ New</button>
+                            <button class="flyout-btn">⚙</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Other Projects -->
+                <div class="project-icon">
+                    ST
+                    <div class="project-flyout" style="top: 100px;">
+                        <div class="flyout-header">Sales Trainer</div>
+                        <div class="flyout-path">~/helios/sales-trainer</div>
+                        <div class="flyout-sessions">
+                            <div class="flyout-session">
+                                <span class="session-name">Auth Work</span>
+                                <span class="session-status"></span>
+                            </div>
+                            <div class="flyout-session">
+                                <span class="session-name">Testing</span>
+                                <span class="session-status"></span>
+                            </div>
+                        </div>
+                        <div class="flyout-actions">
+                            <button class="flyout-btn">+ New</button>
+                            <button class="flyout-btn">⚙</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="project-icon">
+                    DB
+                    <div class="project-flyout" style="top: 150px;">
+                        <div class="flyout-header">Dashboard</div>
+                        <div class="flyout-path">~/projects/dashboard</div>
+                        <div class="flyout-sessions">
+                            <div class="flyout-session">
+                                <span class="session-name">Analytics</span>
+                                <span class="session-status"></span>
+                            </div>
+                        </div>
+                        <div class="flyout-actions">
+                            <button class="flyout-btn">+ New</button>
+                            <button class="flyout-btn">⚙</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="project-icon">
+                    API
+                    <div class="project-flyout" style="top: 200px;">
+                        <div class="flyout-header">API Gateway</div>
+                        <div class="flyout-path">~/work/api-gateway</div>
+                        <div class="flyout-sessions">
+                            <div class="flyout-session">
+                                <span class="session-name">Core</span>
+                                <span class="session-status"></span>
+                            </div>
+                            <div class="flyout-session">
+                                <span class="session-name">Docs</span>
+                                <span class="session-status"></span>
+                            </div>
+                        </div>
+                        <div class="flyout-actions">
+                            <button class="flyout-btn">+ New</button>
+                            <button class="flyout-btn">⚙</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rail-footer">
+                <div class="rail-action" title="New Project">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M8 3v10M3 8h10"/>
+                    </svg>
+                </div>
+                <div class="rail-action" title="Settings">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <circle cx="8" cy="8" r="3"/>
+                        <path d="M12 8a4 4 0 0 0-.5-2l1.5-1.5-1-1-1.5 1.5a4 4 0 0 0-2-.5V3h-1.5v1.5a4 4 0 0 0-2 .5L3.5 3.5l-1 1L4 6a4 4 0 0 0-.5 2H2v1.5h1.5a4 4 0 0 0 .5 2l-1.5 1.5 1 1L5 12.5a4 4 0 0 0 2 .5V14h1.5v-1.5a4 4 0 0 0 2-.5l1.5 1.5 1-1-1.5-1.5a4 4 0 0 0 .5-2H14V8h-2z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Top Bar -->
+            <div class="top-bar">
+                <div class="dashboard-toggle">
+                    <svg class="toggle-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="2" y="2" width="5" height="5" rx="1"/>
+                        <rect x="9" y="2" width="5" height="5" rx="1"/>
+                        <rect x="2" y="9" width="5" height="5" rx="1"/>
+                        <rect x="9" y="9" width="5" height="5" rx="1"/>
+                    </svg>
+                    <span class="toggle-text">Dashboard</span>
+                </div>
+
+                <div class="project-info">
+                    <span class="project-name">Claude Manager</span>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" style="color: var(--text-muted);">
+                        <path d="M4.5 3L7.5 6L4.5 9"/>
+                    </svg>
+                    <span class="project-path">~/personal/claudeManager</span>
+                </div>
+
+                <div class="top-actions">
+                    <div class="top-btn" title="Split View">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <rect x="2" y="3" width="12" height="10" rx="1"/>
+                            <path d="M8 3v10"/>
+                        </svg>
+                    </div>
+                    <div class="top-btn" title="Layout">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <rect x="2" y="2" width="5" height="5" rx="0.5"/>
+                            <rect x="9" y="2" width="5" height="5" rx="0.5"/>
+                            <rect x="2" y="9" width="5" height="5" rx="0.5"/>
+                            <rect x="9" y="9" width="5" height="5" rx="0.5"/>
+                        </svg>
+                    </div>
+                    <div class="top-btn" title="More">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                            <circle cx="8" cy="4" r="1.5"/>
+                            <circle cx="8" cy="8" r="1.5"/>
+                            <circle cx="8" cy="12" r="1.5"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Terminal Workspace -->
+            <div class="terminal-workspace">
+                <!-- Terminal 1 -->
+                <div class="terminal-pane">
+                    <div class="terminal-header">
+                        <div class="terminal-title">
+                            <span class="terminal-status"></span>
+                            <span>zsh • main</span>
+                        </div>
+                        <div class="terminal-controls">
+                            <div class="terminal-control-btn" title="Split">↔</div>
+                            <div class="terminal-control-btn" title="Settings">⚙</div>
+                            <div class="terminal-control-btn" title="Close">×</div>
+                        </div>
+                    </div>
+                    <div class="terminal-body">
+                        <div class="terminal-content">
+                            <div class="terminal-line">
+                                <span class="prompt">❯</span> <span class="command">bun run dev</span>
+                            </div>
+                            <div class="terminal-line output">Starting development server...</div>
+                            <div class="terminal-line success">✓ Backend server started on http://localhost:3000</div>
+                            <div class="terminal-line success">✓ Frontend dev server started on http://localhost:5173</div>
+                            <div class="terminal-line output">[backend] Listening on 0.0.0.0:3000</div>
+                            <div class="terminal-line output">[frontend] Ready in 324ms</div>
+                            <div class="terminal-line">
+                                <span class="prompt">❯</span> <span class="cursor"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terminal 2 -->
+                <div class="terminal-pane">
+                    <div class="terminal-header">
+                        <div class="terminal-title">
+                            <span class="terminal-status"></span>
+                            <span>git • status</span>
+                        </div>
+                        <div class="terminal-controls">
+                            <div class="terminal-control-btn">↔</div>
+                            <div class="terminal-control-btn">⚙</div>
+                            <div class="terminal-control-btn">×</div>
+                        </div>
+                    </div>
+                    <div class="terminal-body">
+                        <div class="terminal-content">
+                            <div class="terminal-line">
+                                <span class="prompt">❯</span> <span class="command">git status</span>
+                            </div>
+                            <div class="terminal-line output">On branch feat/icon-rail-ui</div>
+                            <div class="terminal-line output">Your branch is up to date with 'origin/feat/icon-rail-ui'.</div>
+                            <div class="terminal-line"></div>
+                            <div class="terminal-line output">Changes not staged for commit:</div>
+                            <div class="terminal-line warning">  modified:   apps/frontend/src/lib/features/terminal/Terminal.svelte</div>
+                            <div class="terminal-line warning">  modified:   apps/backend/src/terminal/terminal.service.ts</div>
+                            <div class="terminal-line"></div>
+                            <div class="terminal-line output">Untracked files:</div>
+                            <div class="terminal-line error">  apps/experiments/draft-39-iconrail-compact.html</div>
+                            <div class="terminal-line">
+                                <span class="prompt">❯</span> <span class="cursor"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terminal 3 -->
+                <div class="terminal-pane">
+                    <div class="terminal-header">
+                        <div class="terminal-title">
+                            <span class="terminal-status"></span>
+                            <span>claude • session-a8f2</span>
+                        </div>
+                        <div class="terminal-controls">
+                            <div class="terminal-control-btn">↔</div>
+                            <div class="terminal-control-btn">⚙</div>
+                            <div class="terminal-control-btn">×</div>
+                        </div>
+                    </div>
+                    <div class="terminal-body">
+                        <div class="terminal-content">
+                            <div class="terminal-line">
+                                <span class="prompt">❯</span> <span class="command">claude</span>
+                            </div>
+                            <div class="terminal-line success">⚡ Connected to Claude Code</div>
+                            <div class="terminal-line output">Session ID: a8f2c4d9</div>
+                            <div class="terminal-line output">Project: Claude Manager</div>
+                            <div class="terminal-line output">Working directory: ~/personal/claudeManager</div>
+                            <div class="terminal-line"></div>
+                            <div class="terminal-line output">You: Create the icon rail component</div>
+                            <div class="terminal-line"></div>
+                            <div class="terminal-line success">Claude: I'll create a compact icon rail component for the sidebar.</div>
+                            <div class="terminal-line output">Let me start by analyzing the existing layout structure...</div>
+                            <div class="terminal-line">
+                                <span class="prompt">❯</span> <span class="cursor"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terminal 4 -->
+                <div class="terminal-pane">
+                    <div class="terminal-header">
+                        <div class="terminal-title">
+                            <span class="terminal-status"></span>
+                            <span>logs • backend</span>
+                        </div>
+                        <div class="terminal-controls">
+                            <div class="terminal-control-btn">↔</div>
+                            <div class="terminal-control-btn">⚙</div>
+                            <div class="terminal-control-btn">×</div>
+                        </div>
+                    </div>
+                    <div class="terminal-body">
+                        <div class="terminal-content">
+                            <div class="terminal-line">
+                                <span class="prompt">❯</span> <span class="command">bun run backend:dev</span>
+                            </div>
+                            <div class="terminal-line output">[14:32:18] Starting Elysia server...</div>
+                            <div class="terminal-line success">[14:32:19] ✓ Database connected: sqlite://./data/db.sqlite</div>
+                            <div class="terminal-line success">[14:32:19] ✓ WebSocket server initialized</div>
+                            <div class="terminal-line success">[14:32:19] ✓ Server listening on http://0.0.0.0:3000</div>
+                            <div class="terminal-line output">[14:32:24] GET /api/projects 200 2ms</div>
+                            <div class="terminal-line output">[14:32:24] GET /api/sessions 200 1ms</div>
+                            <div class="terminal-line output">[14:32:25] WS /terminal/connect [terminal-1] connected</div>
+                            <div class="terminal-line output">[14:32:26] WS /terminal/connect [terminal-2] connected</div>
+                            <div class="terminal-line success">[14:32:30] POST /api/sessions/create 201 12ms</div>
+                            <div class="terminal-line">
+                                <span class="prompt">❯</span> <span class="cursor"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resize Handles -->
+                <div class="resize-handle horizontal"></div>
+                <div class="resize-handle vertical"></div>
+            </div>
+
+            <!-- Bottom Status Bar -->
+            <div class="bottom-bar">
+                <div class="status-item active">
+                    <svg class="status-icon" width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                        <circle cx="6" cy="6" r="2"/>
+                    </svg>
+                    <span>CM</span>
+                </div>
+
+                <div class="status-separator"></div>
+
+                <div class="status-sessions">
+                    <div class="status-session active">
+                        <span class="session-dot"></span>
+                        <span>Main Dev</span>
+                    </div>
+                    <div class="status-session">
+                        <span class="session-dot"></span>
+                        <span>Backend API</span>
+                    </div>
+                    <div class="status-session">
+                        <span class="session-dot"></span>
+                        <span>Frontend UI</span>
+                    </div>
+                </div>
+
+                <div class="status-separator"></div>
+
+                <div class="status-item">
+                    <svg class="status-icon" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M6 2v8M2 6h8"/>
+                    </svg>
+                    <span>4 Terminals</span>
+                </div>
+
+                <div class="status-separator"></div>
+
+                <div class="status-item">
+                    <svg class="status-icon" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <circle cx="6" cy="6" r="4"/>
+                        <path d="M6 3v3l2 1"/>
+                    </svg>
+                    <span>14:32:18</span>
+                </div>
+
+                <div class="status-item">
+                    <span>2.4 GB</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Smooth interactions
+        document.addEventListener('DOMContentLoaded', () => {
+            // Terminal line animations
+            const terminalLines = document.querySelectorAll('.terminal-line');
+            terminalLines.forEach((line, index) => {
+                line.style.opacity = '0';
+                line.style.transform = 'translateX(-4px)';
+                setTimeout(() => {
+                    line.style.transition = 'opacity 0.2s, transform 0.2s';
+                    line.style.opacity = '1';
+                    line.style.transform = 'translateX(0)';
+                }, index * 30);
+            });
+
+            // Project icon interactions
+            const projectIcons = document.querySelectorAll('.project-icon');
+            projectIcons.forEach(icon => {
+                icon.addEventListener('click', (e) => {
+                    projectIcons.forEach(i => i.classList.remove('active'));
+                    icon.classList.add('active');
+                });
+            });
+
+            // Status session interactions
+            const statusSessions = document.querySelectorAll('.status-session');
+            statusSessions.forEach(session => {
+                session.addEventListener('click', () => {
+                    statusSessions.forEach(s => s.classList.remove('active'));
+                    session.classList.add('active');
+                });
+            });
+
+            // Flyout session interactions
+            const flyoutSessions = document.querySelectorAll('.flyout-session');
+            flyoutSessions.forEach(session => {
+                session.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const parent = session.closest('.flyout-sessions');
+                    parent.querySelectorAll('.flyout-session').forEach(s => s.classList.remove('active'));
+                    session.classList.add('active');
+                });
+            });
+
+            // Dashboard toggle
+            const dashboardToggle = document.querySelector('.dashboard-toggle');
+            dashboardToggle.addEventListener('click', () => {
+                console.log('Dashboard toggle clicked');
+                // Would navigate to dashboard view
+            });
+
+            // Update clock
+            function updateClock() {
+                const clockEl = document.querySelector('.bottom-bar .status-item:nth-last-child(2) span');
+                if (clockEl) {
+                    const now = new Date();
+                    const timeStr = now.toLocaleTimeString('en-US', {
+                        hour12: false,
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    });
+                    clockEl.textContent = timeStr;
+                }
+            }
+            updateClock();
+            setInterval(updateClock, 1000);
+
+            // Simulate terminal activity
+            function simulateTerminalActivity() {
+                const terminals = document.querySelectorAll('.terminal-body');
+                const randomTerminal = terminals[Math.floor(Math.random() * terminals.length)];
+                const content = randomTerminal.querySelector('.terminal-content');
+
+                // Occasionally add a new line (simulate output)
+                if (Math.random() > 0.7) {
+                    const newLine = document.createElement('div');
+                    newLine.className = 'terminal-line output';
+                    newLine.textContent = `[${new Date().toLocaleTimeString()}] Process completed`;
+                    newLine.style.opacity = '0';
+
+                    const cursor = content.querySelector('.cursor');
+                    if (cursor) {
+                        cursor.parentElement.before(newLine);
+                        setTimeout(() => {
+                            newLine.style.transition = 'opacity 0.3s';
+                            newLine.style.opacity = '1';
+                        }, 10);
+                    }
+                }
+            }
+
+            // Simulate activity every 5-10 seconds
+            setInterval(simulateTerminalActivity, Math.random() * 5000 + 5000);
+
+            // Add subtle glow effect to active elements
+            const style = document.createElement('style');
+            style.textContent = `
+                .terminal-status,
+                .session-dot {
+                    animation: glow 2s ease-in-out infinite;
+                }
+
+                @keyframes glow {
+                    0%, 100% {
+                        box-shadow: 0 0 6px currentColor;
+                        filter: brightness(1);
+                    }
+                    50% {
+                        box-shadow: 0 0 12px currentColor;
+                        filter: brightness(1.3);
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        });
+    </script>
+</body>
+</html>

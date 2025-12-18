@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Manager - Tmux Style</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Terminal color palette */
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #0e0e0e;
+            --border-default: #333333;
+            --border-active: #00ff00;
+            --text-primary: #e0e0e0;
+            --text-secondary: #808080;
+            --text-accent: #00ff00;
+            --status-bg: #262626;
+            --window-active: #00ff00;
+            --window-inactive: #606060;
+            --prefix-indicator: #ffff00;
+        }
+
+        body {
+            font-family: 'Courier New', 'Monaco', monospace;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Main workspace area */
+        .workspace {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: 0;
+        }
+
+        /* Pane layout */
+        .pane-row {
+            display: flex;
+            flex: 1;
+            gap: 0;
+        }
+
+        .pane {
+            flex: 1;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-default);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            transition: border-color 0.15s ease;
+        }
+
+        .pane.active {
+            border-color: var(--border-active);
+            border-width: 2px;
+            z-index: 1;
+        }
+
+        /* Pane header */
+        .pane-header {
+            background: var(--bg-primary);
+            padding: 4px 8px;
+            border-bottom: 1px solid var(--border-default);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+        }
+
+        .pane-title {
+            color: var(--text-secondary);
+        }
+
+        .pane.active .pane-title {
+            color: var(--text-accent);
+        }
+
+        .pane-info {
+            color: var(--text-secondary);
+            font-size: 11px;
+        }
+
+        /* Terminal content */
+        .terminal-content {
+            flex: 1;
+            padding: 8px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.3;
+            color: var(--text-primary);
+        }
+
+        .terminal-line {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .prompt {
+            color: var(--text-accent);
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 14px;
+            background: var(--text-accent);
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        /* Status bar - tmux style */
+        .status-bar {
+            background: var(--status-bg);
+            border-top: 1px solid var(--border-active);
+            padding: 4px 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            height: 28px;
+        }
+
+        .status-left {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .session-name {
+            color: var(--text-primary);
+            font-weight: bold;
+            padding: 2px 6px;
+            background: var(--bg-primary);
+            border-radius: 2px;
+        }
+
+        .window-list {
+            display: flex;
+            gap: 4px;
+        }
+
+        .window-item {
+            padding: 2px 8px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .window-item.active {
+            color: var(--bg-primary);
+            background: var(--window-active);
+            font-weight: bold;
+        }
+
+        .window-item:not(.active) {
+            color: var(--window-inactive);
+        }
+
+        .window-item:not(.active):hover {
+            color: var(--text-primary);
+        }
+
+        .status-right {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            color: var(--text-secondary);
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .prefix-indicator {
+            color: var(--prefix-indicator);
+            font-weight: bold;
+            padding: 2px 6px;
+            background: var(--bg-primary);
+            border: 1px solid var(--prefix-indicator);
+            animation: pulse 0.8s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        /* Keyboard shortcuts help overlay */
+        .shortcuts-overlay {
+            position: fixed;
+            bottom: 40px;
+            right: 16px;
+            background: rgba(38, 38, 38, 0.95);
+            border: 1px solid var(--border-active);
+            padding: 12px 16px;
+            border-radius: 4px;
+            font-size: 11px;
+            min-width: 200px;
+            backdrop-filter: blur(4px);
+        }
+
+        .shortcuts-title {
+            color: var(--text-accent);
+            font-weight: bold;
+            margin-bottom: 8px;
+            border-bottom: 1px solid var(--border-default);
+            padding-bottom: 4px;
+        }
+
+        .shortcut-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+            gap: 16px;
+        }
+
+        .shortcut-key {
+            color: var(--text-accent);
+            font-weight: bold;
+        }
+
+        .shortcut-desc {
+            color: var(--text-secondary);
+        }
+
+        /* Pane size indicators */
+        .pane-size {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid var(--border-active);
+            padding: 8px 16px;
+            font-size: 16px;
+            color: var(--text-accent);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .pane.resizing .pane-size {
+            opacity: 1;
+        }
+
+        /* Scrollbar styling */
+        .terminal-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .terminal-content::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        .terminal-content::-webkit-scrollbar-thumb {
+            background: var(--border-default);
+            border-radius: 4px;
+        }
+
+        .terminal-content::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        /* System indicators */
+        .cpu-indicator {
+            color: #00ff00;
+        }
+
+        .mem-indicator {
+            color: #ffaa00;
+        }
+
+        .time-indicator {
+            color: var(--text-primary);
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Main workspace with panes -->
+        <div class="workspace">
+            <!-- Top row - two panes side by side -->
+            <div class="pane-row" style="flex: 2;">
+                <!-- Left pane - Active -->
+                <div class="pane active">
+                    <div class="pane-header">
+                        <div class="pane-title">0: claude-dev-backend</div>
+                        <div class="pane-info">80x24</div>
+                    </div>
+                    <div class="terminal-content">
+                        <div class="terminal-line"><span class="prompt">claude@manager:~/projects/backend$</span> bun run dev</div>
+                        <div class="terminal-line">$ bun src/index.ts</div>
+                        <div class="terminal-line">[ElysiaJS] Server listening on http://localhost:3000</div>
+                        <div class="terminal-line">[Database] Connected to SQLite</div>
+                        <div class="terminal-line">[WebSocket] PTY server ready</div>
+                        <div class="terminal-line">[Auth] JWT middleware initialized</div>
+                        <div class="terminal-line"></div>
+                        <div class="terminal-line">[16:45:23] GET /api/projects 200 2ms</div>
+                        <div class="terminal-line">[16:45:25] POST /api/terminal/create 201 15ms</div>
+                        <div class="terminal-line">[16:45:26] WS /ws/terminal/abc123 connected</div>
+                        <div class="terminal-line"></div>
+                        <div class="terminal-line"><span class="prompt">claude@manager:~/projects/backend$</span> <span class="cursor"></span></div>
+                    </div>
+                    <div class="pane-size">80x24</div>
+                </div>
+
+                <!-- Right pane -->
+                <div class="pane">
+                    <div class="pane-header">
+                        <div class="pane-title">1: claude-dev-frontend</div>
+                        <div class="pane-info">80x24</div>
+                    </div>
+                    <div class="terminal-content">
+                        <div class="terminal-line"><span class="prompt">claude@manager:~/projects/frontend$</span> bun run dev</div>
+                        <div class="terminal-line">$ vite dev</div>
+                        <div class="terminal-line"></div>
+                        <div class="terminal-line">  VITE v5.4.2  ready in 324 ms</div>
+                        <div class="terminal-line"></div>
+                        <div class="terminal-line">  ➜  Local:   http://localhost:5173/</div>
+                        <div class="terminal-line">  ➜  Network: use --host to expose</div>
+                        <div class="terminal-line"></div>
+                        <div class="terminal-line">  ➜  press h + enter to show help</div>
+                        <div class="terminal-line"></div>
+                        <div class="terminal-line">16:45:27 [vite] hmr update /src/lib/Terminal.svelte</div>
+                        <div class="terminal-line">16:45:30 [vite] page reload src/routes/+page.svelte</div>
+                        <div class="terminal-line"></div>
+                        <div class="terminal-line"><span class="prompt">claude@manager:~/projects/frontend$</span> </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom row - single pane -->
+            <div class="pane-row" style="flex: 1;">
+                <div class="pane">
+                    <div class="pane-header">
+                        <div class="pane-title">2: git-status</div>
+                        <div class="pane-info">160x12</div>
+                    </div>
+                    <div class="terminal-content">
+                        <div class="terminal-line"><span class="prompt">claude@manager:~/projects$</span> git status</div>
+                        <div class="terminal-line">On branch feature/terminal-websocket</div>
+                        <div class="terminal-line">Your branch is up to date with 'origin/feature/terminal-websocket'.</div>
+                        <div class="terminal-line"></div>
+                        <div class="terminal-line">Changes not staged for commit:</div>
+                        <div class="terminal-line">  (use "git add &lt;file&gt;..." to update what will be committed)</div>
+                        <div class="terminal-line">  (use "git restore &lt;file&gt;..." to discard changes in working directory)</div>
+                        <div class="terminal-line">        modified:   backend/src/terminal/terminal.router.ts</div>
+                        <div class="terminal-line">        modified:   frontend/src/lib/Terminal.component.svelte</div>
+                        <div class="terminal-line"></div>
+                        <div class="terminal-line">no changes added to commit (use "git add" and/or "git commit -a")</div>
+                        <div class="terminal-line"><span class="prompt">claude@manager:~/projects$</span> </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tmux-style status bar -->
+        <div class="status-bar">
+            <div class="status-left">
+                <div class="session-name">[claude-manager]</div>
+                <div class="window-list">
+                    <div class="window-item active">0:dev*</div>
+                    <div class="window-item">1:logs</div>
+                    <div class="window-item">2:db</div>
+                    <div class="window-item">3:shell</div>
+                </div>
+            </div>
+            <div class="status-right">
+                <div class="status-item">
+                    <span class="prefix-indicator">PREFIX</span>
+                </div>
+                <div class="status-item">
+                    <span class="cpu-indicator">CPU: 12%</span>
+                </div>
+                <div class="status-item">
+                    <span class="mem-indicator">MEM: 2.4G/16G</span>
+                </div>
+                <div class="status-item">
+                    <span>⚡ 3 sessions</span>
+                </div>
+                <div class="status-item time-indicator">
+                    16:45:34
+                </div>
+                <div class="status-item">
+                    2025-12-18
+                </div>
+            </div>
+        </div>
+
+        <!-- Keyboard shortcuts overlay -->
+        <div class="shortcuts-overlay">
+            <div class="shortcuts-title">KEYBOARD SHORTCUTS</div>
+            <div class="shortcut-item">
+                <span class="shortcut-key">Ctrl+B</span>
+                <span class="shortcut-desc">Prefix</span>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-key">Prefix + %</span>
+                <span class="shortcut-desc">Split vertical</span>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-key">Prefix + "</span>
+                <span class="shortcut-desc">Split horizontal</span>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-key">Prefix + Arrow</span>
+                <span class="shortcut-desc">Switch pane</span>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-key">Prefix + C</span>
+                <span class="shortcut-desc">New window</span>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-key">Prefix + 0-9</span>
+                <span class="shortcut-desc">Switch window</span>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-key">Prefix + X</span>
+                <span class="shortcut-desc">Close pane</span>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-key">Prefix + Z</span>
+                <span class="shortcut-desc">Zoom pane</span>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-key">Prefix + ?</span>
+                <span class="shortcut-desc">Help</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simple interaction simulation
+        document.addEventListener('DOMContentLoaded', () => {
+            // Simulate cursor blinking
+            const cursor = document.querySelector('.cursor');
+
+            // Window switching
+            const windowItems = document.querySelectorAll('.window-item');
+            windowItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    windowItems.forEach(w => w.classList.remove('active'));
+                    item.classList.add('active');
+                });
+            });
+
+            // Pane switching on click
+            const panes = document.querySelectorAll('.pane');
+            panes.forEach(pane => {
+                pane.addEventListener('click', () => {
+                    panes.forEach(p => p.classList.remove('active'));
+                    pane.classList.add('active');
+                });
+            });
+
+            // Update time in status bar
+            function updateTime() {
+                const timeElement = document.querySelector('.time-indicator');
+                const now = new Date();
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const seconds = String(now.getSeconds()).padStart(2, '0');
+                timeElement.textContent = `${hours}:${minutes}:${seconds}`;
+            }
+
+            setInterval(updateTime, 1000);
+            updateTime();
+
+            // Simulate random CPU/MEM updates
+            function updateSystemStats() {
+                const cpuElement = document.querySelector('.cpu-indicator');
+                const memElement = document.querySelector('.mem-indicator');
+
+                const cpu = Math.floor(Math.random() * 30) + 5;
+                const mem = (Math.random() * 2 + 2).toFixed(1);
+
+                cpuElement.textContent = `CPU: ${cpu}%`;
+                memElement.textContent = `MEM: ${mem}G/16G`;
+            }
+
+            setInterval(updateSystemStats, 3000);
+        });
+    </script>
+</body>
+</html>

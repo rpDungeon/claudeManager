@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Manager - Terminal Workspace</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @font-face {
+            font-family: 'Helvetica Neue';
+            src: local('Helvetica Neue'), local('HelveticaNeue');
+            font-weight: 300;
+        }
+
+        :root {
+            --bg: #000000;
+            --fg: #ffffff;
+            --border: #ffffff;
+            --text-dim: #888888;
+            --terminal-bg: #000000;
+            --terminal-text: #00ff00;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+            font-weight: 300;
+            background: var(--bg);
+            color: var(--fg);
+            height: 100vh;
+            overflow: hidden;
+            letter-spacing: 0.03em;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .workspace {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 0;
+        }
+
+        /* Project Header - Ultra minimal */
+        .project-header {
+            padding: 24px 32px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .project-name {
+            font-size: 11px;
+            font-weight: 400;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+        }
+
+        .project-path {
+            font-size: 10px;
+            color: var(--text-dim);
+            letter-spacing: 0.05em;
+            font-weight: 300;
+        }
+
+        /* Tab Bar - Minimal dots */
+        .tab-bar {
+            padding: 16px 32px 12px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tab-indicator {
+            width: 4px;
+            height: 4px;
+            background: var(--text-dim);
+            border-radius: 50%;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .tab-indicator.active {
+            background: var(--fg);
+            width: 6px;
+            height: 6px;
+        }
+
+        .tab-indicator:hover {
+            background: var(--fg);
+        }
+
+        .tab-label {
+            font-size: 9px;
+            color: var(--text-dim);
+            letter-spacing: 0.1em;
+            margin-left: 4px;
+            text-transform: uppercase;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .tab-indicator.active + .tab-label,
+        .tab-indicator:hover + .tab-label {
+            opacity: 1;
+        }
+
+        /* Terminal Container */
+        .terminal-container {
+            flex: 1;
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .terminal-window {
+            flex: 1;
+            border: 1px solid var(--border);
+            background: var(--terminal-bg);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Terminal Title Bar */
+        .terminal-title {
+            padding: 8px 16px;
+            border-bottom: 1px solid var(--border);
+            font-size: 9px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .terminal-session-id {
+            font-size: 8px;
+            color: var(--text-dim);
+            opacity: 0.5;
+        }
+
+        /* Terminal Content */
+        .terminal-content {
+            flex: 1;
+            padding: 16px;
+            font-family: 'SF Mono', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            overflow-y: auto;
+            color: var(--terminal-text);
+        }
+
+        .terminal-line {
+            margin-bottom: 2px;
+        }
+
+        .prompt {
+            color: var(--fg);
+        }
+
+        .command {
+            color: #00ff00;
+        }
+
+        .output {
+            color: #aaaaaa;
+        }
+
+        .error {
+            color: #ff0000;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background: var(--terminal-text);
+            animation: blink 1s step-end infinite;
+            margin-left: 2px;
+        }
+
+        @keyframes blink {
+            50% {
+                opacity: 0;
+            }
+        }
+
+        /* Keyboard Shortcuts Bar */
+        .shortcuts-bar {
+            padding: 12px 32px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 24px;
+            font-size: 9px;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            flex-wrap: wrap;
+        }
+
+        .shortcut {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .key {
+            padding: 2px 6px;
+            border: 1px solid var(--text-dim);
+            border-radius: 2px;
+            font-size: 8px;
+            letter-spacing: 0.08em;
+        }
+
+        .shortcut-label {
+            text-transform: uppercase;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 1px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--text-dim);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--fg);
+        }
+
+        /* Selection */
+        ::selection {
+            background: var(--fg);
+            color: var(--bg);
+        }
+
+        /* Subtle fade-in animation */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(4px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .workspace > * {
+            animation: fadeIn 0.4s ease-out backwards;
+        }
+
+        .project-header {
+            animation-delay: 0.05s;
+        }
+
+        .tab-bar {
+            animation-delay: 0.1s;
+        }
+
+        .terminal-container {
+            animation-delay: 0.15s;
+        }
+
+        .shortcuts-bar {
+            animation-delay: 0.2s;
+        }
+
+        /* Focus states for accessibility */
+        .tab-indicator:focus {
+            outline: 1px solid var(--fg);
+            outline-offset: 2px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .project-header {
+                padding: 16px 20px 12px;
+            }
+
+            .tab-bar {
+                padding: 12px 20px 8px;
+            }
+
+            .terminal-container {
+                padding: 20px;
+            }
+
+            .shortcuts-bar {
+                padding: 10px 20px;
+                font-size: 8px;
+                gap: 16px;
+            }
+
+            .terminal-content {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="workspace">
+        <!-- Project Header -->
+        <header class="project-header">
+            <h1 class="project-name">Claude Manager</h1>
+            <div class="project-path">/mnt/claude/personal/claudeManager</div>
+        </header>
+
+        <!-- Tab Bar with minimal indicators -->
+        <nav class="tab-bar">
+            <div class="tab-indicator active" tabindex="0" role="tab" aria-selected="true"></div>
+            <span class="tab-label">Main</span>
+
+            <div class="tab-indicator" tabindex="0" role="tab" aria-selected="false"></div>
+            <span class="tab-label">Backend</span>
+
+            <div class="tab-indicator" tabindex="0" role="tab" aria-selected="false"></div>
+            <span class="tab-label">Frontend</span>
+
+            <div class="tab-indicator" tabindex="0" role="tab" aria-selected="false"></div>
+            <span class="tab-label">Database</span>
+        </nav>
+
+        <!-- Terminal -->
+        <main class="terminal-container">
+            <div class="terminal-window" role="region" aria-label="Terminal output">
+                <div class="terminal-title">
+                    <span>Terminal Session</span>
+                    <span class="terminal-session-id">SESSION-A7F3</span>
+                </div>
+                <div class="terminal-content">
+                    <div class="terminal-line">
+                        <span class="prompt">claude@manager</span><span class="output">:</span><span class="prompt">~/claudeManager</span><span class="output">$</span> <span class="command">bun run dev</span>
+                    </div>
+                    <div class="terminal-line output">$ bun run --filter '*' dev</div>
+                    <div class="terminal-line output">────────────────────────────────────────</div>
+                    <div class="terminal-line output"></div>
+                    <div class="terminal-line output">⚡ Starting development servers...</div>
+                    <div class="terminal-line output"></div>
+                    <div class="terminal-line output">[backend]  ✓ Server listening on http://localhost:3000</div>
+                    <div class="terminal-line output">[frontend] ✓ SvelteKit ready on http://localhost:5173</div>
+                    <div class="terminal-line output"></div>
+                    <div class="terminal-line output">────────────────────────────────────────</div>
+                    <div class="terminal-line output"></div>
+                    <div class="terminal-line">
+                        <span class="prompt">claude@manager</span><span class="output">:</span><span class="prompt">~/claudeManager</span><span class="output">$</span> <span class="command">git status</span>
+                    </div>
+                    <div class="terminal-line output">On branch main</div>
+                    <div class="terminal-line output">Your branch is up to date with 'origin/main'.</div>
+                    <div class="terminal-line output"></div>
+                    <div class="terminal-line output">Changes not staged for commit:</div>
+                    <div class="terminal-line output">  (use "git add &lt;file&gt;..." to update what will be committed)</div>
+                    <div class="terminal-line output">  (use "git restore &lt;file&gt;..." to discard changes in working directory)</div>
+                    <div class="terminal-line output"></div>
+                    <div class="terminal-line output" style="color: #ff5555;">        modified:   apps/frontend/src/lib/features/terminal/Terminal.component.svelte</div>
+                    <div class="terminal-line output" style="color: #ff5555;">        modified:   apps/backend/src/terminal/terminal.router.ts</div>
+                    <div class="terminal-line output"></div>
+                    <div class="terminal-line output">no changes added to commit (use "git add" and/or "git commit -a")</div>
+                    <div class="terminal-line output"></div>
+                    <div class="terminal-line">
+                        <span class="prompt">claude@manager</span><span class="output">:</span><span class="prompt">~/claudeManager</span><span class="output">$</span> <span class="cursor"></span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Keyboard Shortcuts -->
+        <footer class="shortcuts-bar">
+            <div class="shortcut">
+                <kbd class="key">⌘</kbd>
+                <kbd class="key">T</kbd>
+                <span class="shortcut-label">New Tab</span>
+            </div>
+            <div class="shortcut">
+                <kbd class="key">⌘</kbd>
+                <kbd class="key">W</kbd>
+                <span class="shortcut-label">Close Tab</span>
+            </div>
+            <div class="shortcut">
+                <kbd class="key">⌘</kbd>
+                <kbd class="key">1-9</kbd>
+                <span class="shortcut-label">Switch Tab</span>
+            </div>
+            <div class="shortcut">
+                <kbd class="key">⌘</kbd>
+                <kbd class="key">K</kbd>
+                <span class="shortcut-label">Clear</span>
+            </div>
+            <div class="shortcut">
+                <kbd class="key">⌘</kbd>
+                <kbd class="key">D</kbd>
+                <span class="shortcut-label">Split</span>
+            </div>
+            <div class="shortcut">
+                <kbd class="key">⌘</kbd>
+                <kbd class="key">P</kbd>
+                <span class="shortcut-label">Projects</span>
+            </div>
+            <div class="shortcut">
+                <kbd class="key">⌘</kbd>
+                <kbd class="key">/</kbd>
+                <span class="shortcut-label">Commands</span>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Tab switching interaction
+        const tabs = document.querySelectorAll('.tab-indicator');
+
+        tabs.forEach((tab, index) => {
+            tab.addEventListener('click', () => switchTab(index));
+            tab.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    switchTab(index);
+                }
+            });
+        });
+
+        function switchTab(index) {
+            tabs.forEach(t => {
+                t.classList.remove('active');
+                t.setAttribute('aria-selected', 'false');
+            });
+            tabs[index].classList.add('active');
+            tabs[index].setAttribute('aria-selected', 'true');
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            const isMod = e.metaKey || e.ctrlKey;
+
+            if (isMod && e.key >= '1' && e.key <= '9') {
+                e.preventDefault();
+                const index = parseInt(e.key) - 1;
+                if (index < tabs.length) {
+                    switchTab(index);
+                }
+            }
+        });
+
+        // Auto-scroll terminal to bottom
+        const terminalContent = document.querySelector('.terminal-content');
+        if (terminalContent) {
+            terminalContent.scrollTop = terminalContent.scrollHeight;
+        }
+    </script>
+</body>
+</html>

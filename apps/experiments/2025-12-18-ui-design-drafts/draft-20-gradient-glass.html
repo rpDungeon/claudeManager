@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Manager - Gradient Glass</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-gradient-1: #667eea;
+            --bg-gradient-2: #764ba2;
+            --bg-gradient-3: #f093fb;
+            --bg-gradient-4: #4facfe;
+
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --glass-shadow: rgba(0, 0, 0, 0.1);
+
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --text-tertiary: rgba(255, 255, 255, 0.5);
+
+            --accent-purple: #a78bfa;
+            --accent-blue: #60a5fa;
+            --accent-pink: #f472b6;
+            --accent-green: #4ade80;
+
+            --terminal-bg: rgba(10, 10, 20, 0.4);
+            --terminal-text: #e2e8f0;
+            --terminal-cursor: #60a5fa;
+
+            --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: linear-gradient(135deg, var(--bg-gradient-1) 0%, var(--bg-gradient-2) 25%, var(--bg-gradient-3) 50%, var(--bg-gradient-4) 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        /* Background mesh overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                radial-gradient(circle at 20% 80%, rgba(167, 139, 250, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(96, 165, 250, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(244, 114, 182, 0.2) 0%, transparent 50%);
+            pointer-events: none;
+            animation: meshPulse 8s ease-in-out infinite;
+        }
+
+        @keyframes meshPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 20px;
+            gap: 16px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        .header {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 8px 32px var(--glass-shadow);
+            animation: slideDown 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        .project-badge {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .project-badge:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .project-icon {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--accent-green);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-button {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            font-family: var(--font-sans);
+        }
+
+        .header-button:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-button.primary {
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header-button.primary:hover {
+            transform: translateY(-1px) scale(1.02);
+            box-shadow: 0 8px 24px rgba(167, 139, 250, 0.3);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            gap: 16px;
+            min-height: 0;
+            animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Terminal Container */
+        .terminal-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* Terminal Pane */
+        .terminal-pane {
+            flex: 1;
+            background: var(--glass-bg);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 8px 32px var(--glass-shadow);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+        }
+
+        .terminal-pane::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(167, 139, 250, 0.05) 0%, rgba(96, 165, 250, 0.05) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .terminal-pane:hover::before {
+            opacity: 1;
+        }
+
+        .terminal-pane:hover {
+            border-color: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+        }
+
+        .terminal-pane.active {
+            border-color: rgba(167, 139, 250, 0.4);
+            box-shadow: 0 12px 48px rgba(167, 139, 250, 0.2);
+        }
+
+        .terminal-pane.active::before {
+            opacity: 1;
+        }
+
+        /* Tab Bar */
+        .tab-bar {
+            display: flex;
+            align-items: center;
+            padding: 12px 12px 0 12px;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tab {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 8px 8px 0 0;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            background: transparent;
+            border: 1px solid transparent;
+            border-bottom: none;
+            position: relative;
+        }
+
+        .tab:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            background: var(--terminal-bg);
+            backdrop-filter: blur(10px);
+            color: var(--text-primary);
+            border-color: rgba(255, 255, 255, 0.1);
+            border-bottom: none;
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue));
+        }
+
+        .tab-icon {
+            width: 12px;
+            height: 12px;
+            background: currentColor;
+            border-radius: 2px;
+            opacity: 0.6;
+        }
+
+        .tab-close {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: all 0.2s ease;
+            font-size: 12px;
+        }
+
+        .tab:hover .tab-close {
+            opacity: 0.6;
+        }
+
+        .tab-close:hover {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .tab-add {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-left: 4px;
+        }
+
+        .tab-add:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-primary);
+        }
+
+        /* Terminal Content */
+        .terminal-content {
+            flex: 1;
+            background: var(--terminal-bg);
+            backdrop-filter: blur(10px);
+            padding: 16px;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--terminal-text);
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .terminal-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .terminal-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        .terminal-content::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            transition: background 0.2s ease;
+        }
+
+        .terminal-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .terminal-line {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 4px;
+            animation: terminalLineIn 0.3s ease;
+        }
+
+        @keyframes terminalLineIn {
+            from {
+                opacity: 0;
+                transform: translateX(-4px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .terminal-prompt {
+            color: var(--accent-purple);
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+
+        .terminal-text {
+            color: var(--terminal-text);
+        }
+
+        .terminal-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background: var(--terminal-cursor);
+            animation: blink 1s step-end infinite;
+            margin-left: 2px;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .terminal-command {
+            color: var(--accent-blue);
+        }
+
+        .terminal-output {
+            color: var(--text-secondary);
+            padding-left: 0;
+        }
+
+        .terminal-success {
+            color: var(--accent-green);
+        }
+
+        .terminal-error {
+            color: #f87171;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 32px var(--glass-shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            animation: slideInRight 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .sidebar-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .sidebar-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-tertiary);
+        }
+
+        .session-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 14px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .session-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .session-card.active {
+            background: linear-gradient(135deg, rgba(167, 139, 250, 0.15), rgba(96, 165, 250, 0.15));
+            border-color: rgba(167, 139, 250, 0.3);
+        }
+
+        .session-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .session-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .session-status {
+            width: 6px;
+            height: 6px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            box-shadow: 0 0 6px var(--accent-green);
+        }
+
+        .session-status.paused {
+            background: #fbbf24;
+            box-shadow: 0 0 6px #fbbf24;
+        }
+
+        .session-meta {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .session-time {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 14px;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .stat-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-tertiary);
+            margin-bottom: 6px;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+
+        .stat-unit {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .action-button {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--font-sans);
+        }
+
+        .action-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateX(2px);
+        }
+
+        .action-icon {
+            width: 16px;
+            height: 16px;
+            background: currentColor;
+            border-radius: 3px;
+            opacity: 0.7;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .sidebar {
+                width: 240px;
+            }
+        }
+
+        @media (max-width: 968px) {
+            .main-content {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+            }
+
+            .terminal-container {
+                min-height: 400px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .app-container {
+                padding: 12px;
+                gap: 12px;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 12px;
+                align-items: stretch;
+            }
+
+            .header-left {
+                justify-content: space-between;
+            }
+
+            .header-right {
+                justify-content: stretch;
+            }
+
+            .header-button {
+                flex: 1;
+                justify-content: center;
+            }
+
+            .terminal-container {
+                gap: 12px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">Claude Manager</div>
+                <div class="project-badge">
+                    <div class="project-icon"></div>
+                    <span>my-awesome-project</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="header-button">Settings</button>
+                <button class="header-button primary">New Session</button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Terminal Container -->
+            <div class="terminal-container">
+                <!-- Terminal Pane 1 -->
+                <div class="terminal-pane active">
+                    <div class="tab-bar">
+                        <div class="tab active">
+                            <div class="tab-icon"></div>
+                            <span>bash</span>
+                            <div class="tab-close">×</div>
+                        </div>
+                        <div class="tab">
+                            <div class="tab-icon"></div>
+                            <span>server</span>
+                            <div class="tab-close">×</div>
+                        </div>
+                        <div class="tab-add">+</div>
+                    </div>
+                    <div class="terminal-content">
+                        <div class="terminal-line">
+                            <span class="terminal-prompt">➜</span>
+                            <span class="terminal-text">~/my-awesome-project</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-prompt">$</span>
+                            <span class="terminal-command">bun run dev</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output terminal-success">✓ Server started on http://localhost:3000</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output terminal-success">✓ Frontend running on http://localhost:5173</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output">Watching for file changes...</span>
+                        </div>
+                        <div class="terminal-line" style="margin-top: 12px;">
+                            <span class="terminal-prompt">$</span>
+                            <span class="terminal-command">git status</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output">On branch feature/gradient-glass-ui</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output">Your branch is up to date with 'origin/feature/gradient-glass-ui'.</span>
+                        </div>
+                        <div class="terminal-line" style="margin-top: 12px;">
+                            <span class="terminal-output">Changes not staged for commit:</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output" style="color: #f87171;">  modified:   apps/frontend/src/app.css</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output" style="color: #4ade80;">  new file:   apps/frontend/src/components/Terminal.svelte</span>
+                        </div>
+                        <div class="terminal-line" style="margin-top: 12px;">
+                            <span class="terminal-prompt">$</span>
+                            <span class="terminal-cursor"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terminal Pane 2 -->
+                <div class="terminal-pane">
+                    <div class="tab-bar">
+                        <div class="tab active">
+                            <div class="tab-icon"></div>
+                            <span>claude</span>
+                            <div class="tab-close">×</div>
+                        </div>
+                        <div class="tab-add">+</div>
+                    </div>
+                    <div class="terminal-content">
+                        <div class="terminal-line">
+                            <span class="terminal-prompt">➜</span>
+                            <span class="terminal-text">~/my-awesome-project</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-prompt">$</span>
+                            <span class="terminal-command">claude chat</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output terminal-success">✓ Connected to Claude Code</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output">Session ID: abc123xyz</span>
+                        </div>
+                        <div class="terminal-line" style="margin-top: 12px;">
+                            <span class="terminal-output" style="color: var(--accent-purple); font-weight: 500;">Claude:</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output">I'll help you implement the gradient glassmorphism design.</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output">Let me create the component with frosted glass effects...</span>
+                        </div>
+                        <div class="terminal-line" style="margin-top: 12px;">
+                            <span class="terminal-output terminal-success">✓ Created Terminal.component.svelte</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output terminal-success">✓ Updated app.css with glass utilities</span>
+                        </div>
+                        <div class="terminal-line" style="margin-top: 12px;">
+                            <span class="terminal-output" style="color: var(--accent-purple); font-weight: 500;">Claude:</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output">The component is ready! The frosted glass effect uses</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output">backdrop-filter with the gradient mesh background.</span>
+                        </div>
+                        <div class="terminal-line" style="margin-top: 12px;">
+                            <span class="terminal-prompt">You:</span>
+                            <span class="terminal-cursor"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <!-- Active Sessions -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Claude Sessions</div>
+                    <div class="session-card active">
+                        <div class="session-header">
+                            <div class="session-name">UI Implementation</div>
+                            <div class="session-status"></div>
+                        </div>
+                        <div class="session-meta">
+                            <span class="session-time">
+                                <span>⏱</span>
+                                <span>2h 34m</span>
+                            </span>
+                            <span>•</span>
+                            <span>147 msgs</span>
+                        </div>
+                    </div>
+                    <div class="session-card">
+                        <div class="session-header">
+                            <div class="session-name">Bug Fixes</div>
+                            <div class="session-status paused"></div>
+                        </div>
+                        <div class="session-meta">
+                            <span class="session-time">
+                                <span>⏱</span>
+                                <span>1h 12m</span>
+                            </span>
+                            <span>•</span>
+                            <span>83 msgs</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Project Stats</div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Terminals</div>
+                            <div class="stat-value">
+                                <span>4</span>
+                                <span class="stat-unit">active</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Sessions</div>
+                            <div class="stat-value">
+                                <span>2</span>
+                                <span class="stat-unit">running</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Uptime</div>
+                            <div class="stat-value">
+                                <span>3.5</span>
+                                <span class="stat-unit">hrs</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Commands</div>
+                            <div class="stat-value">
+                                <span>247</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Quick Actions</div>
+                    <div class="action-buttons">
+                        <button class="action-button">
+                            <div class="action-icon"></div>
+                            <span>Split Terminal</span>
+                        </button>
+                        <button class="action-button">
+                            <div class="action-icon"></div>
+                            <span>New Claude Session</span>
+                        </button>
+                        <button class="action-button">
+                            <div class="action-icon"></div>
+                            <span>Export Chat History</span>
+                        </button>
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+</body>
+</html>

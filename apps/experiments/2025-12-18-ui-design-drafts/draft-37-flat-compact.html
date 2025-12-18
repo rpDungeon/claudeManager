@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Manager - Draft 37: Flat Compact</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Dark theme palette */
+            --bg-primary: #1a1d23;
+            --bg-secondary: #21252b;
+            --bg-tertiary: #282c34;
+            --bg-hover: #2c313a;
+            --bg-active: #323842;
+
+            --border-subtle: #30353f;
+            --border-default: #3e4451;
+            --border-strong: #4b5263;
+
+            --text-primary: #abb2bf;
+            --text-secondary: #828997;
+            --text-muted: #5c6370;
+            --text-bright: #e6e9ef;
+
+            --accent-cyan: #56b6c2;
+            --accent-amber: #e5c07b;
+            --accent-green: #98c379;
+            --accent-red: #e06c75;
+            --accent-purple: #c678dd;
+
+            /* Compact spacing */
+            --spacing-xs: 2px;
+            --spacing-sm: 4px;
+            --spacing-md: 6px;
+            --spacing-lg: 8px;
+            --spacing-xl: 12px;
+
+            /* Typography */
+            --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            --font-mono: 'SF Mono', 'Monaco', 'Cascadia Code', 'Consolas', monospace;
+
+            /* Sizes */
+            --sidebar-width: 180px;
+            --topbar-height: 32px;
+            --bottombar-height: 22px;
+            --tab-height: 28px;
+        }
+
+        body {
+            font-family: var(--font-ui);
+            font-size: 11px;
+            line-height: 1.3;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Layout */
+        .app {
+            display: grid;
+            grid-template-columns: var(--sidebar-width) 1fr;
+            grid-template-rows: var(--topbar-height) 1fr var(--bottombar-height);
+            height: 100vh;
+        }
+
+        /* Top Bar */
+        .topbar {
+            grid-column: 1 / -1;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-default);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 var(--spacing-lg);
+            gap: var(--spacing-lg);
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xl);
+        }
+
+        .topbar-logo {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            font-weight: 600;
+            font-size: 11px;
+            letter-spacing: -0.01em;
+            color: var(--text-bright);
+        }
+
+        .topbar-logo-icon {
+            width: 16px;
+            height: 16px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--bg-primary);
+        }
+
+        .topbar-toggle {
+            display: flex;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            padding: 2px;
+            gap: 1px;
+        }
+
+        .topbar-toggle-btn {
+            padding: 3px 8px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 10px;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.15s ease;
+            font-family: var(--font-ui);
+        }
+
+        .topbar-toggle-btn.active {
+            background: var(--bg-secondary);
+            color: var(--accent-cyan);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        .topbar-toggle-btn:hover:not(.active) {
+            color: var(--text-primary);
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .topbar-btn {
+            padding: 4px 8px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 10px;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.15s ease;
+            font-family: var(--font-ui);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .topbar-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .topbar-user {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: 3px 8px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .topbar-user:hover {
+            background: var(--bg-hover);
+        }
+
+        .topbar-avatar {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-amber), var(--accent-red));
+        }
+
+        .topbar-username {
+            font-size: 10px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-default);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: var(--spacing-md) var(--spacing-lg);
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .sidebar-title {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .sidebar-add {
+            width: 16px;
+            height: 16px;
+            border: none;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border-radius: 3px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            line-height: 1;
+            transition: all 0.15s ease;
+        }
+
+        .sidebar-add:hover {
+            background: var(--accent-cyan);
+            color: var(--bg-primary);
+        }
+
+        .sidebar-list {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .sidebar-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar-list::-webkit-scrollbar-thumb {
+            background: var(--border-default);
+            border-radius: 3px;
+        }
+
+        .sidebar-list::-webkit-scrollbar-thumb:hover {
+            background: var(--border-strong);
+        }
+
+        .sidebar-item {
+            padding: 5px var(--spacing-lg);
+            cursor: pointer;
+            transition: background 0.1s ease;
+            border-left: 2px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .sidebar-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .sidebar-item.active {
+            background: var(--bg-active);
+            border-left-color: var(--accent-cyan);
+        }
+
+        .sidebar-item-icon {
+            width: 14px;
+            height: 14px;
+            border-radius: 2px;
+            background: var(--bg-tertiary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            flex-shrink: 0;
+        }
+
+        .sidebar-item.active .sidebar-item-icon {
+            background: var(--accent-cyan);
+            color: var(--bg-primary);
+        }
+
+        .sidebar-item-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .sidebar-item-name {
+            font-size: 11px;
+            color: var(--text-primary);
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sidebar-item.active .sidebar-item-name {
+            color: var(--text-bright);
+        }
+
+        .sidebar-item-path {
+            font-size: 9px;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 1px;
+        }
+
+        .sidebar-item-count {
+            font-size: 9px;
+            color: var(--text-muted);
+            background: var(--bg-tertiary);
+            padding: 1px 4px;
+            border-radius: 2px;
+            font-weight: 500;
+        }
+
+        .sidebar-item.active .sidebar-item-count {
+            background: var(--accent-cyan);
+            color: var(--bg-primary);
+        }
+
+        /* Main Content */
+        .main {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Tabs */
+        .tabs {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-default);
+            display: flex;
+            align-items: center;
+            height: var(--tab-height);
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+
+        .tabs::-webkit-scrollbar {
+            height: 3px;
+        }
+
+        .tabs::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .tabs::-webkit-scrollbar-thumb {
+            background: var(--border-default);
+        }
+
+        .tab {
+            height: 100%;
+            padding: 0 var(--spacing-xl);
+            background: transparent;
+            border: none;
+            border-right: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            font-size: 10px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            transition: all 0.1s ease;
+            position: relative;
+            font-family: var(--font-ui);
+            white-space: nowrap;
+        }
+
+        .tab:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            background: var(--bg-primary);
+            color: var(--accent-cyan);
+            border-bottom: 2px solid var(--accent-cyan);
+        }
+
+        .tab-icon {
+            font-size: 8px;
+        }
+
+        .tab-close {
+            margin-left: var(--spacing-sm);
+            opacity: 0;
+            transition: opacity 0.15s ease;
+        }
+
+        .tab:hover .tab-close,
+        .tab.active .tab-close {
+            opacity: 0.6;
+        }
+
+        .tab-close:hover {
+            opacity: 1;
+            color: var(--accent-red);
+        }
+
+        /* Terminal Grid */
+        .terminal-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 1px;
+            background: var(--border-default);
+            overflow: hidden;
+        }
+
+        .terminal-pane {
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .terminal-header {
+            background: var(--bg-secondary);
+            padding: 3px var(--spacing-lg);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-subtle);
+            min-height: 22px;
+        }
+
+        .terminal-title {
+            font-size: 10px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .terminal-status {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-green);
+        }
+
+        .terminal-status.idle {
+            background: var(--text-muted);
+        }
+
+        .terminal-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        .terminal-action {
+            width: 14px;
+            height: 14px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 10px;
+            cursor: pointer;
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+        }
+
+        .terminal-action:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .terminal-content {
+            flex: 1;
+            padding: var(--spacing-lg);
+            font-family: var(--font-mono);
+            font-size: 11px;
+            line-height: 1.5;
+            overflow-y: auto;
+            color: var(--text-primary);
+        }
+
+        .terminal-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .terminal-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .terminal-content::-webkit-scrollbar-thumb {
+            background: var(--border-default);
+            border-radius: 4px;
+        }
+
+        .terminal-content::-webkit-scrollbar-thumb:hover {
+            background: var(--border-strong);
+        }
+
+        .terminal-line {
+            margin-bottom: 2px;
+        }
+
+        .terminal-prompt {
+            color: var(--accent-cyan);
+        }
+
+        .terminal-command {
+            color: var(--text-bright);
+        }
+
+        .terminal-output {
+            color: var(--text-secondary);
+        }
+
+        .terminal-success {
+            color: var(--accent-green);
+        }
+
+        .terminal-error {
+            color: var(--accent-red);
+        }
+
+        .terminal-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 14px;
+            background: var(--accent-cyan);
+            animation: blink 1s infinite;
+            margin-left: 2px;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        /* Bottom Bar */
+        .bottombar {
+            grid-column: 1 / -1;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-default);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 var(--spacing-lg);
+            font-size: 10px;
+        }
+
+        .bottombar-left,
+        .bottombar-right {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xl);
+        }
+
+        .bottombar-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-secondary);
+        }
+
+        .bottombar-item-label {
+            color: var(--text-muted);
+        }
+
+        .bottombar-item-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .bottombar-status {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .bottombar-status-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--accent-green);
+        }
+
+        .bottombar-separator {
+            width: 1px;
+            height: 12px;
+            background: var(--border-subtle);
+        }
+
+        /* Utilities */
+        .icon {
+            display: inline-block;
+            width: 1em;
+            height: 1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- Top Bar -->
+        <div class="topbar">
+            <div class="topbar-left">
+                <div class="topbar-logo">
+                    <div class="topbar-logo-icon">C</div>
+                    <span>Claude Manager</span>
+                </div>
+                <div class="topbar-toggle">
+                    <button class="topbar-toggle-btn">Dashboard</button>
+                    <button class="topbar-toggle-btn active">Workspace</button>
+                </div>
+            </div>
+            <div class="topbar-right">
+                <button class="topbar-btn">
+                    <span>⚙</span>
+                    Settings
+                </button>
+                <div class="topbar-user">
+                    <div class="topbar-avatar"></div>
+                    <span class="topbar-username">admin</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <span class="sidebar-title">Projects</span>
+                <button class="sidebar-add">+</button>
+            </div>
+            <div class="sidebar-list">
+                <div class="sidebar-item active">
+                    <div class="sidebar-item-icon">📁</div>
+                    <div class="sidebar-item-content">
+                        <div class="sidebar-item-name">claude-manager</div>
+                        <div class="sidebar-item-path">~/dev/claude-manager</div>
+                    </div>
+                    <span class="sidebar-item-count">3</span>
+                </div>
+                <div class="sidebar-item">
+                    <div class="sidebar-item-icon">📁</div>
+                    <div class="sidebar-item-content">
+                        <div class="sidebar-item-name">api-gateway</div>
+                        <div class="sidebar-item-path">~/dev/api-gateway</div>
+                    </div>
+                    <span class="sidebar-item-count">2</span>
+                </div>
+                <div class="sidebar-item">
+                    <div class="sidebar-item-icon">📁</div>
+                    <div class="sidebar-item-content">
+                        <div class="sidebar-item-name">frontend-app</div>
+                        <div class="sidebar-item-path">~/dev/frontend-app</div>
+                    </div>
+                    <span class="sidebar-item-count">1</span>
+                </div>
+                <div class="sidebar-item">
+                    <div class="sidebar-item-icon">📁</div>
+                    <div class="sidebar-item-content">
+                        <div class="sidebar-item-name">ml-pipeline</div>
+                        <div class="sidebar-item-path">~/work/ml-pipeline</div>
+                    </div>
+                    <span class="sidebar-item-count">4</span>
+                </div>
+                <div class="sidebar-item">
+                    <div class="sidebar-item-icon">📁</div>
+                    <div class="sidebar-item-content">
+                        <div class="sidebar-item-name">docs-site</div>
+                        <div class="sidebar-item-path">~/projects/docs-site</div>
+                    </div>
+                    <span class="sidebar-item-count">1</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main">
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab active">
+                    <span class="tab-icon">🤖</span>
+                    <span>Main Session</span>
+                    <span class="tab-close">×</span>
+                </button>
+                <button class="tab">
+                    <span class="tab-icon">🤖</span>
+                    <span>Feature Branch</span>
+                    <span class="tab-close">×</span>
+                </button>
+                <button class="tab">
+                    <span class="tab-icon">🤖</span>
+                    <span>Debug Session</span>
+                    <span class="tab-close">×</span>
+                </button>
+            </div>
+
+            <!-- Terminal Grid -->
+            <div class="terminal-grid">
+                <!-- Terminal 1 -->
+                <div class="terminal-pane">
+                    <div class="terminal-header">
+                        <div class="terminal-title">
+                            <span class="terminal-status"></span>
+                            <span>Backend Dev</span>
+                        </div>
+                        <div class="terminal-actions">
+                            <button class="terminal-action" title="Split">⊞</button>
+                            <button class="terminal-action" title="Settings">⚙</button>
+                            <button class="terminal-action" title="Close">×</button>
+                        </div>
+                    </div>
+                    <div class="terminal-content">
+                        <div class="terminal-line">
+                            <span class="terminal-prompt">➜</span>
+                            <span class="terminal-command"> bun run dev</span>
+                        </div>
+                        <div class="terminal-line terminal-output">$ bun --watch src/index.ts</div>
+                        <div class="terminal-line terminal-success">✓ Server started on http://localhost:3000</div>
+                        <div class="terminal-line terminal-output">Watching for changes...</div>
+                        <div class="terminal-line"><br></div>
+                        <div class="terminal-line terminal-output">[16:23:45] GET /api/projects → 200 (12ms)</div>
+                        <div class="terminal-line terminal-output">[16:23:47] POST /api/terminals → 201 (8ms)</div>
+                        <div class="terminal-line terminal-output">[16:23:48] WebSocket connection established</div>
+                        <div class="terminal-line"><br></div>
+                        <div class="terminal-line">
+                            <span class="terminal-prompt">➜</span>
+                            <span class="terminal-cursor"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terminal 2 -->
+                <div class="terminal-pane">
+                    <div class="terminal-header">
+                        <div class="terminal-title">
+                            <span class="terminal-status"></span>
+                            <span>Frontend Dev</span>
+                        </div>
+                        <div class="terminal-actions">
+                            <button class="terminal-action" title="Split">⊞</button>
+                            <button class="terminal-action" title="Settings">⚙</button>
+                            <button class="terminal-action" title="Close">×</button>
+                        </div>
+                    </div>
+                    <div class="terminal-content">
+                        <div class="terminal-line">
+                            <span class="terminal-prompt">➜</span>
+                            <span class="terminal-command"> bun run dev</span>
+                        </div>
+                        <div class="terminal-line terminal-output">$ vite</div>
+                        <div class="terminal-line"><br></div>
+                        <div class="terminal-line terminal-success">  VITE v5.0.10  ready in 248 ms</div>
+                        <div class="terminal-line"><br></div>
+                        <div class="terminal-line terminal-output">  ➜  Local:   http://localhost:5173/</div>
+                        <div class="terminal-line terminal-output">  ➜  Network: use --host to expose</div>
+                        <div class="terminal-line"><br></div>
+                        <div class="terminal-line terminal-output">  ➜  press h + enter to show help</div>
+                        <div class="terminal-line"><br></div>
+                        <div class="terminal-line">
+                            <span class="terminal-prompt">➜</span>
+                            <span class="terminal-cursor"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terminal 3 -->
+                <div class="terminal-pane">
+                    <div class="terminal-header">
+                        <div class="terminal-title">
+                            <span class="terminal-status idle"></span>
+                            <span>Git Status</span>
+                        </div>
+                        <div class="terminal-actions">
+                            <button class="terminal-action" title="Split">⊞</button>
+                            <button class="terminal-action" title="Settings">⚙</button>
+                            <button class="terminal-action" title="Close">×</button>
+                        </div>
+                    </div>
+                    <div class="terminal-content">
+                        <div class="terminal-line">
+                            <span class="terminal-prompt">➜</span>
+                            <span class="terminal-command"> git status</span>
+                        </div>
+                        <div class="terminal-line terminal-output">On branch main</div>
+                        <div class="terminal-line terminal-output">Your branch is up to date with 'origin/main'.</div>
+                        <div class="terminal-line"><br></div>
+                        <div class="terminal-line terminal-output">Changes not staged for commit:</div>
+                        <div class="terminal-line terminal-error">  modified:   apps/backend/src/index.ts</div>
+                        <div class="terminal-line terminal-error">  modified:   apps/frontend/src/routes/+page.svelte</div>
+                        <div class="terminal-line"><br></div>
+                        <div class="terminal-line terminal-output">Untracked files:</div>
+                        <div class="terminal-line terminal-error">  apps/common/features/session/</div>
+                        <div class="terminal-line"><br></div>
+                        <div class="terminal-line">
+                            <span class="terminal-prompt">➜</span>
+                            <span class="terminal-cursor"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terminal 4 -->
+                <div class="terminal-pane">
+                    <div class="terminal-header">
+                        <div class="terminal-title">
+                            <span class="terminal-status"></span>
+                            <span>Claude Chat</span>
+                        </div>
+                        <div class="terminal-actions">
+                            <button class="terminal-action" title="Split">⊞</button>
+                            <button class="terminal-action" title="Settings">⚙</button>
+                            <button class="terminal-action" title="Close">×</button>
+                        </div>
+                    </div>
+                    <div class="terminal-content">
+                        <div class="terminal-line">
+                            <span class="terminal-prompt">➜</span>
+                            <span class="terminal-command"> claude</span>
+                        </div>
+                        <div class="terminal-line terminal-output">Starting Claude Code CLI...</div>
+                        <div class="terminal-line terminal-success">✓ Connected to chat: abc123xyz</div>
+                        <div class="terminal-line"><br></div>
+                        <div class="terminal-line terminal-output"><strong>You:</strong> Add authentication to the backend API</div>
+                        <div class="terminal-line"><br></div>
+                        <div class="terminal-line terminal-output"><strong>Claude:</strong> I'll help you add authentication. Let me:</div>
+                        <div class="terminal-line terminal-output">1. Create JWT middleware</div>
+                        <div class="terminal-line terminal-output">2. Add auth routes</div>
+                        <div class="terminal-line terminal-output">3. Set up password hashing</div>
+                        <div class="terminal-line"><br></div>
+                        <div class="terminal-line terminal-success">✓ Created src/auth/auth.middleware.ts</div>
+                        <div class="terminal-line terminal-success">✓ Created src/auth/auth.router.ts</div>
+                        <div class="terminal-line"><br></div>
+                        <div class="terminal-line">
+                            <span class="terminal-prompt">You:</span>
+                            <span class="terminal-cursor"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Bar -->
+        <div class="bottombar">
+            <div class="bottombar-left">
+                <div class="bottombar-item">
+                    <span class="bottombar-status-dot"></span>
+                    <span class="bottombar-item-value">Connected</span>
+                </div>
+                <span class="bottombar-separator"></span>
+                <div class="bottombar-item">
+                    <span class="bottombar-item-label">Project:</span>
+                    <span class="bottombar-item-value">claude-manager</span>
+                </div>
+                <span class="bottombar-separator"></span>
+                <div class="bottombar-item">
+                    <span class="bottombar-item-label">Session:</span>
+                    <span class="bottombar-item-value">abc123xyz</span>
+                </div>
+            </div>
+            <div class="bottombar-right">
+                <div class="bottombar-item">
+                    <span class="bottombar-item-label">CPU:</span>
+                    <span class="bottombar-item-value">12%</span>
+                </div>
+                <span class="bottombar-separator"></span>
+                <div class="bottombar-item">
+                    <span class="bottombar-item-label">MEM:</span>
+                    <span class="bottombar-item-value">2.3GB</span>
+                </div>
+                <span class="bottombar-separator"></span>
+                <div class="bottombar-item">
+                    <span class="bottombar-item-value">16:23:52</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sidebar interactions
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // Tab interactions
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function(e) {
+                if (!e.target.classList.contains('tab-close')) {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                }
+            });
+        });
+
+        // Tab close
+        document.querySelectorAll('.tab-close').forEach(close => {
+            close.addEventListener('click', function(e) {
+                e.stopPropagation();
+                this.closest('.tab').remove();
+            });
+        });
+
+        // View toggle
+        document.querySelectorAll('.topbar-toggle-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.topbar-toggle-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // Update time
+        function updateTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', {
+                hour12: false,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            const timeElement = document.querySelector('.bottombar-right .bottombar-item:last-child .bottombar-item-value');
+            if (timeElement) {
+                timeElement.textContent = timeStr;
+            }
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // Simulate resource usage changes
+        function updateResources() {
+            const cpuElement = document.querySelector('.bottombar-item:has(.bottombar-item-label:contains("CPU")) .bottombar-item-value');
+            const memElement = document.querySelector('.bottombar-item:has(.bottombar-item-label:contains("MEM")) .bottombar-item-value');
+
+            if (cpuElement) {
+                const cpu = Math.floor(Math.random() * 30) + 5;
+                cpuElement.textContent = `${cpu}%`;
+            }
+
+            if (memElement) {
+                const mem = (Math.random() * 2 + 1.5).toFixed(1);
+                memElement.textContent = `${mem}GB`;
+            }
+        }
+        setInterval(updateResources, 3000);
+    </script>
+</body>
+</html>

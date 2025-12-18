@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Manager - Stacked Terminals</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #13141b;
+            --bg-tertiary: #1a1b26;
+            --bg-hover: #21222d;
+            --border-color: #2a2b3a;
+            --border-hover: #3a3b4a;
+            --text-primary: #e4e4e7;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --accent-primary: #818cf8;
+            --accent-secondary: #a78bfa;
+            --success: #4ade80;
+            --warning: #fbbf24;
+            --error: #f87171;
+            --terminal-bg: #0d0e15;
+            --terminal-text: #d4d4d8;
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.4);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.5;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.875rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--shadow-sm);
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .back-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            transition: all 0.15s ease;
+        }
+
+        .back-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-hover);
+            color: var(--text-primary);
+        }
+
+        .project-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.125rem;
+        }
+
+        .project-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .project-path {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .btn-icon {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            width: 2.25rem;
+            height: 2.25rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+        }
+
+        .btn-icon:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-hover);
+            color: var(--text-primary);
+        }
+
+        .btn-primary {
+            background: var(--accent-primary);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.15s ease;
+        }
+
+        .btn-primary:hover {
+            background: #6366f1;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            background: var(--bg-primary);
+        }
+
+        .terminals-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-color) transparent;
+        }
+
+        .terminals-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .terminals-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .terminals-container::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        .terminals-container::-webkit-scrollbar-thumb:hover {
+            background: var(--border-hover);
+        }
+
+        .terminals-list {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        /* Terminal Accordion Item */
+        .terminal-item {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            overflow: hidden;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .terminal-item.expanded {
+            box-shadow: var(--shadow-lg);
+        }
+
+        .terminal-item:not(.expanded) {
+            box-shadow: var(--shadow-sm);
+        }
+
+        .terminal-header {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.25rem;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.15s ease;
+        }
+
+        .terminal-item:not(.expanded) .terminal-header:hover {
+            background: var(--bg-hover);
+        }
+
+        .terminal-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-primary);
+            font-size: 1.125rem;
+            flex-shrink: 0;
+        }
+
+        .terminal-info {
+            flex: 1;
+            margin-left: 1rem;
+            min-width: 0;
+        }
+
+        .terminal-title-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .terminal-name {
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .status-badge {
+            font-size: 0.6875rem;
+            font-weight: 500;
+            padding: 0.125rem 0.5rem;
+            border-radius: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        .status-active {
+            background: rgba(74, 222, 128, 0.15);
+            color: var(--success);
+            border: 1px solid rgba(74, 222, 128, 0.3);
+        }
+
+        .status-idle {
+            background: rgba(251, 191, 36, 0.15);
+            color: var(--warning);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .status-error {
+            background: rgba(248, 113, 113, 0.15);
+            color: var(--error);
+            border: 1px solid rgba(248, 113, 113, 0.3);
+        }
+
+        .terminal-preview {
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: opacity 0.2s ease;
+        }
+
+        .terminal-item.expanded .terminal-preview {
+            opacity: 0;
+            height: 0;
+            overflow: hidden;
+        }
+
+        .terminal-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-left: 1rem;
+        }
+
+        .action-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            width: 2rem;
+            height: 2rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+            font-size: 0.875rem;
+        }
+
+        .action-btn:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--border-hover);
+            color: var(--text-primary);
+        }
+
+        .expand-indicator {
+            width: 1.5rem;
+            height: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-left: 0.5rem;
+        }
+
+        .terminal-item.expanded .expand-indicator {
+            transform: rotate(180deg);
+        }
+
+        /* Terminal Content */
+        .terminal-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: var(--terminal-bg);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .terminal-item.expanded .terminal-content {
+            max-height: 500px;
+        }
+
+        .terminal-viewport {
+            padding: 1rem;
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            color: var(--terminal-text);
+            height: 500px;
+            overflow-y: auto;
+        }
+
+        .terminal-line {
+            display: flex;
+            gap: 1rem;
+            padding: 0.125rem 0;
+        }
+
+        .terminal-prompt {
+            color: var(--accent-primary);
+            flex-shrink: 0;
+        }
+
+        .terminal-output {
+            flex: 1;
+            color: var(--terminal-text);
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 0.5rem;
+            height: 1rem;
+            background: var(--accent-primary);
+            animation: blink 1s step-end infinite;
+            vertical-align: text-top;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        .empty-icon {
+            width: 4rem;
+            height: 4rem;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-color);
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .empty-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-description {
+            font-size: 0.9375rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            max-width: 24rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                padding: 0.75rem 1rem;
+            }
+
+            .project-name {
+                font-size: 0.9375rem;
+            }
+
+            .terminals-container {
+                padding: 0.75rem;
+            }
+
+            .terminal-header {
+                padding: 0.875rem 1rem;
+            }
+
+            .terminal-actions {
+                gap: 0.375rem;
+            }
+
+            .action-btn {
+                width: 1.75rem;
+                height: 1.75rem;
+                font-size: 0.8125rem;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .terminal-item {
+            animation: fadeIn 0.3s ease backwards;
+        }
+
+        .terminal-item:nth-child(1) { animation-delay: 0.05s; }
+        .terminal-item:nth-child(2) { animation-delay: 0.1s; }
+        .terminal-item:nth-child(3) { animation-delay: 0.15s; }
+        .terminal-item:nth-child(4) { animation-delay: 0.2s; }
+        .terminal-item:nth-child(5) { animation-delay: 0.25s; }
+        .terminal-item:nth-child(6) { animation-delay: 0.3s; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <button class="back-btn" onclick="alert('← Back to projects')">
+                    <span>←</span>
+                    <span>Projects</span>
+                </button>
+                <div class="project-info">
+                    <div class="project-name">E-Commerce Platform</div>
+                    <div class="project-path">~/projects/ecommerce</div>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="btn-icon" onclick="alert('⚙️ Settings')" title="Settings">
+                    <span>⚙️</span>
+                </button>
+                <button class="btn-primary" onclick="alert('+ New Terminal')">
+                    <span>+</span>
+                    <span>New Terminal</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="terminals-container">
+                <div class="terminals-list">
+                    <!-- Terminal Item 1 - Expanded -->
+                    <div class="terminal-item expanded">
+                        <div class="terminal-header" onclick="toggleTerminal(this)">
+                            <div class="terminal-icon">💻</div>
+                            <div class="terminal-info">
+                                <div class="terminal-title-row">
+                                    <span class="terminal-name">Dev Server</span>
+                                    <span class="status-badge status-active">Active</span>
+                                </div>
+                                <div class="terminal-preview">$ bun run dev</div>
+                            </div>
+                            <div class="terminal-actions" onclick="event.stopPropagation()">
+                                <button class="action-btn" onclick="alert('⏸️ Pause')" title="Pause">⏸️</button>
+                                <button class="action-btn" onclick="alert('🔄 Restart')" title="Restart">🔄</button>
+                                <button class="action-btn" onclick="alert('❌ Stop')" title="Stop">❌</button>
+                            </div>
+                            <div class="expand-indicator">
+                                <span>⌄</span>
+                            </div>
+                        </div>
+                        <div class="terminal-content">
+                            <div class="terminal-viewport">
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt">$</span>
+                                    <span class="terminal-output">bun run dev</span>
+                                </div>
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt"></span>
+                                    <span class="terminal-output" style="color: var(--accent-primary);">🚀 Starting development server...</span>
+                                </div>
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt"></span>
+                                    <span class="terminal-output" style="color: var(--success);">✓ Server running at http://localhost:3000</span>
+                                </div>
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt"></span>
+                                    <span class="terminal-output" style="color: var(--success);">✓ Frontend ready in 1.2s</span>
+                                </div>
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt"></span>
+                                    <span class="terminal-output" style="color: var(--success);">✓ Backend ready in 0.8s</span>
+                                </div>
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt"></span>
+                                    <span class="terminal-output" style="color: var(--text-muted);">[14:23:45] Watching for file changes...</span>
+                                </div>
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt"></span>
+                                    <span class="terminal-output"><span class="cursor"></span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Terminal Item 2 - Collapsed -->
+                    <div class="terminal-item">
+                        <div class="terminal-header" onclick="toggleTerminal(this)">
+                            <div class="terminal-icon">🤖</div>
+                            <div class="terminal-info">
+                                <div class="terminal-title-row">
+                                    <span class="terminal-name">Claude Session</span>
+                                    <span class="status-badge status-active">Active</span>
+                                </div>
+                                <div class="terminal-preview">Working on authentication refactor...</div>
+                            </div>
+                            <div class="terminal-actions" onclick="event.stopPropagation()">
+                                <button class="action-btn" onclick="alert('⏸️ Pause')" title="Pause">⏸️</button>
+                                <button class="action-btn" onclick="alert('💬 Chat')" title="View Chat">💬</button>
+                                <button class="action-btn" onclick="alert('❌ Stop')" title="Stop">❌</button>
+                            </div>
+                            <div class="expand-indicator">
+                                <span>⌄</span>
+                            </div>
+                        </div>
+                        <div class="terminal-content">
+                            <div class="terminal-viewport">
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt">$</span>
+                                    <span class="terminal-output">claude code</span>
+                                </div>
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt"></span>
+                                    <span class="terminal-output" style="color: var(--accent-secondary);">Claude Code v1.2.0</span>
+                                </div>
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt"></span>
+                                    <span class="terminal-output">Chat ID: a7b3c9d2</span>
+                                </div>
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt"></span>
+                                    <span class="terminal-output" style="color: var(--success);">✓ Connected to Claude API</span>
+                                </div>
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt"></span>
+                                    <span class="terminal-output">Working on: Refactoring authentication module</span>
+                                </div>
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt"></span>
+                                    <span class="terminal-output"><span class="cursor"></span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Terminal Item 3 - Collapsed -->
+                    <div class="terminal-item">
+                        <div class="terminal-header" onclick="toggleTerminal(this)">
+                            <div class="terminal-icon">🗄️</div>
+                            <div class="terminal-info">
+                                <div class="terminal-title-row">
+                                    <span class="terminal-name">Database</span>
+                                    <span class="status-badge status-active">Active</span>
+                                </div>
+                                <div class="terminal-preview">PostgreSQL running on port 5432</div>
+                            </div>
+                            <div class="terminal-actions" onclick="event.stopPropagation()">
+                                <button class="action-btn" onclick="alert('⏸️ Pause')" title="Pause">⏸️</button>
+                                <button class="action-btn" onclick="alert('🔄 Restart')" title="Restart">🔄</button>
+                                <button class="action-btn" onclick="alert('❌ Stop')" title="Stop">❌</button>
+                            </div>
+                            <div class="expand-indicator">
+                                <span>⌄</span>
+                            </div>
+                        </div>
+                        <div class="terminal-content">
+                            <div class="terminal-viewport">
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt">$</span>
+                                    <span class="terminal-output">docker run -p 5432:5432 postgres:15</span>
+                                </div>
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt"></span>
+                                    <span class="terminal-output" style="color: var(--success);">✓ PostgreSQL started successfully</span>
+                                </div>
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt"></span>
+                                    <span class="terminal-output">Listening on: localhost:5432</span>
+                                </div>
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt"></span>
+                                    <span class="terminal-output">Database: ecommerce_dev</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Terminal Item 4 - Collapsed -->
+                    <div class="terminal-item">
+                        <div class="terminal-header" onclick="toggleTerminal(this)">
+                            <div class="terminal-icon">🧪</div>
+                            <div class="terminal-info">
+                                <div class="terminal-title-row">
+                                    <span class="terminal-name">Test Runner</span>
+                                    <span class="status-badge status-idle">Idle</span>
+                                </div>
+                                <div class="terminal-preview">All tests passed (42/42)</div>
+                            </div>
+                            <div class="terminal-actions" onclick="event.stopPropagation()">
+                                <button class="action-btn" onclick="alert('▶️ Run')" title="Run">▶️</button>
+                                <button class="action-btn" onclick="alert('🔄 Rerun')" title="Rerun">🔄</button>
+                                <button class="action-btn" onclick="alert('❌ Clear')" title="Clear">❌</button>
+                            </div>
+                            <div class="expand-indicator">
+                                <span>⌄</span>
+                            </div>
+                        </div>
+                        <div class="terminal-content">
+                            <div class="terminal-viewport">
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt">$</span>
+                                    <span class="terminal-output">bun test</span>
+                                </div>
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt"></span>
+                                    <span class="terminal-output" style="color: var(--success);">✓ Auth tests (8 passed)</span>
+                                </div>
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt"></span>
+                                    <span class="terminal-output" style="color: var(--success);">✓ API tests (15 passed)</span>
+                                </div>
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt"></span>
+                                    <span class="terminal-output" style="color: var(--success);">✓ Integration tests (19 passed)</span>
+                                </div>
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt"></span>
+                                    <span class="terminal-output" style="color: var(--success);">Tests: 42 passed, 42 total</span>
+                                </div>
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt"></span>
+                                    <span class="terminal-output">Time: 3.21s</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Terminal Item 5 - Collapsed with Error -->
+                    <div class="terminal-item">
+                        <div class="terminal-header" onclick="toggleTerminal(this)">
+                            <div class="terminal-icon">📦</div>
+                            <div class="terminal-info">
+                                <div class="terminal-title-row">
+                                    <span class="terminal-name">Build</span>
+                                    <span class="status-badge status-error">Error</span>
+                                </div>
+                                <div class="terminal-preview">Build failed: Type error in auth.service.ts</div>
+                            </div>
+                            <div class="terminal-actions" onclick="event.stopPropagation()">
+                                <button class="action-btn" onclick="alert('🔄 Retry')" title="Retry">🔄</button>
+                                <button class="action-btn" onclick="alert('🔍 View')" title="View Details">🔍</button>
+                                <button class="action-btn" onclick="alert('❌ Clear')" title="Clear">❌</button>
+                            </div>
+                            <div class="expand-indicator">
+                                <span>⌄</span>
+                            </div>
+                        </div>
+                        <div class="terminal-content">
+                            <div class="terminal-viewport">
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt">$</span>
+                                    <span class="terminal-output">bun run build</span>
+                                </div>
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt"></span>
+                                    <span class="terminal-output" style="color: var(--accent-primary);">Building for production...</span>
+                                </div>
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt"></span>
+                                    <span class="terminal-output" style="color: var(--error);">✗ Type error in src/auth/auth.service.ts:42:15</span>
+                                </div>
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt"></span>
+                                    <span class="terminal-output" style="color: var(--error);">  Property 'userId' does not exist on type 'Session'</span>
+                                </div>
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt"></span>
+                                    <span class="terminal-output" style="color: var(--error);">Build failed with 1 error</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Terminal Item 6 - Collapsed -->
+                    <div class="terminal-item">
+                        <div class="terminal-header" onclick="toggleTerminal(this)">
+                            <div class="terminal-icon">📊</div>
+                            <div class="terminal-info">
+                                <div class="terminal-title-row">
+                                    <span class="terminal-name">Logs Monitor</span>
+                                    <span class="status-badge status-active">Active</span>
+                                </div>
+                                <div class="terminal-preview">Watching application logs...</div>
+                            </div>
+                            <div class="terminal-actions" onclick="event.stopPropagation()">
+                                <button class="action-btn" onclick="alert('⏸️ Pause')" title="Pause">⏸️</button>
+                                <button class="action-btn" onclick="alert('🧹 Clear')" title="Clear">🧹</button>
+                                <button class="action-btn" onclick="alert('❌ Stop')" title="Stop">❌</button>
+                            </div>
+                            <div class="expand-indicator">
+                                <span>⌄</span>
+                            </div>
+                        </div>
+                        <div class="terminal-content">
+                            <div class="terminal-viewport">
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt">$</span>
+                                    <span class="terminal-output">tail -f logs/app.log</span>
+                                </div>
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt"></span>
+                                    <span class="terminal-output" style="color: var(--text-muted);">[14:23:12] INFO: Request GET /api/users</span>
+                                </div>
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt"></span>
+                                    <span class="terminal-output" style="color: var(--text-muted);">[14:23:13] INFO: Response 200 (45ms)</span>
+                                </div>
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt"></span>
+                                    <span class="terminal-output" style="color: var(--warning);">[14:23:15] WARN: Slow query detected (320ms)</span>
+                                </div>
+                                <div class="terminal-line">
+                                    <span class="terminal-prompt"></span>
+                                    <span class="terminal-output" style="color: var(--text-muted);">[14:23:18] INFO: Request POST /api/auth/login</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function toggleTerminal(headerElement) {
+            const terminalItem = headerElement.closest('.terminal-item');
+            const wasExpanded = terminalItem.classList.contains('expanded');
+
+            // Collapse all terminals
+            document.querySelectorAll('.terminal-item').forEach(item => {
+                item.classList.remove('expanded');
+            });
+
+            // Expand clicked terminal if it wasn't already expanded
+            if (!wasExpanded) {
+                terminalItem.classList.add('expanded');
+            }
+        }
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Alt+T for new terminal
+            if (e.altKey && e.key === 't') {
+                e.preventDefault();
+                alert('⌨️ Keyboard shortcut: New Terminal');
+            }
+
+            // Escape to collapse all
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.terminal-item').forEach(item => {
+                    item.classList.remove('expanded');
+                });
+            }
+        });
+
+        // Initialize with first terminal expanded
+        window.addEventListener('load', () => {
+            const firstTerminal = document.querySelector('.terminal-item');
+            if (firstTerminal) {
+                firstTerminal.classList.add('expanded');
+            }
+        });
+    </script>
+</body>
+</html>

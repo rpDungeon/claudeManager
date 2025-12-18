@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Manager - Retro CRT Terminal</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --crt-green: #33ff33;
+      --crt-green-glow: #00ff00;
+      --crt-dark: #0a0a0a;
+      --crt-screen: #0d0d0d;
+      --crt-border: #1a1a1a;
+      --scanline-opacity: 0.15;
+      --vignette-strength: 0.5;
+    }
+
+    body {
+      font-family: 'VT323', monospace;
+      background: #000;
+      color: var(--crt-green);
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* CRT Screen Container */
+    .crt-monitor {
+      position: relative;
+      width: 95vw;
+      height: 95vh;
+      max-width: 1800px;
+      max-height: 1200px;
+      background: var(--crt-border);
+      border-radius: 8px;
+      padding: 40px;
+      box-shadow:
+        0 0 80px rgba(0, 255, 0, 0.1),
+        inset 0 0 40px rgba(0, 0, 0, 0.8);
+    }
+
+    .crt-screen {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: var(--crt-screen);
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.9);
+    }
+
+    /* Screen Curvature Effect */
+    .crt-screen::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, var(--vignette-strength)) 100%);
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    /* Scanlines */
+    .crt-screen::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0) 0px,
+        rgba(0, 0, 0, 0) 1px,
+        rgba(0, 0, 0, var(--scanline-opacity)) 2px,
+        rgba(0, 0, 0, var(--scanline-opacity)) 3px
+      );
+      pointer-events: none;
+      z-index: 99;
+      animation: scanline-flicker 0.15s infinite;
+    }
+
+    @keyframes scanline-flicker {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.95; }
+    }
+
+    /* CRT Glow Effect */
+    .crt-content {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      padding: 20px;
+      text-shadow:
+        0 0 5px var(--crt-green-glow),
+        0 0 10px var(--crt-green-glow);
+      animation: screen-flicker 0.3s infinite;
+    }
+
+    @keyframes screen-flicker {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.98; }
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: rgba(0, 255, 0, 0.05);
+      border: 2px solid var(--crt-green);
+      margin-bottom: 16px;
+      font-size: 24px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .logo {
+      font-size: 32px;
+      font-weight: bold;
+      letter-spacing: 2px;
+    }
+
+    .project-name {
+      font-size: 28px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header-right {
+      display: flex;
+      gap: 16px;
+      font-size: 22px;
+    }
+
+    .status-indicator {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      background: var(--crt-green);
+      box-shadow: 0 0 8px var(--crt-green-glow);
+      animation: blink 1s infinite;
+      margin-right: 8px;
+    }
+
+    @keyframes blink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0.3; }
+    }
+
+    /* Tab Bar */
+    .tab-bar {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 8px;
+      border-bottom: 2px solid var(--crt-green);
+      padding-bottom: 8px;
+    }
+
+    .tab {
+      padding: 8px 24px;
+      background: rgba(0, 255, 0, 0.1);
+      border: 2px solid var(--crt-green);
+      font-size: 22px;
+      cursor: pointer;
+      transition: all 0.1s;
+      position: relative;
+      clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+    }
+
+    .tab:hover {
+      background: rgba(0, 255, 0, 0.15);
+      box-shadow: 0 0 12px rgba(0, 255, 0, 0.3);
+    }
+
+    .tab.active {
+      background: rgba(0, 255, 0, 0.2);
+      box-shadow: inset 0 0 12px rgba(0, 255, 0, 0.3);
+    }
+
+    .tab .close {
+      margin-left: 12px;
+      font-size: 18px;
+      opacity: 0.7;
+    }
+
+    .tab .close:hover {
+      opacity: 1;
+      text-shadow: 0 0 8px var(--crt-green-glow);
+    }
+
+    /* Terminal Container */
+    .terminal-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      height: calc(100% - 220px);
+      margin-bottom: 16px;
+    }
+
+    /* Terminal Pane */
+    .terminal-pane {
+      background: rgba(0, 0, 0, 0.6);
+      border: 2px solid var(--crt-green);
+      padding: 12px;
+      overflow-y: auto;
+      position: relative;
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+    }
+
+    .terminal-pane::-webkit-scrollbar {
+      width: 12px;
+    }
+
+    .terminal-pane::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    .terminal-pane::-webkit-scrollbar-thumb {
+      background: var(--crt-green);
+      box-shadow: 0 0 4px var(--crt-green-glow);
+    }
+
+    .terminal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid var(--crt-green);
+      font-size: 20px;
+    }
+
+    .terminal-title {
+      font-size: 22px;
+      letter-spacing: 1px;
+    }
+
+    .terminal-controls {
+      display: flex;
+      gap: 8px;
+      font-size: 18px;
+    }
+
+    .terminal-controls span {
+      cursor: pointer;
+      padding: 2px 6px;
+      border: 1px solid var(--crt-green);
+    }
+
+    .terminal-controls span:hover {
+      background: rgba(0, 255, 0, 0.2);
+      box-shadow: 0 0 8px rgba(0, 255, 0, 0.3);
+    }
+
+    .terminal-content {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 18px;
+      line-height: 1.6;
+      letter-spacing: 0.5px;
+    }
+
+    .terminal-line {
+      display: flex;
+      margin-bottom: 4px;
+    }
+
+    .prompt {
+      color: var(--crt-green);
+      margin-right: 8px;
+      font-weight: bold;
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 10px;
+      height: 20px;
+      background: var(--crt-green);
+      animation: cursor-blink 0.8s infinite;
+      margin-left: 4px;
+      box-shadow: 0 0 8px var(--crt-green-glow);
+    }
+
+    @keyframes cursor-blink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+
+    .output-line {
+      color: rgba(51, 255, 51, 0.8);
+      padding-left: 20px;
+    }
+
+    .error-line {
+      color: #ff3333;
+      text-shadow: 0 0 5px #ff0000, 0 0 10px #ff0000;
+      padding-left: 20px;
+    }
+
+    /* Status Bar */
+    .status-bar {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      padding: 12px 16px;
+      background: rgba(0, 255, 0, 0.05);
+      border: 2px solid var(--crt-green);
+      font-size: 20px;
+    }
+
+    .status-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .status-label {
+      opacity: 0.7;
+    }
+
+    .status-value {
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    .ascii-art {
+      font-size: 16px;
+      line-height: 1.2;
+      opacity: 0.6;
+      white-space: pre;
+    }
+
+    /* Resizer */
+    .resizer {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 20px;
+      height: 40px;
+      background: var(--crt-green);
+      cursor: ew-resize;
+      opacity: 0.3;
+      transition: opacity 0.2s;
+      box-shadow: 0 0 8px var(--crt-green-glow);
+      clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+    }
+
+    .resizer:hover {
+      opacity: 0.7;
+      box-shadow: 0 0 12px var(--crt-green-glow);
+    }
+
+    /* Bloom Effect */
+    .terminal-content {
+      filter: blur(0.3px);
+    }
+
+    /* Additional CRT Effects */
+    .crt-content {
+      animation: screen-flicker 0.3s infinite, subtle-glow 2s infinite;
+    }
+
+    @keyframes subtle-glow {
+      0%, 100% { filter: brightness(1); }
+      50% { filter: brightness(1.02); }
+    }
+
+    /* Power Button (Easter Egg) */
+    .power-button {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      width: 16px;
+      height: 16px;
+      background: var(--crt-green);
+      border-radius: 50%;
+      box-shadow: 0 0 12px var(--crt-green-glow);
+      cursor: pointer;
+      animation: power-pulse 2s infinite;
+    }
+
+    @keyframes power-pulse {
+      0%, 100% { opacity: 0.8; }
+      50% { opacity: 1; }
+    }
+
+    .power-button:hover {
+      box-shadow: 0 0 20px var(--crt-green-glow);
+    }
+  </style>
+</head>
+<body>
+  <div class="crt-monitor">
+    <div class="crt-screen">
+      <div class="crt-content">
+        <!-- Header -->
+        <div class="header">
+          <div class="header-left">
+            <div class="logo">CLAUDE.MGR</div>
+            <div class="project-name">
+              <span>[</span>
+              <span>SALES-TRAINER-PROD</span>
+              <span>]</span>
+            </div>
+          </div>
+          <div class="header-right">
+            <span><span class="status-indicator"></span>ONLINE</span>
+            <span>2 SESSIONS</span>
+            <span>14:37:22</span>
+          </div>
+        </div>
+
+        <!-- Tab Bar -->
+        <div class="tab-bar">
+          <div class="tab active">
+            <span>[1] MAIN</span>
+            <span class="close">[X]</span>
+          </div>
+          <div class="tab">
+            <span>[2] DEBUG</span>
+            <span class="close">[X]</span>
+          </div>
+          <div class="tab">
+            <span>[3] TEST</span>
+            <span class="close">[X]</span>
+          </div>
+          <div class="tab" style="opacity: 0.5; border-style: dashed;">
+            <span>[+] NEW</span>
+          </div>
+        </div>
+
+        <!-- Terminal Container -->
+        <div class="terminal-container">
+          <!-- Left Terminal -->
+          <div class="terminal-pane">
+            <div class="terminal-header">
+              <span class="terminal-title">// TERMINAL-A</span>
+              <div class="terminal-controls">
+                <span>[-]</span>
+                <span>[O]</span>
+                <span>[X]</span>
+              </div>
+            </div>
+            <div class="terminal-content">
+              <div class="terminal-line">
+                <span class="prompt">root@claude:~$</span>
+                <span>bun run dev</span>
+              </div>
+              <div class="output-line">
+                [INFO] Starting development server...
+              </div>
+              <div class="output-line">
+                [OK] Backend compiled successfully
+              </div>
+              <div class="output-line">
+                [OK] Frontend compiled successfully
+              </div>
+              <div class="output-line">
+                &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;
+              </div>
+              <div class="output-line">
+                &#9658; Backend: http://localhost:3000
+              </div>
+              <div class="output-line">
+                &#9658; Frontend: http://localhost:5173
+              </div>
+              <div class="output-line">
+                &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;
+              </div>
+              <div class="output-line">&nbsp;</div>
+              <div class="terminal-line">
+                <span class="prompt">root@claude:~$</span>
+                <span>claude chat new</span>
+              </div>
+              <div class="output-line">
+                [OK] Created new Claude session: sess_a7f3
+              </div>
+              <div class="output-line">
+                [OK] Working directory: /mnt/sales-trainer
+              </div>
+              <div class="output-line">&nbsp;</div>
+              <div class="terminal-line">
+                <span class="prompt">root@claude:~$</span>
+                <span>git status</span>
+              </div>
+              <div class="output-line">
+                On branch feature/ai-voice-coach
+              </div>
+              <div class="output-line">
+                Your branch is up to date with 'origin/feature/ai-voice-coach'.
+              </div>
+              <div class="output-line">&nbsp;</div>
+              <div class="output-line">
+                Changes not staged for commit:
+              </div>
+              <div class="output-line">
+                  modified:   src/voice/coach.ts
+              </div>
+              <div class="output-line">
+                  modified:   src/components/VoiceUI.svelte
+              </div>
+              <div class="output-line">&nbsp;</div>
+              <div class="terminal-line">
+                <span class="prompt">root@claude:~$</span>
+                <span class="cursor"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Terminal -->
+          <div class="terminal-pane">
+            <div class="terminal-header">
+              <span class="terminal-title">// TERMINAL-B</span>
+              <div class="terminal-controls">
+                <span>[-]</span>
+                <span>[O]</span>
+                <span>[X]</span>
+              </div>
+            </div>
+            <div class="terminal-content">
+              <div class="terminal-line">
+                <span class="prompt">root@claude:~$</span>
+                <span>bun test</span>
+              </div>
+              <div class="output-line">
+                &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;
+              </div>
+              <div class="output-line">
+                TEST SUITE: Voice Coach
+              </div>
+              <div class="output-line">
+                &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;
+              </div>
+              <div class="output-line">
+                &#10004; should initialize coach instance
+              </div>
+              <div class="output-line">
+                &#10004; should process audio input
+              </div>
+              <div class="output-line">
+                &#10004; should provide feedback on speech
+              </div>
+              <div class="error-line">
+                &#10006; should handle edge cases - FAILED
+              </div>
+              <div class="output-line">&nbsp;</div>
+              <div class="output-line">
+                &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;
+              </div>
+              <div class="output-line">
+                RESULTS: 3 passed, 1 failed, 4 total
+              </div>
+              <div class="output-line">
+                TIME: 2.34s
+              </div>
+              <div class="output-line">
+                &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;
+              </div>
+              <div class="output-line">&nbsp;</div>
+              <div class="terminal-line">
+                <span class="prompt">root@claude:~$</span>
+                <span>ps aux | grep claude</span>
+              </div>
+              <div class="output-line">
+                root     1247  0.5  2.1  claude-code chat
+              </div>
+              <div class="output-line">
+                root     1248  0.3  1.8  claude-code session a7f3
+              </div>
+              <div class="output-line">&nbsp;</div>
+              <div class="terminal-line">
+                <span class="prompt">root@claude:~$</span>
+                <span class="cursor"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Resizer Handle -->
+          <div class="resizer"></div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+          <div class="status-section">
+            <span class="status-label">PROJECT:</span>
+            <span class="status-value">SALES-TRAINER-PROD</span>
+          </div>
+          <div class="status-section">
+            <span class="status-label">BRANCH:</span>
+            <span class="status-value">FEATURE/AI-VOICE-COACH</span>
+          </div>
+          <div class="status-section">
+            <span class="status-label">UPTIME:</span>
+            <span class="status-value">02:34:17</span>
+          </div>
+        </div>
+
+        <div class="ascii-art" style="position: absolute; bottom: 60px; right: 30px;">
+ _____
+|     |
+| o o |
+|  ^  |
+| \_/ |
+|_____|
+CLAUDE
+        </div>
+      </div>
+
+      <!-- Power Button -->
+      <div class="power-button"></div>
+    </div>
+  </div>
+
+  <script>
+    // Add subtle animation on load
+    window.addEventListener('load', () => {
+      const screen = document.querySelector('.crt-screen');
+      screen.style.animation = 'screen-boot 0.5s ease-out';
+    });
+
+    // Add interactivity to tabs
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        if (!e.target.classList.contains('close')) {
+          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+        }
+      });
+    });
+
+    // Power button easter egg
+    document.querySelector('.power-button').addEventListener('click', () => {
+      const screen = document.querySelector('.crt-screen');
+      screen.style.animation = 'screen-shutdown 0.8s ease-out';
+      setTimeout(() => {
+        screen.style.animation = 'screen-boot 0.5s ease-out';
+      }, 1000);
+    });
+
+    // Add boot animation keyframes dynamically
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes screen-boot {
+        0% {
+          opacity: 0;
+          filter: brightness(3);
+        }
+        50% {
+          opacity: 0.5;
+          filter: brightness(2);
+        }
+        100% {
+          opacity: 1;
+          filter: brightness(1);
+        }
+      }
+      @keyframes screen-shutdown {
+        0% {
+          opacity: 1;
+          filter: brightness(1);
+        }
+        50% {
+          opacity: 0.5;
+          filter: brightness(0.5);
+        }
+        100% {
+          opacity: 0;
+          filter: brightness(0);
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  </script>
+</body>
+</html>

@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Manager - Dropdown Compact</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0e14;
+            --bg-secondary: #0d1117;
+            --bg-tertiary: #161b22;
+            --bg-elevated: #1c2128;
+            --border-primary: #21262d;
+            --border-secondary: #30363d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-tertiary: #6e7681;
+            --accent-blue: #58a6ff;
+            --accent-green: #3fb950;
+            --accent-yellow: #d29922;
+            --accent-red: #f85149;
+            --accent-purple: #bc8cff;
+            --crt-green: #33ff33;
+            --crt-glow: rgba(51, 255, 51, 0.3);
+            --crt-scanline: rgba(0, 0, 0, 0.05);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* Layout */
+        .app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            height: 36px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-primary);
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+
+        .logo-icon {
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: #000;
+        }
+
+        /* Mode Toggle */
+        .mode-toggle {
+            display: flex;
+            gap: 0;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            padding: 2px;
+        }
+
+        .mode-btn {
+            padding: 4px 10px;
+            font-size: 11px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.15s ease;
+            font-weight: 500;
+        }
+
+        .mode-btn:hover {
+            color: var(--text-primary);
+            background: var(--bg-elevated);
+        }
+
+        .mode-btn.active {
+            background: var(--accent-blue);
+            color: #000;
+            font-weight: 600;
+        }
+
+        /* Project Dropdown */
+        .project-dropdown {
+            position: relative;
+            margin-left: auto;
+        }
+
+        .project-select {
+            padding: 5px 28px 5px 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-secondary);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-size: 12px;
+            cursor: pointer;
+            appearance: none;
+            min-width: 180px;
+            font-weight: 500;
+            transition: all 0.15s ease;
+        }
+
+        .project-select:hover {
+            border-color: var(--accent-blue);
+            background: var(--bg-elevated);
+        }
+
+        .project-select:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.1);
+        }
+
+        .dropdown-icon {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: var(--text-secondary);
+        }
+
+        /* Actions */
+        .header-actions {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .icon-btn {
+            width: 26px;
+            height: 26px;
+            border-radius: 4px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.15s ease;
+        }
+
+        .icon-btn:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border-color: var(--border-secondary);
+        }
+
+        .icon-btn.active {
+            background: var(--accent-blue);
+            color: #000;
+            border-color: var(--accent-blue);
+        }
+
+        /* Main Content */
+        .main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Project Panels */
+        .project-panels {
+            display: flex;
+            flex: 1;
+            gap: 0;
+        }
+
+        .project-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border-primary);
+        }
+
+        .project-panel:last-child {
+            border-right: none;
+        }
+
+        /* Project Header */
+        .project-header {
+            height: 32px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-primary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10px;
+            gap: 8px;
+        }
+
+        .project-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .project-status {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .project-status.active {
+            background: var(--accent-green);
+            box-shadow: 0 0 6px var(--accent-green);
+        }
+
+        .project-status.idle {
+            background: var(--accent-yellow);
+        }
+
+        .project-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .project-path {
+            font-size: 10px;
+            color: var(--text-tertiary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .project-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .project-btn {
+            width: 22px;
+            height: 22px;
+            border-radius: 3px;
+            background: transparent;
+            border: none;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.15s ease;
+        }
+
+        .project-btn:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        /* Terminal Panes */
+        .terminal-panes {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .pane-row {
+            flex: 1;
+            display: flex;
+            border-bottom: 1px solid var(--border-primary);
+        }
+
+        .pane-row:last-child {
+            border-bottom: none;
+        }
+
+        .terminal-pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary);
+            border-right: 1px solid var(--border-primary);
+            position: relative;
+        }
+
+        .terminal-pane:last-child {
+            border-right: none;
+        }
+
+        /* Terminal Header */
+        .terminal-header {
+            height: 28px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-primary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 8px;
+            gap: 6px;
+        }
+
+        .terminal-tabs {
+            display: flex;
+            gap: 2px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .terminal-tab {
+            padding: 4px 8px;
+            font-size: 11px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 140px;
+        }
+
+        .terminal-tab:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .terminal-tab.active {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .tab-icon {
+            font-size: 10px;
+            flex-shrink: 0;
+        }
+
+        .tab-close {
+            opacity: 0;
+            font-size: 10px;
+            color: var(--text-tertiary);
+            transition: all 0.15s ease;
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+
+        .terminal-tab:hover .tab-close {
+            opacity: 1;
+        }
+
+        .tab-close:hover {
+            color: var(--accent-red);
+        }
+
+        .terminal-controls {
+            display: flex;
+            gap: 3px;
+        }
+
+        .terminal-ctrl-btn {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            background: transparent;
+            border: none;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            transition: all 0.15s ease;
+        }
+
+        .terminal-ctrl-btn:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        /* Terminal Content */
+        .terminal-content {
+            flex: 1;
+            background: #000;
+            padding: 8px;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', 'Droid Sans Mono', 'Source Code Pro', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            overflow: auto;
+            position: relative;
+        }
+
+        /* CRT Effect */
+        .terminal-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 1px,
+                var(--crt-scanline) 2px,
+                transparent 3px
+            );
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .terminal-content::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.3) 100%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .terminal-output {
+            color: var(--crt-green);
+            position: relative;
+            z-index: 2;
+            text-shadow: 0 0 2px var(--crt-glow);
+        }
+
+        .prompt {
+            color: var(--accent-blue);
+            text-shadow: 0 0 3px rgba(88, 166, 255, 0.5);
+        }
+
+        .path {
+            color: var(--accent-purple);
+        }
+
+        .command {
+            color: var(--crt-green);
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background: var(--crt-green);
+            animation: blink 1s step-end infinite;
+            box-shadow: 0 0 4px var(--crt-glow);
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        .error {
+            color: var(--accent-red);
+            text-shadow: 0 0 3px rgba(248, 81, 73, 0.5);
+        }
+
+        .success {
+            color: var(--accent-green);
+        }
+
+        /* Bottom Bar */
+        .bottom-bar {
+            height: 22px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-primary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10px;
+            gap: 12px;
+            flex-shrink: 0;
+            font-size: 10px;
+        }
+
+        .status-left, .status-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .status-icon {
+            font-size: 9px;
+        }
+
+        .status-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .status-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .status-dot.green {
+            background: var(--accent-green);
+            box-shadow: 0 0 4px var(--accent-green);
+        }
+
+        .status-dot.yellow {
+            background: var(--accent-yellow);
+            box-shadow: 0 0 4px var(--accent-yellow);
+        }
+
+        .status-dot.red {
+            background: var(--accent-red);
+            box-shadow: 0 0 4px var(--accent-red);
+        }
+
+        .divider {
+            width: 1px;
+            height: 12px;
+            background: var(--border-secondary);
+        }
+
+        /* Resize Handle */
+        .resize-handle {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            cursor: col-resize;
+            background: transparent;
+            transition: background 0.15s ease;
+            z-index: 10;
+        }
+
+        .resize-handle:hover,
+        .resize-handle.dragging {
+            background: var(--accent-blue);
+        }
+
+        .resize-handle-horizontal {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 4px;
+            cursor: row-resize;
+            background: transparent;
+            transition: background 0.15s ease;
+            z-index: 10;
+        }
+
+        .resize-handle-horizontal:hover,
+        .resize-handle-horizontal.dragging {
+            background: var(--accent-blue);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-secondary);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-tertiary);
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <div class="logo-icon">C</div>
+                <span>Claude Manager</span>
+            </div>
+
+            <div class="mode-toggle">
+                <button class="mode-btn">Dashboard</button>
+                <button class="mode-btn active">Workspace</button>
+            </div>
+
+            <div class="project-dropdown">
+                <select class="project-select">
+                    <option>sales-trainer-prod</option>
+                    <option>claudeManager</option>
+                    <option>api-gateway</option>
+                    <option>+ New Project</option>
+                </select>
+                <span class="dropdown-icon">▼</span>
+            </div>
+
+            <div class="header-actions">
+                <button class="icon-btn" title="Search">⌘</button>
+                <button class="icon-btn" title="Settings">⚙</button>
+                <button class="icon-btn" title="Notifications">🔔</button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main">
+            <div class="project-panels">
+                <!-- Project 1: sales-trainer-prod -->
+                <div class="project-panel">
+                    <div class="project-header">
+                        <div class="project-info">
+                            <div class="project-status active"></div>
+                            <div>
+                                <div class="project-name">sales-trainer-prod</div>
+                                <div class="project-path">~/helios/sales-trainer</div>
+                            </div>
+                        </div>
+                        <div class="project-actions">
+                            <button class="project-btn" title="Add Terminal">+</button>
+                            <button class="project-btn" title="Settings">⚙</button>
+                        </div>
+                    </div>
+
+                    <div class="terminal-panes">
+                        <!-- Top Pane -->
+                        <div class="pane-row">
+                            <div class="terminal-pane">
+                                <div class="terminal-header">
+                                    <div class="terminal-tabs">
+                                        <button class="terminal-tab active">
+                                            <span class="tab-icon">▲</span>
+                                            <span>bash</span>
+                                            <span class="tab-close">×</span>
+                                        </button>
+                                        <button class="terminal-tab">
+                                            <span class="tab-icon">●</span>
+                                            <span>dev server</span>
+                                            <span class="tab-close">×</span>
+                                        </button>
+                                    </div>
+                                    <div class="terminal-controls">
+                                        <button class="terminal-ctrl-btn" title="Split Horizontal">⚌</button>
+                                        <button class="terminal-ctrl-btn" title="Split Vertical">⚍</button>
+                                        <button class="terminal-ctrl-btn" title="Maximize">□</button>
+                                    </div>
+                                </div>
+                                <div class="terminal-content">
+                                    <div class="terminal-output">
+<span class="prompt">claude@helios</span>:<span class="path">~/helios/sales-trainer</span>$ <span class="command">git status</span>
+On branch feature/dashboard-redesign
+Your branch is up to date with 'origin/feature/dashboard-redesign'.
+
+Changes not staged for commit:
+  (use "git add &lt;file&gt;..." to update what will be committed)
+  (use "git restore &lt;file&gt;..." to discard changes in working directory)
+        <span class="success">modified:   src/components/Dashboard.svelte</span>
+        <span class="success">modified:   src/lib/stores/user.ts</span>
+
+no changes added to commit (use "git add" and/or "git commit -a")
+
+<span class="prompt">claude@helios</span>:<span class="path">~/helios/sales-trainer</span>$ <span class="cursor"></span>
+                                    </div>
+                                </div>
+                                <div class="resize-handle-horizontal"></div>
+                            </div>
+                        </div>
+
+                        <!-- Bottom Pane -->
+                        <div class="pane-row">
+                            <div class="terminal-pane">
+                                <div class="terminal-header">
+                                    <div class="terminal-tabs">
+                                        <button class="terminal-tab active">
+                                            <span class="tab-icon">●</span>
+                                            <span>npm run dev</span>
+                                            <span class="tab-close">×</span>
+                                        </button>
+                                    </div>
+                                    <div class="terminal-controls">
+                                        <button class="terminal-ctrl-btn" title="Clear">⌫</button>
+                                        <button class="terminal-ctrl-btn" title="Kill">✕</button>
+                                        <button class="terminal-ctrl-btn" title="Maximize">□</button>
+                                    </div>
+                                </div>
+                                <div class="terminal-content">
+                                    <div class="terminal-output">
+<span class="prompt">claude@helios</span>:<span class="path">~/helios/sales-trainer</span>$ <span class="command">npm run dev</span>
+
+> sales-trainer@1.0.0 dev
+> vite dev
+
+  <span class="success">VITE v5.0.8</span>  ready in <span class="success">347 ms</span>
+
+  ➜  <span style="color: #58a6ff;">Local</span>:   http://localhost:5173/
+  ➜  <span style="color: #8b949e;">Network</span>: use --host to expose
+  ➜  <span style="color: #bc8cff;">press h + enter to show help</span>
+
+<span style="color: #3fb950;">12:34:15 PM</span> [vite] hmr update /src/components/Dashboard.svelte
+<span style="color: #3fb950;">12:34:28 PM</span> [vite] hmr update /src/lib/stores/user.ts
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project 2: claudeManager -->
+                <div class="project-panel">
+                    <div class="project-header">
+                        <div class="project-info">
+                            <div class="project-status active"></div>
+                            <div>
+                                <div class="project-name">claudeManager</div>
+                                <div class="project-path">~/personal/claudeManager</div>
+                            </div>
+                        </div>
+                        <div class="project-actions">
+                            <button class="project-btn" title="Add Terminal">+</button>
+                            <button class="project-btn" title="Settings">⚙</button>
+                        </div>
+                    </div>
+
+                    <div class="terminal-panes">
+                        <!-- Top Pane -->
+                        <div class="pane-row">
+                            <div class="terminal-pane">
+                                <div class="terminal-header">
+                                    <div class="terminal-tabs">
+                                        <button class="terminal-tab active">
+                                            <span class="tab-icon">▲</span>
+                                            <span>bash</span>
+                                            <span class="tab-close">×</span>
+                                        </button>
+                                    </div>
+                                    <div class="terminal-controls">
+                                        <button class="terminal-ctrl-btn" title="Split Horizontal">⚌</button>
+                                        <button class="terminal-ctrl-btn" title="Split Vertical">⚍</button>
+                                        <button class="terminal-ctrl-btn" title="Maximize">□</button>
+                                    </div>
+                                </div>
+                                <div class="terminal-content">
+                                    <div class="terminal-output">
+<span class="prompt">claude@helios</span>:<span class="path">~/personal/claudeManager</span>$ <span class="command">bun run dev</span>
+
+$ bun run --filter '*' dev
+
+────────────────────────────────────────────────
+  <span class="success">✓ frontend</span>  ready in 289ms
+  <span class="success">✓ backend</span>   ready in 156ms
+────────────────────────────────────────────────
+
+<span style="color: #bc8cff;">[frontend]</span> SvelteKit running at:
+<span style="color: #bc8cff;">[frontend]</span>   ➜ Local:   <span style="color: #58a6ff;">http://localhost:5174</span>
+
+<span style="color: #d29922;">[backend]</span>  Elysia listening on:
+<span style="color: #d29922;">[backend]</span>   ➜ http://0.0.0.0:3000
+
+<span class="prompt">claude@helios</span>:<span class="path">~/personal/claudeManager</span>$ <span class="cursor"></span>
+                                    </div>
+                                </div>
+                                <div class="resize-handle-horizontal"></div>
+                            </div>
+                        </div>
+
+                        <!-- Bottom Pane -->
+                        <div class="pane-row">
+                            <div class="terminal-pane">
+                                <div class="terminal-header">
+                                    <div class="terminal-tabs">
+                                        <button class="terminal-tab active">
+                                            <span class="tab-icon">▲</span>
+                                            <span>logs</span>
+                                            <span class="tab-close">×</span>
+                                        </button>
+                                        <button class="terminal-tab">
+                                            <span class="tab-icon">●</span>
+                                            <span>db:studio</span>
+                                            <span class="tab-close">×</span>
+                                        </button>
+                                    </div>
+                                    <div class="terminal-controls">
+                                        <button class="terminal-ctrl-btn" title="Clear">⌫</button>
+                                        <button class="terminal-ctrl-btn" title="Kill">✕</button>
+                                        <button class="terminal-ctrl-btn" title="Maximize">□</button>
+                                    </div>
+                                </div>
+                                <div class="terminal-content">
+                                    <div class="terminal-output">
+<span class="prompt">claude@helios</span>:<span class="path">~/personal/claudeManager</span>$ <span class="command">tail -f apps/backend/logs/app.log</span>
+
+<span style="color: #8b949e;">2025-12-18 12:30:45</span> <span class="success">[INFO]</span>  Server started on port 3000
+<span style="color: #8b949e;">2025-12-18 12:30:45</span> <span class="success">[INFO]</span>  Database connected: sqlite://data/claude-manager.db
+<span style="color: #8b949e;">2025-12-18 12:30:45</span> <span class="success">[INFO]</span>  WebSocket server ready
+<span style="color: #8b949e;">2025-12-18 12:31:12</span> <span style="color: #58a6ff;">[DEBUG]</span> New terminal created: term_abc123
+<span style="color: #8b949e;">2025-12-18 12:31:15</span> <span style="color: #58a6ff;">[DEBUG]</span> PTY spawned: pid=45678
+<span style="color: #8b949e;">2025-12-18 12:32:08</span> <span class="success">[INFO]</span>  Claude session started: session_xyz789
+<span style="color: #8b949e;">2025-12-18 12:33:45</span> <span style="color: #58a6ff;">[DEBUG]</span> Terminal resize: 120x30
+<span style="color: #8b949e;">2025-12-18 12:34:12</span> <span class="success">[INFO]</span>  WebSocket message: {"type":"input","data":"ls -la"}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Status Bar -->
+        <div class="bottom-bar">
+            <div class="status-left">
+                <div class="status-item">
+                    <div class="status-dot green"></div>
+                    <span>Connected</span>
+                </div>
+                <div class="divider"></div>
+                <div class="status-item">
+                    <span class="status-icon">◧</span>
+                    <span class="status-value">4</span>
+                    <span>terminals</span>
+                </div>
+                <div class="divider"></div>
+                <div class="status-item">
+                    <span class="status-icon">●</span>
+                    <span class="status-value">2</span>
+                    <span>active</span>
+                </div>
+                <div class="divider"></div>
+                <div class="status-item">
+                    <span class="status-icon">⟁</span>
+                    <span class="status-value">2</span>
+                    <span>projects</span>
+                </div>
+            </div>
+            <div class="status-right">
+                <div class="status-item">
+                    <span class="status-icon">↑</span>
+                    <span class="status-value">12.3 KB/s</span>
+                </div>
+                <div class="divider"></div>
+                <div class="status-item">
+                    <span class="status-icon">↓</span>
+                    <span class="status-value">45.7 KB/s</span>
+                </div>
+                <div class="divider"></div>
+                <div class="status-item">
+                    <span class="status-icon">⚡</span>
+                    <span class="status-value">8%</span>
+                    <span>CPU</span>
+                </div>
+                <div class="divider"></div>
+                <div class="status-item">
+                    <span class="status-icon">◉</span>
+                    <span class="status-value">2.1 GB</span>
+                    <span>RAM</span>
+                </div>
+                <div class="divider"></div>
+                <div class="status-item">
+                    <span>12:34:56 PM</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Manager - Session Centric View</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Archivo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-deep: #0a0e1a;
+            --bg-elevated: #151b2e;
+            --bg-overlay: #1c2438;
+            --bg-hover: #242d45;
+            --border-subtle: #2a3650;
+            --border-medium: #3d4a68;
+            --text-primary: #e8ecf5;
+            --text-secondary: #a0aac8;
+            --text-tertiary: #6b7591;
+            --accent-blue: #4d9fff;
+            --accent-blue-dim: #2d5f9f;
+            --accent-green: #4dff8f;
+            --accent-yellow: #ffb84d;
+            --accent-red: #ff4d6d;
+            --accent-purple: #b84dff;
+            --glow-blue: rgba(77, 159, 255, 0.2);
+            --glow-green: rgba(77, 255, 143, 0.15);
+            --shadow-deep: rgba(0, 0, 0, 0.4);
+        }
+
+        body {
+            font-family: 'Archivo', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            line-height: 1.5;
+        }
+
+        /* Layout */
+        .app-container {
+            display: grid;
+            grid-template-columns: 320px 1fr 360px;
+            grid-template-rows: 1fr 42px;
+            height: 100vh;
+            gap: 0;
+        }
+
+        /* Left Sidebar - Session Tree */
+        .sessions-sidebar {
+            grid-row: 1 / 2;
+            grid-column: 1;
+            background: var(--bg-elevated);
+            border-right: 1px solid var(--border-subtle);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 24px 20px 20px;
+            border-bottom: 1px solid var(--border-subtle);
+            background: linear-gradient(180deg, var(--bg-elevated) 0%, rgba(21, 27, 46, 0.5) 100%);
+        }
+
+        .sidebar-title {
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .sidebar-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-new {
+            flex: 1;
+            padding: 8px 12px;
+            background: var(--accent-blue);
+            color: var(--bg-deep);
+            border: none;
+            border-radius: 6px;
+            font-family: 'Archivo', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 0 20px var(--glow-blue);
+        }
+
+        .btn-new:hover {
+            background: #5da8ff;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 24px var(--glow-blue);
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--bg-overlay);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-icon:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-medium);
+            color: var(--text-primary);
+        }
+
+        /* Session Tree */
+        .session-tree {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 0;
+        }
+
+        .session-tree::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .session-tree::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .session-tree::-webkit-scrollbar-thumb {
+            background: var(--border-medium);
+            border-radius: 4px;
+        }
+
+        .session-tree::-webkit-scrollbar-thumb:hover {
+            background: var(--text-tertiary);
+        }
+
+        /* Project Group */
+        .project-group {
+            margin-bottom: 4px;
+        }
+
+        .project-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 20px;
+            cursor: pointer;
+            transition: background 0.15s ease;
+            user-select: none;
+        }
+
+        .project-header:hover {
+            background: var(--bg-overlay);
+        }
+
+        .project-chevron {
+            font-size: 10px;
+            color: var(--text-tertiary);
+            transition: transform 0.2s ease;
+            width: 12px;
+        }
+
+        .project-group.collapsed .project-chevron {
+            transform: rotate(-90deg);
+        }
+
+        .project-icon {
+            font-size: 14px;
+            width: 16px;
+            text-align: center;
+        }
+
+        .project-name {
+            flex: 1;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .project-count {
+            font-size: 11px;
+            font-family: 'DM Mono', monospace;
+            color: var(--text-tertiary);
+            background: var(--bg-overlay);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        /* Session Items */
+        .session-list {
+            display: none;
+            padding-left: 12px;
+        }
+
+        .project-group:not(.collapsed) .session-list {
+            display: block;
+        }
+
+        .session-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 20px 8px 36px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border-left: 2px solid transparent;
+            position: relative;
+        }
+
+        .session-item:hover {
+            background: var(--bg-overlay);
+        }
+
+        .session-item.active {
+            background: var(--bg-overlay);
+            border-left-color: var(--accent-blue);
+        }
+
+        .session-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--accent-blue);
+            box-shadow: 0 0 12px var(--glow-blue);
+        }
+
+        .session-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .session-status.active {
+            background: var(--accent-green);
+            box-shadow: 0 0 8px var(--glow-green);
+        }
+
+        .session-status.active::after {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 50%;
+            border: 1px solid var(--accent-green);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(1.5); }
+        }
+
+        .session-status.paused {
+            background: var(--accent-yellow);
+        }
+
+        .session-status.completed {
+            background: var(--text-tertiary);
+        }
+
+        .session-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .session-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .session-meta {
+            font-size: 11px;
+            font-family: 'DM Mono', monospace;
+            color: var(--text-tertiary);
+            margin-top: 2px;
+        }
+
+        .session-actions {
+            display: none;
+            gap: 4px;
+        }
+
+        .session-item:hover .session-actions {
+            display: flex;
+        }
+
+        .session-action-btn {
+            width: 24px;
+            height: 24px;
+            background: var(--bg-hover);
+            border: none;
+            border-radius: 4px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .session-action-btn:hover {
+            background: var(--accent-blue);
+            color: var(--bg-deep);
+        }
+
+        /* Main Workspace */
+        .workspace {
+            grid-row: 1 / 2;
+            grid-column: 2;
+            background: var(--bg-deep);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .workspace-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-subtle);
+            background: linear-gradient(180deg, rgba(21, 27, 46, 0.4) 0%, transparent 100%);
+        }
+
+        .workspace-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .workspace-breadcrumb {
+            font-size: 12px;
+            font-family: 'DM Mono', monospace;
+            color: var(--text-tertiary);
+        }
+
+        .workspace-breadcrumb span {
+            color: var(--accent-blue);
+        }
+
+        /* Session Panes */
+        .session-panes {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px;
+            background: var(--border-subtle);
+            overflow: hidden;
+        }
+
+        .session-pane {
+            background: var(--bg-elevated);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .pane-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-subtle);
+            background: rgba(21, 27, 46, 0.6);
+            backdrop-filter: blur(10px);
+        }
+
+        .pane-title-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pane-status {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            box-shadow: 0 0 6px var(--glow-green);
+        }
+
+        .pane-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .pane-project {
+            font-size: 11px;
+            font-family: 'DM Mono', monospace;
+            color: var(--text-tertiary);
+            margin-left: 8px;
+        }
+
+        .pane-controls {
+            display: flex;
+            gap: 4px;
+        }
+
+        .pane-control-btn {
+            width: 24px;
+            height: 24px;
+            background: transparent;
+            border: none;
+            border-radius: 4px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .pane-control-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        /* Terminal Content */
+        .terminal-content {
+            flex: 1;
+            padding: 16px;
+            font-family: 'DM Mono', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            overflow-y: auto;
+            background: linear-gradient(135deg, rgba(77, 159, 255, 0.02) 0%, transparent 50%);
+        }
+
+        .terminal-line {
+            margin-bottom: 8px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .terminal-prompt {
+            color: var(--accent-blue);
+        }
+
+        .terminal-command {
+            color: var(--text-primary);
+            margin-left: 8px;
+        }
+
+        .terminal-output {
+            color: var(--text-secondary);
+            margin-left: 16px;
+        }
+
+        .terminal-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background: var(--accent-blue);
+            animation: blink 1s step-end infinite;
+            margin-left: 4px;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        /* Activity Feed */
+        .activity-feed {
+            grid-row: 1 / 2;
+            grid-column: 3;
+            background: var(--bg-elevated);
+            border-left: 1px solid var(--border-subtle);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .activity-header {
+            padding: 24px 20px 20px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .activity-title {
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .activity-session-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .activity-session-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-family: 'DM Mono', monospace;
+            color: var(--accent-green);
+            background: rgba(77, 255, 143, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .activity-timeline {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 20px;
+        }
+
+        .activity-timeline::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .activity-timeline::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .activity-timeline::-webkit-scrollbar-thumb {
+            background: var(--border-medium);
+            border-radius: 4px;
+        }
+
+        /* Activity Items */
+        .activity-item {
+            position: relative;
+            padding-left: 24px;
+            margin-bottom: 24px;
+            animation: slideIn 0.4s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .activity-item::before {
+            content: '';
+            position: absolute;
+            left: 6px;
+            top: 8px;
+            bottom: -24px;
+            width: 1px;
+            background: var(--border-subtle);
+        }
+
+        .activity-item:last-child::before {
+            display: none;
+        }
+
+        .activity-icon {
+            position: absolute;
+            left: 0;
+            top: 4px;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            font-weight: 700;
+        }
+
+        .activity-icon.command {
+            background: var(--accent-blue);
+            color: var(--bg-deep);
+            box-shadow: 0 0 12px var(--glow-blue);
+        }
+
+        .activity-icon.file {
+            background: var(--accent-purple);
+            color: var(--bg-deep);
+        }
+
+        .activity-icon.error {
+            background: var(--accent-red);
+            color: var(--bg-deep);
+        }
+
+        .activity-icon.success {
+            background: var(--accent-green);
+            color: var(--bg-deep);
+        }
+
+        .activity-content {
+            background: var(--bg-overlay);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            padding: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .activity-content:hover {
+            border-color: var(--border-medium);
+            box-shadow: 0 4px 12px var(--shadow-deep);
+        }
+
+        .activity-time {
+            font-size: 10px;
+            font-family: 'DM Mono', monospace;
+            color: var(--text-tertiary);
+            margin-bottom: 6px;
+        }
+
+        .activity-description {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .activity-code {
+            font-family: 'DM Mono', monospace;
+            font-size: 11px;
+            color: var(--accent-blue);
+            background: rgba(77, 159, 255, 0.08);
+            padding: 8px 10px;
+            border-radius: 4px;
+            border-left: 2px solid var(--accent-blue);
+            overflow-x: auto;
+            white-space: pre;
+        }
+
+        .activity-file-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .activity-file {
+            font-family: 'DM Mono', monospace;
+            font-size: 10px;
+            color: var(--text-tertiary);
+            background: var(--bg-elevated);
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        /* Status Bar */
+        .status-bar {
+            grid-row: 2 / 3;
+            grid-column: 1 / 4;
+            background: var(--bg-elevated);
+            border-top: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            font-size: 11px;
+            font-family: 'DM Mono', monospace;
+            color: var(--text-tertiary);
+        }
+
+        .status-left,
+        .status-right {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: color 0.2s ease;
+            cursor: default;
+        }
+
+        .status-item:hover {
+            color: var(--text-secondary);
+        }
+
+        .status-indicator {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .status-indicator.green {
+            background: var(--accent-green);
+            box-shadow: 0 0 6px var(--glow-green);
+        }
+
+        .status-indicator.yellow {
+            background: var(--accent-yellow);
+        }
+
+        .status-indicator.blue {
+            background: var(--accent-blue);
+        }
+
+        .status-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-tertiary);
+            text-align: center;
+            padding: 40px;
+        }
+
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .empty-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .empty-description {
+            font-size: 13px;
+            line-height: 1.6;
+            max-width: 300px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1400px) {
+            .app-container {
+                grid-template-columns: 280px 1fr 320px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Left Sidebar: Session Tree -->
+        <aside class="sessions-sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">Sessions</div>
+                <div class="sidebar-actions">
+                    <button class="btn-new">+ New Session</button>
+                    <button class="btn-icon">⋮</button>
+                </div>
+            </div>
+
+            <div class="session-tree">
+                <!-- Project 1 -->
+                <div class="project-group">
+                    <div class="project-header">
+                        <span class="project-chevron">▼</span>
+                        <span class="project-icon">📦</span>
+                        <span class="project-name">E-commerce Platform</span>
+                        <span class="project-count">4</span>
+                    </div>
+                    <div class="session-list">
+                        <div class="session-item active">
+                            <span class="session-status active"></span>
+                            <div class="session-info">
+                                <div class="session-name">Refactor Authentication</div>
+                                <div class="session-meta">45m ago • 127 messages</div>
+                            </div>
+                            <div class="session-actions">
+                                <button class="session-action-btn">▶</button>
+                                <button class="session-action-btn">⋯</button>
+                            </div>
+                        </div>
+
+                        <div class="session-item">
+                            <span class="session-status paused"></span>
+                            <div class="session-info">
+                                <div class="session-name">Add Payment Gateway</div>
+                                <div class="session-meta">2h ago • 89 messages</div>
+                            </div>
+                            <div class="session-actions">
+                                <button class="session-action-btn">▶</button>
+                                <button class="session-action-btn">⋯</button>
+                            </div>
+                        </div>
+
+                        <div class="session-item">
+                            <span class="session-status active"></span>
+                            <div class="session-info">
+                                <div class="session-name">Fix Cart Bug</div>
+                                <div class="session-meta">3h ago • 43 messages</div>
+                            </div>
+                            <div class="session-actions">
+                                <button class="session-action-btn">▶</button>
+                                <button class="session-action-btn">⋯</button>
+                            </div>
+                        </div>
+
+                        <div class="session-item">
+                            <span class="session-status completed"></span>
+                            <div class="session-info">
+                                <div class="session-name">Setup Email Templates</div>
+                                <div class="session-meta">1d ago • 156 messages</div>
+                            </div>
+                            <div class="session-actions">
+                                <button class="session-action-btn">▶</button>
+                                <button class="session-action-btn">⋯</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project 2 -->
+                <div class="project-group">
+                    <div class="project-header">
+                        <span class="project-chevron">▼</span>
+                        <span class="project-icon">🎨</span>
+                        <span class="project-name">Design System</span>
+                        <span class="project-count">2</span>
+                    </div>
+                    <div class="session-list">
+                        <div class="session-item">
+                            <span class="session-status active"></span>
+                            <div class="session-info">
+                                <div class="session-name">Component Library Setup</div>
+                                <div class="session-meta">1h ago • 62 messages</div>
+                            </div>
+                            <div class="session-actions">
+                                <button class="session-action-btn">▶</button>
+                                <button class="session-action-btn">⋯</button>
+                            </div>
+                        </div>
+
+                        <div class="session-item">
+                            <span class="session-status completed"></span>
+                            <div class="session-info">
+                                <div class="session-name">Color Tokens Review</div>
+                                <div class="session-meta">2d ago • 31 messages</div>
+                            </div>
+                            <div class="session-actions">
+                                <button class="session-action-btn">▶</button>
+                                <button class="session-action-btn">⋯</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project 3 -->
+                <div class="project-group collapsed">
+                    <div class="project-header">
+                        <span class="project-chevron">▼</span>
+                        <span class="project-icon">🚀</span>
+                        <span class="project-name">API Microservices</span>
+                        <span class="project-count">1</span>
+                    </div>
+                    <div class="session-list">
+                        <div class="session-item">
+                            <span class="session-status paused"></span>
+                            <div class="session-info">
+                                <div class="session-name">GraphQL Migration</div>
+                                <div class="session-meta">5d ago • 203 messages</div>
+                            </div>
+                            <div class="session-actions">
+                                <button class="session-action-btn">▶</button>
+                                <button class="session-action-btn">⋯</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project 4 -->
+                <div class="project-group">
+                    <div class="project-header">
+                        <span class="project-chevron">▼</span>
+                        <span class="project-icon">📱</span>
+                        <span class="project-name">Mobile App</span>
+                        <span class="project-count">3</span>
+                    </div>
+                    <div class="session-list">
+                        <div class="session-item">
+                            <span class="session-status active"></span>
+                            <div class="session-info">
+                                <div class="session-name">Offline Mode Implementation</div>
+                                <div class="session-meta">30m ago • 94 messages</div>
+                            </div>
+                            <div class="session-actions">
+                                <button class="session-action-btn">▶</button>
+                                <button class="session-action-btn">⋯</button>
+                            </div>
+                        </div>
+
+                        <div class="session-item">
+                            <span class="session-status active"></span>
+                            <div class="session-info">
+                                <div class="session-name">Push Notifications</div>
+                                <div class="session-meta">4h ago • 71 messages</div>
+                            </div>
+                            <div class="session-actions">
+                                <button class="session-action-btn">▶</button>
+                                <button class="session-action-btn">⋯</button>
+                            </div>
+                        </div>
+
+                        <div class="session-item">
+                            <span class="session-status paused"></span>
+                            <div class="session-info">
+                                <div class="session-name">Biometric Auth</div>
+                                <div class="session-meta">1w ago • 112 messages</div>
+                            </div>
+                            <div class="session-actions">
+                                <button class="session-action-btn">▶</button>
+                                <button class="session-action-btn">⋯</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace: Multi-Session Panes -->
+        <main class="workspace">
+            <div class="workspace-header">
+                <div class="workspace-title">Active Sessions</div>
+                <div class="workspace-breadcrumb">
+                    <span>2</span> sessions open • E-commerce Platform, Design System
+                </div>
+            </div>
+
+            <div class="session-panes">
+                <!-- Pane 1 -->
+                <div class="session-pane">
+                    <div class="pane-header">
+                        <div class="pane-title-group">
+                            <span class="pane-status"></span>
+                            <span class="pane-title">Refactor Authentication</span>
+                            <span class="pane-project">E-commerce Platform</span>
+                        </div>
+                        <div class="pane-controls">
+                            <button class="pane-control-btn">↗</button>
+                            <button class="pane-control-btn">⋮</button>
+                            <button class="pane-control-btn">✕</button>
+                        </div>
+                    </div>
+                    <div class="terminal-content">
+                        <div class="terminal-line">
+                            <span class="terminal-prompt">❯</span>
+                            <span class="terminal-command">git status</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output">On branch refactor-auth</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output">Changes not staged for commit:</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output" style="margin-left: 24px; color: var(--accent-red);">modified:   src/auth/auth.service.ts</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output" style="margin-left: 24px; color: var(--accent-green);">new file:   src/auth/auth.middleware.ts</span>
+                        </div>
+                        <div class="terminal-line" style="margin-top: 16px;">
+                            <span class="terminal-prompt">❯</span>
+                            <span class="terminal-command">npm test</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output">Running tests...</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output" style="color: var(--accent-green);">✓ auth.service.spec.ts (12 tests)</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output" style="color: var(--accent-green);">✓ auth.middleware.spec.ts (8 tests)</span>
+                        </div>
+                        <div class="terminal-line" style="margin-top: 16px;">
+                            <span class="terminal-output" style="color: var(--accent-green); font-weight: 600;">Test Suites: 2 passed, 2 total</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output" style="color: var(--accent-green);">Tests:       20 passed, 20 total</span>
+                        </div>
+                        <div class="terminal-line" style="margin-top: 16px;">
+                            <span class="terminal-prompt">❯</span>
+                            <span class="terminal-cursor"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pane 2 -->
+                <div class="session-pane">
+                    <div class="pane-header">
+                        <div class="pane-title-group">
+                            <span class="pane-status"></span>
+                            <span class="pane-title">Component Library Setup</span>
+                            <span class="pane-project">Design System</span>
+                        </div>
+                        <div class="pane-controls">
+                            <button class="pane-control-btn">↗</button>
+                            <button class="pane-control-btn">⋮</button>
+                            <button class="pane-control-btn">✕</button>
+                        </div>
+                    </div>
+                    <div class="terminal-content">
+                        <div class="terminal-line">
+                            <span class="terminal-prompt">❯</span>
+                            <span class="terminal-command">bun run storybook</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output">Starting Storybook...</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output" style="color: var(--accent-blue);">╭─────────────────────────────────────────────────╮</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output" style="color: var(--accent-blue);">│                                                 │</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output" style="color: var(--accent-blue);">│   Storybook 8.0.0 for Svelte started           │</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output" style="color: var(--accent-blue);">│   http://localhost:6006                         │</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output" style="color: var(--accent-blue);">│                                                 │</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output" style="color: var(--accent-blue);">╰─────────────────────────────────────────────────╯</span>
+                        </div>
+                        <div class="terminal-line" style="margin-top: 16px;">
+                            <span class="terminal-output">Components loaded:</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output" style="margin-left: 16px;">• Button (5 variants)</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output" style="margin-left: 16px;">• Input (3 variants)</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-output" style="margin-left: 16px;">• Card (2 variants)</span>
+                        </div>
+                        <div class="terminal-line" style="margin-top: 16px;">
+                            <span class="terminal-output" style="color: var(--accent-green);">✓ Build successful in 2.4s</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Sidebar: Activity Feed -->
+        <aside class="activity-feed">
+            <div class="activity-header">
+                <div class="activity-title">Activity</div>
+                <div class="activity-session-name">Refactor Authentication</div>
+                <div class="activity-session-status">
+                    <span class="session-status active"></span>
+                    Active • 45m
+                </div>
+            </div>
+
+            <div class="activity-timeline">
+                <div class="activity-item">
+                    <div class="activity-icon command">⚡</div>
+                    <div class="activity-content">
+                        <div class="activity-time">2 minutes ago</div>
+                        <div class="activity-description">Ran test suite</div>
+                        <div class="activity-code">npm test -- auth.service.spec.ts</div>
+                    </div>
+                </div>
+
+                <div class="activity-item">
+                    <div class="activity-icon success">✓</div>
+                    <div class="activity-content">
+                        <div class="activity-time">8 minutes ago</div>
+                        <div class="activity-description">All tests passed (20/20)</div>
+                    </div>
+                </div>
+
+                <div class="activity-item">
+                    <div class="activity-icon file">📝</div>
+                    <div class="activity-content">
+                        <div class="activity-time">15 minutes ago</div>
+                        <div class="activity-description">Modified files</div>
+                        <div class="activity-file-list">
+                            <span class="activity-file">auth.service.ts</span>
+                            <span class="activity-file">auth.middleware.ts</span>
+                            <span class="activity-file">auth.types.ts</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="activity-item">
+                    <div class="activity-icon command">⚡</div>
+                    <div class="activity-content">
+                        <div class="activity-time">22 minutes ago</div>
+                        <div class="activity-description">Generated middleware boilerplate</div>
+                        <div class="activity-code">claude generate auth middleware</div>
+                    </div>
+                </div>
+
+                <div class="activity-item">
+                    <div class="activity-icon file">📝</div>
+                    <div class="activity-content">
+                        <div class="activity-time">30 minutes ago</div>
+                        <div class="activity-description">Read service implementation</div>
+                        <div class="activity-file-list">
+                            <span class="activity-file">auth.service.ts</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="activity-item">
+                    <div class="activity-icon command">⚡</div>
+                    <div class="activity-content">
+                        <div class="activity-time">35 minutes ago</div>
+                        <div class="activity-description">Installed dependencies</div>
+                        <div class="activity-code">bun add jsonwebtoken @types/jsonwebtoken</div>
+                    </div>
+                </div>
+
+                <div class="activity-item">
+                    <div class="activity-icon command">⚡</div>
+                    <div class="activity-content">
+                        <div class="activity-time">45 minutes ago</div>
+                        <div class="activity-description">Started session</div>
+                        <div class="activity-code">git checkout -b refactor-auth</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-left">
+                <div class="status-item">
+                    <span class="status-indicator green"></span>
+                    <span>System:</span>
+                    <span class="status-value">Healthy</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-indicator blue"></span>
+                    <span>Active Sessions:</span>
+                    <span class="status-value">6</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-indicator yellow"></span>
+                    <span>Paused:</span>
+                    <span class="status-value">3</span>
+                </div>
+            </div>
+            <div class="status-right">
+                <div class="status-item">
+                    <span>CPU:</span>
+                    <span class="status-value">18%</span>
+                </div>
+                <div class="status-item">
+                    <span>Memory:</span>
+                    <span class="status-value">4.2 GB</span>
+                </div>
+                <div class="status-item">
+                    <span>Uptime:</span>
+                    <span class="status-value">3h 24m</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Project collapse/expand
+        document.querySelectorAll('.project-header').forEach(header => {
+            header.addEventListener('click', () => {
+                header.parentElement.classList.toggle('collapsed');
+            });
+        });
+
+        // Session selection
+        document.querySelectorAll('.session-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                if (!e.target.closest('.session-action-btn')) {
+                    document.querySelectorAll('.session-item').forEach(i => i.classList.remove('active'));
+                    item.classList.add('active');
+                }
+            });
+        });
+
+        // Simulate live activity feed updates
+        function addActivityItem() {
+            const timeline = document.querySelector('.activity-timeline');
+            const newItem = document.createElement('div');
+            newItem.className = 'activity-item';
+            newItem.style.animationDelay = '0s';
+
+            const types = [
+                { icon: 'command', class: 'command', symbol: '⚡', desc: 'Executed command', code: 'bun run build' },
+                { icon: 'file', class: 'file', symbol: '📝', desc: 'File modified', files: ['index.ts'] },
+                { icon: 'success', class: 'success', symbol: '✓', desc: 'Build successful' }
+            ];
+
+            const type = types[Math.floor(Math.random() * types.length)];
+
+            newItem.innerHTML = `
+                <div class="activity-icon ${type.class}">${type.symbol}</div>
+                <div class="activity-content">
+                    <div class="activity-time">Just now</div>
+                    <div class="activity-description">${type.desc}</div>
+                    ${type.code ? `<div class="activity-code">${type.code}</div>` : ''}
+                    ${type.files ? `<div class="activity-file-list"><span class="activity-file">${type.files[0]}</span></div>` : ''}
+                </div>
+            `;
+
+            timeline.insertBefore(newItem, timeline.firstChild);
+
+            // Remove old items if too many
+            const items = timeline.querySelectorAll('.activity-item');
+            if (items.length > 10) {
+                items[items.length - 1].remove();
+            }
+        }
+
+        // Simulate activity every 8-15 seconds
+        setInterval(() => {
+            if (Math.random() > 0.5) {
+                addActivityItem();
+            }
+        }, 10000);
+
+        // Simulate terminal typing
+        function addTerminalLine(pane, text, type = 'output') {
+            const content = pane.querySelector('.terminal-content');
+            const line = document.createElement('div');
+            line.className = 'terminal-line';
+
+            if (type === 'command') {
+                line.innerHTML = `
+                    <span class="terminal-prompt">❯</span>
+                    <span class="terminal-command">${text}</span>
+                `;
+            } else {
+                line.innerHTML = `<span class="terminal-output">${text}</span>`;
+            }
+
+            // Remove cursor from previous line
+            const cursor = content.querySelector('.terminal-cursor');
+            if (cursor) {
+                cursor.remove();
+            }
+
+            // Add new line
+            content.appendChild(line);
+
+            // Add cursor to new line
+            if (type === 'command') {
+                const cursorLine = document.createElement('div');
+                cursorLine.className = 'terminal-line';
+                cursorLine.innerHTML = `
+                    <span class="terminal-prompt">❯</span>
+                    <span class="terminal-cursor"></span>
+                `;
+                content.appendChild(cursorLine);
+            }
+
+            // Auto-scroll
+            content.scrollTop = content.scrollHeight;
+        }
+
+        // Simulate occasional terminal activity
+        setInterval(() => {
+            if (Math.random() > 0.7) {
+                const panes = document.querySelectorAll('.session-pane');
+                const randomPane = panes[Math.floor(Math.random() * panes.length)];
+                const commands = [
+                    'git status',
+                    'bun run lint',
+                    'bun test',
+                    'git diff',
+                ];
+                addTerminalLine(randomPane, commands[Math.floor(Math.random() * commands.length)], 'command');
+
+                setTimeout(() => {
+                    addTerminalLine(randomPane, '✓ Success');
+                }, 1000);
+            }
+        }, 15000);
+    </script>
+</body>
+</html>

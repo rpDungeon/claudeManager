@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Manager - Ultimate Edition</title>
+  <style>
+    /* CSS Reset & Base */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      /* Dark Theme */
+      --bg-main: #0a0a0a;
+      --bg-elevated: #121212;
+      --bg-panel: #1a1a1a;
+      --bg-hover: #252525;
+      --border: #2a2a2a;
+      --border-bright: #3a3a3a;
+
+      /* Terminal CRT Colors */
+      --terminal-bg: #000000;
+      --terminal-green: #00ff41;
+      --terminal-green-dim: #00cc33;
+      --terminal-amber: #ffb000;
+      --terminal-amber-dim: #cc8800;
+      --terminal-cursor: #00ff41;
+      --terminal-glow: rgba(0, 255, 65, 0.3);
+
+      /* Project Colors */
+      --project-1: #3b82f6;
+      --project-1-dim: #2563eb;
+      --project-2: #8b5cf6;
+      --project-2-dim: #7c3aed;
+      --project-3: #ec4899;
+      --project-3-dim: #db2777;
+      --project-4: #10b981;
+      --project-4-dim: #059669;
+
+      /* Status Colors */
+      --status-success: #10b981;
+      --status-warning: #f59e0b;
+      --status-error: #ef4444;
+      --status-info: #3b82f6;
+
+      /* Text */
+      --text-primary: #ffffff;
+      --text-secondary: #a0a0a0;
+      --text-tertiary: #666666;
+
+      /* Metrics */
+      --top-bar-height: 36px;
+      --dashboard-height: 140px;
+      --bottom-bar-height: 24px;
+      --rail-width: 40px;
+      --flyout-width: 240px;
+      --pane-header-height: 28px;
+
+      /* Typography */
+      --font-mono: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+      --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    body {
+      font-family: var(--font-ui);
+      background: var(--bg-main);
+      color: var(--text-primary);
+      overflow: hidden;
+      height: 100vh;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    /* App Layout */
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* Top Bar - Minimal Dashboard/Workspace Toggle */
+    .top-bar {
+      height: var(--top-bar-height);
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      flex-shrink: 0;
+      z-index: 100;
+    }
+
+    .top-bar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .app-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      letter-spacing: 0.5px;
+    }
+
+    .view-toggle {
+      display: flex;
+      gap: 4px;
+      background: var(--bg-panel);
+      border-radius: 4px;
+      padding: 2px;
+    }
+
+    .view-toggle-btn {
+      padding: 4px 10px;
+      font-size: 11px;
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-radius: 3px;
+      transition: all 0.15s ease;
+      font-weight: 500;
+    }
+
+    .view-toggle-btn.active {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .view-toggle-btn:hover:not(.active) {
+      color: var(--text-primary);
+    }
+
+    .top-bar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dashboard-toggle {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .dashboard-toggle:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .dashboard-toggle .chevron {
+      transition: transform 0.2s ease;
+    }
+
+    .dashboard-toggle.collapsed .chevron {
+      transform: rotate(-180deg);
+    }
+
+    /* Dashboard Strip - Collapsible */
+    .dashboard {
+      height: var(--dashboard-height);
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border);
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      flex-shrink: 0;
+    }
+
+    .dashboard.collapsed {
+      height: 0;
+      border-bottom: none;
+    }
+
+    .dashboard-inner {
+      padding: 12px;
+      height: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+
+    .dashboard-grid {
+      display: flex;
+      gap: 10px;
+      height: 100%;
+    }
+
+    .project-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px;
+      min-width: 180px;
+      max-width: 220px;
+      flex-shrink: 0;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .project-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--project-color);
+      opacity: 0.6;
+    }
+
+    .project-card:hover {
+      border-color: var(--border-bright);
+      background: var(--bg-hover);
+    }
+
+    .project-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .project-card-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .project-card-status {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--status-success);
+      box-shadow: 0 0 8px var(--status-success);
+    }
+
+    .project-card-path {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      color: var(--text-tertiary);
+      margin-bottom: 10px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .project-card-stats {
+      display: flex;
+      gap: 12px;
+      font-size: 10px;
+      color: var(--text-secondary);
+    }
+
+    .project-card-stat {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .project-card-stat-value {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    /* Main Content Area */
+    .main-content {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      min-height: 0;
+      position: relative;
+    }
+
+    /* Icon Rail */
+    .icon-rail {
+      width: var(--rail-width);
+      background: var(--bg-elevated);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px 0;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .rail-icon {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.15s ease;
+      border: 1px solid transparent;
+    }
+
+    .rail-icon::before {
+      content: '';
+      position: absolute;
+      left: -8px;
+      width: 3px;
+      height: 0;
+      background: var(--project-color);
+      border-radius: 0 2px 2px 0;
+      transition: height 0.15s ease;
+    }
+
+    .rail-icon:hover {
+      background: var(--bg-hover);
+    }
+
+    .rail-icon.active {
+      background: var(--bg-hover);
+      border-color: var(--project-color);
+    }
+
+    .rail-icon.active::before {
+      height: 20px;
+    }
+
+    .rail-icon-color {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      background: var(--project-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      color: white;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    }
+
+    .rail-divider {
+      width: 24px;
+      height: 1px;
+      background: var(--border);
+      margin: 4px 0;
+    }
+
+    .rail-action {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      color: var(--text-secondary);
+      font-size: 16px;
+    }
+
+    .rail-action:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    /* Project Flyout */
+    .project-flyout {
+      width: var(--flyout-width);
+      background: var(--bg-elevated);
+      border-right: 1px solid var(--border);
+      display: none;
+      flex-direction: column;
+      position: absolute;
+      left: var(--rail-width);
+      top: 0;
+      bottom: 0;
+      z-index: 50;
+      box-shadow: 4px 0 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .project-flyout.open {
+      display: flex;
+    }
+
+    .flyout-header {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .flyout-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .flyout-close {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .flyout-close:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .flyout-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    .flyout-project {
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border: 1px solid transparent;
+    }
+
+    .flyout-project:hover {
+      background: var(--bg-hover);
+    }
+
+    .flyout-project.active {
+      background: var(--bg-hover);
+      border-color: var(--project-color);
+    }
+
+    .flyout-project-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .flyout-project-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--project-color);
+      flex-shrink: 0;
+    }
+
+    .flyout-project-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .flyout-project-path {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      color: var(--text-tertiary);
+      margin-left: 16px;
+    }
+
+    .flyout-sessions {
+      margin-top: 8px;
+      margin-left: 16px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .flyout-session {
+      padding: 4px 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: color 0.15s ease;
+    }
+
+    .flyout-session:hover {
+      color: var(--text-primary);
+    }
+
+    .session-status {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-tertiary);
+    }
+
+    .session-status.active {
+      background: var(--status-success);
+      box-shadow: 0 0 6px var(--status-success);
+    }
+
+    /* Workspace - Terminal Containers */
+    .workspace {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .project-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .project-container:last-child {
+      border-bottom: none;
+    }
+
+    .project-header {
+      height: 32px;
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .project-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--project-color);
+      box-shadow: 0 0 8px var(--project-color);
+      flex-shrink: 0;
+    }
+
+    .project-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .project-path {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      color: var(--text-tertiary);
+    }
+
+    .project-tabs {
+      display: flex;
+      gap: 2px;
+      margin-left: auto;
+    }
+
+    .project-tab {
+      padding: 4px 10px;
+      font-size: 11px;
+      background: var(--bg-panel);
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-radius: 4px 4px 0 0;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .project-tab:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .project-tab.active {
+      background: var(--terminal-bg);
+      color: var(--terminal-green);
+      border-bottom: 2px solid var(--project-color);
+    }
+
+    .project-tab-close {
+      margin-left: 6px;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+
+    .project-tab:hover .project-tab-close {
+      opacity: 1;
+    }
+
+    /* Terminal Panes Container */
+    .panes-container {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+      position: relative;
+    }
+
+    .terminal-pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      border-right: 1px solid var(--border);
+      position: relative;
+    }
+
+    .terminal-pane:last-child {
+      border-right: none;
+    }
+
+    /* Ultra-Minimal Pane Header */
+    .pane-header {
+      height: var(--pane-header-height);
+      background: var(--terminal-bg);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .pane-title {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      color: var(--terminal-green-dim);
+      font-weight: 500;
+      letter-spacing: 0.5px;
+    }
+
+    .pane-actions {
+      display: flex;
+      gap: 6px;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+
+    .terminal-pane:hover .pane-actions {
+      opacity: 1;
+    }
+
+    .pane-action {
+      background: none;
+      border: none;
+      color: var(--terminal-green-dim);
+      cursor: pointer;
+      padding: 2px 4px;
+      font-size: 10px;
+      border-radius: 2px;
+      transition: all 0.15s ease;
+    }
+
+    .pane-action:hover {
+      background: rgba(0, 255, 65, 0.1);
+      color: var(--terminal-green);
+    }
+
+    /* CRT Terminal Style */
+    .terminal {
+      flex: 1;
+      background: var(--terminal-bg);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.5;
+      padding: 12px;
+      overflow-y: auto;
+      position: relative;
+      color: var(--terminal-green);
+    }
+
+    /* CRT Scanlines Effect */
+    .terminal::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.15) 0px,
+        transparent 1px,
+        transparent 2px,
+        rgba(0, 0, 0, 0.15) 3px
+      );
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* CRT Glow Effect */
+    .terminal::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(
+        ellipse at center,
+        transparent 0%,
+        rgba(0, 0, 0, 0.3) 100%
+      );
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .terminal-content {
+      position: relative;
+      z-index: 2;
+      text-shadow: 0 0 5px var(--terminal-glow);
+    }
+
+    .terminal-line {
+      margin-bottom: 2px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .terminal-prompt {
+      color: var(--terminal-green);
+      font-weight: 600;
+    }
+
+    .terminal-amber .terminal-prompt,
+    .terminal-amber .terminal-line {
+      color: var(--terminal-amber);
+      text-shadow: 0 0 5px rgba(255, 176, 0, 0.3);
+    }
+
+    .terminal-cursor {
+      display: inline-block;
+      width: 8px;
+      height: 16px;
+      background: var(--terminal-cursor);
+      animation: blink 1s step-end infinite;
+      box-shadow: 0 0 8px var(--terminal-glow);
+    }
+
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+
+    .terminal-error {
+      color: var(--status-error);
+      text-shadow: 0 0 5px rgba(239, 68, 68, 0.3);
+    }
+
+    .terminal-success {
+      color: var(--status-success);
+      text-shadow: 0 0 5px rgba(16, 185, 129, 0.3);
+    }
+
+    .terminal-info {
+      color: var(--status-info);
+      text-shadow: 0 0 5px rgba(59, 130, 246, 0.3);
+    }
+
+    /* Bottom Bar - Tmux Style */
+    .bottom-bar {
+      height: var(--bottom-bar-height);
+      background: var(--terminal-green);
+      color: var(--terminal-bg);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      gap: 16px;
+      flex-shrink: 0;
+      letter-spacing: 0.3px;
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-label {
+      opacity: 0.8;
+    }
+
+    .status-value {
+      font-weight: 700;
+    }
+
+    .status-indicator {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--terminal-bg);
+    }
+
+    .status-indicator.warning {
+      background: var(--status-warning);
+      box-shadow: 0 0 6px var(--status-warning);
+    }
+
+    .status-indicator.error {
+      background: var(--status-error);
+      box-shadow: 0 0 6px var(--status-error);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .status-time {
+      margin-left: auto;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-panel);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-bright);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #505050;
+    }
+
+    /* Utility Classes */
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <div class="top-bar-left">
+        <div class="app-title">CLAUDE MANAGER</div>
+        <div class="view-toggle">
+          <button class="view-toggle-btn active">Workspace</button>
+          <button class="view-toggle-btn">Dashboard</button>
+        </div>
+      </div>
+      <div class="top-bar-right">
+        <button class="dashboard-toggle" onclick="toggleDashboard()">
+          <span>Projects Overview</span>
+          <span class="chevron">▼</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Collapsible Dashboard Strip -->
+    <div class="dashboard">
+      <div class="dashboard-inner">
+        <div class="dashboard-grid">
+          <!-- Project Card 1 -->
+          <div class="project-card" style="--project-color: var(--project-1)">
+            <div class="project-card-header">
+              <div class="project-card-name">Sales Trainer</div>
+              <div class="project-card-status"></div>
+            </div>
+            <div class="project-card-path">~/dev/sales-trainer</div>
+            <div class="project-card-stats">
+              <div class="project-card-stat">
+                <span class="project-card-stat-value">3</span>
+                <span>sessions</span>
+              </div>
+              <div class="project-card-stat">
+                <span class="project-card-stat-value">2</span>
+                <span>panes</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Project Card 2 -->
+          <div class="project-card" style="--project-color: var(--project-2)">
+            <div class="project-card-header">
+              <div class="project-card-name">API Gateway</div>
+              <div class="project-card-status"></div>
+            </div>
+            <div class="project-card-path">~/dev/api-gateway</div>
+            <div class="project-card-stats">
+              <div class="project-card-stat">
+                <span class="project-card-stat-value">2</span>
+                <span>sessions</span>
+              </div>
+              <div class="project-card-stat">
+                <span class="project-card-stat-value">2</span>
+                <span>panes</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Project Card 3 -->
+          <div class="project-card" style="--project-color: var(--project-3)">
+            <div class="project-card-header">
+              <div class="project-card-name">Dashboard UI</div>
+              <div class="project-card-status"></div>
+            </div>
+            <div class="project-card-path">~/dev/dashboard-ui</div>
+            <div class="project-card-stats">
+              <div class="project-card-stat">
+                <span class="project-card-stat-value">1</span>
+                <span>session</span>
+              </div>
+              <div class="project-card-stat">
+                <span class="project-card-stat-value">1</span>
+                <span>pane</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Project Card 4 -->
+          <div class="project-card" style="--project-color: var(--project-4)">
+            <div class="project-card-header">
+              <div class="project-card-name">ML Pipeline</div>
+              <div class="project-card-status"></div>
+            </div>
+            <div class="project-card-path">~/dev/ml-pipeline</div>
+            <div class="project-card-stats">
+              <div class="project-card-stat">
+                <span class="project-card-stat-value">2</span>
+                <span>sessions</span>
+              </div>
+              <div class="project-card-stat">
+                <span class="project-card-stat-value">3</span>
+                <span>panes</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+      <!-- Icon Rail -->
+      <div class="icon-rail">
+        <div class="rail-icon" style="--project-color: var(--project-1)" title="Sales Trainer">
+          <div class="rail-icon-color">ST</div>
+        </div>
+        <div class="rail-icon" style="--project-color: var(--project-2)" title="API Gateway">
+          <div class="rail-icon-color">AG</div>
+        </div>
+        <div class="rail-icon" style="--project-color: var(--project-3)" title="Dashboard UI">
+          <div class="rail-icon-color">DU</div>
+        </div>
+        <div class="rail-icon" style="--project-color: var(--project-4)" title="ML Pipeline">
+          <div class="rail-icon-color">ML</div>
+        </div>
+        <div class="rail-divider"></div>
+        <div class="rail-action" title="New Project">+</div>
+        <div class="rail-action" title="Settings" style="margin-top: auto">⚙</div>
+      </div>
+
+      <!-- Project Flyout (Hidden by default) -->
+      <div class="project-flyout">
+        <div class="flyout-header">
+          <div class="flyout-title">Projects</div>
+          <button class="flyout-close">✕</button>
+        </div>
+        <div class="flyout-content">
+          <div class="flyout-project" style="--project-color: var(--project-1)">
+            <div class="flyout-project-header">
+              <div class="flyout-project-indicator"></div>
+              <div class="flyout-project-name">Sales Trainer</div>
+            </div>
+            <div class="flyout-project-path">~/dev/sales-trainer</div>
+            <div class="flyout-sessions">
+              <div class="flyout-session">• dev-server <span class="session-status active"></span></div>
+              <div class="flyout-session">• logs</div>
+              <div class="flyout-session">• build</div>
+            </div>
+          </div>
+          <div class="flyout-project" style="--project-color: var(--project-2)">
+            <div class="flyout-project-header">
+              <div class="flyout-project-indicator"></div>
+              <div class="flyout-project-name">API Gateway</div>
+            </div>
+            <div class="flyout-project-path">~/dev/api-gateway</div>
+            <div class="flyout-sessions">
+              <div class="flyout-session">• server <span class="session-status active"></span></div>
+              <div class="flyout-session">• docker</div>
+            </div>
+          </div>
+          <div class="flyout-project" style="--project-color: var(--project-3)">
+            <div class="flyout-project-header">
+              <div class="flyout-project-indicator"></div>
+              <div class="flyout-project-name">Dashboard UI</div>
+            </div>
+            <div class="flyout-project-path">~/dev/dashboard-ui</div>
+            <div class="flyout-sessions">
+              <div class="flyout-session">• vite <span class="session-status active"></span></div>
+            </div>
+          </div>
+          <div class="flyout-project" style="--project-color: var(--project-4)">
+            <div class="flyout-project-header">
+              <div class="flyout-project-indicator"></div>
+              <div class="flyout-project-name">ML Pipeline</div>
+            </div>
+            <div class="flyout-project-path">~/dev/ml-pipeline</div>
+            <div class="flyout-sessions">
+              <div class="flyout-session">• jupyter</div>
+              <div class="flyout-session">• training <span class="session-status active"></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Workspace -->
+      <div class="workspace">
+        <!-- Project Container 1: Sales Trainer -->
+        <div class="project-container" style="--project-color: var(--project-1)">
+          <div class="project-header">
+            <div class="project-indicator"></div>
+            <div class="project-name">Sales Trainer</div>
+            <div class="project-path">~/dev/sales-trainer</div>
+            <div class="project-tabs">
+              <button class="project-tab active">dev server</button>
+              <button class="project-tab">logs <span class="project-tab-close">✕</span></button>
+              <button class="project-tab">build <span class="project-tab-close">✕</span></button>
+            </div>
+          </div>
+          <div class="panes-container">
+            <!-- Pane 1 -->
+            <div class="terminal-pane">
+              <div class="pane-header">
+                <div class="pane-title">TERMINAL 1</div>
+                <div class="pane-actions">
+                  <button class="pane-action">⤨</button>
+                  <button class="pane-action">✕</button>
+                </div>
+              </div>
+              <div class="terminal">
+                <div class="terminal-content">
+                  <div class="terminal-line"><span class="terminal-prompt">$</span> npm run dev</div>
+                  <div class="terminal-line"></div>
+                  <div class="terminal-line terminal-info">&gt; sales-trainer@1.0.0 dev</div>
+                  <div class="terminal-line terminal-info">&gt; vite</div>
+                  <div class="terminal-line"></div>
+                  <div class="terminal-line">  VITE v5.0.8  ready in 423 ms</div>
+                  <div class="terminal-line"></div>
+                  <div class="terminal-line terminal-success">  ➜  Local:   http://localhost:5173/</div>
+                  <div class="terminal-line terminal-success">  ➜  Network: http://192.168.1.10:5173/</div>
+                  <div class="terminal-line"></div>
+                  <div class="terminal-line">  <span class="terminal-success">✓</span> built in 127ms</div>
+                  <div class="terminal-line"></div>
+                  <div class="terminal-line"><span class="terminal-prompt">●</span><span class="terminal-cursor"></span></div>
+                </div>
+              </div>
+            </div>
+            <!-- Pane 2 -->
+            <div class="terminal-pane">
+              <div class="pane-header">
+                <div class="pane-title">TERMINAL 2</div>
+                <div class="pane-actions">
+                  <button class="pane-action">⤨</button>
+                  <button class="pane-action">✕</button>
+                </div>
+              </div>
+              <div class="terminal terminal-amber">
+                <div class="terminal-content">
+                  <div class="terminal-line"><span class="terminal-prompt">$</span> git status</div>
+                  <div class="terminal-line">On branch feature/ai-voice-coach</div>
+                  <div class="terminal-line">Your branch is up to date with 'origin/feature/ai-voice-coach'.</div>
+                  <div class="terminal-line"></div>
+                  <div class="terminal-line">Changes not staged for commit:</div>
+                  <div class="terminal-line">  (use "git add &lt;file&gt;..." to update what will be committed)</div>
+                  <div class="terminal-line">  (use "git restore &lt;file&gt;..." to discard changes in working directory)</div>
+                  <div class="terminal-line"></div>
+                  <div class="terminal-line terminal-error">        modified:   src/components/VoiceCoach.tsx</div>
+                  <div class="terminal-line terminal-error">        modified:   src/hooks/useAudioRecorder.ts</div>
+                  <div class="terminal-line"></div>
+                  <div class="terminal-line">no changes added to commit (use "git add" and/or "git commit -a")</div>
+                  <div class="terminal-line"></div>
+                  <div class="terminal-line"><span class="terminal-prompt">$</span><span class="terminal-cursor"></span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Project Container 2: API Gateway -->
+        <div class="project-container" style="--project-color: var(--project-2)">
+          <div class="project-header">
+            <div class="project-indicator"></div>
+            <div class="project-name">API Gateway</div>
+            <div class="project-path">~/dev/api-gateway</div>
+            <div class="project-tabs">
+              <button class="project-tab active">server</button>
+              <button class="project-tab">docker <span class="project-tab-close">✕</span></button>
+            </div>
+          </div>
+          <div class="panes-container">
+            <!-- Pane 1 -->
+            <div class="terminal-pane">
+              <div class="pane-header">
+                <div class="pane-title">TERMINAL 1</div>
+                <div class="pane-actions">
+                  <button class="pane-action">⤨</button>
+                  <button class="pane-action">✕</button>
+                </div>
+              </div>
+              <div class="terminal">
+                <div class="terminal-content">
+                  <div class="terminal-line"><span class="terminal-prompt">$</span> bun run dev</div>
+                  <div class="terminal-line"></div>
+                  <div class="terminal-line terminal-info">[elysia] Starting server...</div>
+                  <div class="terminal-line"></div>
+                  <div class="terminal-line terminal-success">🦊 Elysia is running at localhost:3000</div>
+                  <div class="terminal-line"></div>
+                  <div class="terminal-line">GET  /health → 200 (3ms)</div>
+                  <div class="terminal-line">POST /api/auth/login → 200 (145ms)</div>
+                  <div class="terminal-line">GET  /api/users/profile → 200 (12ms)</div>
+                  <div class="terminal-line">GET  /api/projects → 200 (28ms)</div>
+                  <div class="terminal-line terminal-error">POST /api/projects/create → 500 (231ms)</div>
+                  <div class="terminal-line"></div>
+                  <div class="terminal-line"><span class="terminal-prompt">●</span><span class="terminal-cursor"></span></div>
+                </div>
+              </div>
+            </div>
+            <!-- Pane 2 -->
+            <div class="terminal-pane">
+              <div class="pane-header">
+                <div class="pane-title">TERMINAL 2</div>
+                <div class="pane-actions">
+                  <button class="pane-action">⤨</button>
+                  <button class="pane-action">✕</button>
+                </div>
+              </div>
+              <div class="terminal">
+                <div class="terminal-content">
+                  <div class="terminal-line"><span class="terminal-prompt">$</span> bun test</div>
+                  <div class="terminal-line"></div>
+                  <div class="terminal-line">bun test v1.0.25</div>
+                  <div class="terminal-line"></div>
+                  <div class="terminal-line terminal-success">✓ auth.test.ts (12 tests) 234ms</div>
+                  <div class="terminal-line terminal-success">✓ users.test.ts (8 tests) 156ms</div>
+                  <div class="terminal-line terminal-success">✓ projects.test.ts (15 tests) 289ms</div>
+                  <div class="terminal-line"></div>
+                  <div class="terminal-line">All tests passed (35 tests)</div>
+                  <div class="terminal-line"></div>
+                  <div class="terminal-line"><span class="terminal-prompt">$</span><span class="terminal-cursor"></span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Bar - Tmux Style -->
+    <div class="bottom-bar">
+      <div class="status-item">
+        <span class="status-label">CPU</span>
+        <span class="status-value">24%</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">MEM</span>
+        <span class="status-value">3.2GB</span>
+      </div>
+      <div class="status-item">
+        <div class="status-indicator"></div>
+        <span class="status-value">2</span>
+        <span class="status-label">SESSIONS</span>
+      </div>
+      <div class="status-item">
+        <div class="status-indicator"></div>
+        <span class="status-value">4</span>
+        <span class="status-label">TERMINALS</span>
+      </div>
+      <div class="status-item">
+        <div class="status-indicator error"></div>
+        <span class="status-value">1</span>
+        <span class="status-label">ERROR</span>
+      </div>
+      <div class="status-time">18:42:15</div>
+    </div>
+  </div>
+
+  <script>
+    // Dashboard toggle
+    function toggleDashboard() {
+      const dashboard = document.querySelector('.dashboard');
+      const toggle = document.querySelector('.dashboard-toggle');
+      dashboard.classList.toggle('collapsed');
+      toggle.classList.toggle('collapsed');
+    }
+
+    // Update time every second
+    function updateTime() {
+      const timeElement = document.querySelector('.status-time');
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      timeElement.textContent = `${hours}:${minutes}:${seconds}`;
+    }
+
+    setInterval(updateTime, 1000);
+    updateTime();
+
+    // Simulate CPU/MEM updates
+    function updateSystemStats() {
+      const cpuElement = document.querySelector('.bottom-bar .status-item:nth-child(1) .status-value');
+      const memElement = document.querySelector('.bottom-bar .status-item:nth-child(2) .status-value');
+
+      const cpu = Math.floor(Math.random() * 40) + 15;
+      const mem = (Math.random() * 2 + 2.5).toFixed(1);
+
+      cpuElement.textContent = `${cpu}%`;
+      memElement.textContent = `${mem}GB`;
+    }
+
+    setInterval(updateSystemStats, 3000);
+
+    // Tab switching
+    document.querySelectorAll('.project-tab').forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        if (e.target.classList.contains('project-tab-close')) {
+          e.stopPropagation();
+          return;
+        }
+
+        const container = tab.closest('.project-container');
+        container.querySelectorAll('.project-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+      });
+    });
+
+    // View toggle
+    document.querySelectorAll('.view-toggle-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.view-toggle-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+
+    // Rail icon navigation + flyout toggle
+    const flyout = document.querySelector('.project-flyout');
+    const flyoutClose = document.querySelector('.flyout-close');
+
+    document.querySelectorAll('.rail-icon').forEach(icon => {
+      icon.addEventListener('click', () => {
+        const wasActive = icon.classList.contains('active');
+        document.querySelectorAll('.rail-icon').forEach(i => i.classList.remove('active'));
+
+        if (wasActive) {
+          // Clicking active icon closes flyout
+          flyout.classList.remove('open');
+        } else {
+          // Clicking new icon opens flyout
+          icon.classList.add('active');
+          flyout.classList.add('open');
+        }
+      });
+    });
+
+    // Close flyout button
+    flyoutClose.addEventListener('click', () => {
+      flyout.classList.remove('open');
+      document.querySelectorAll('.rail-icon').forEach(i => i.classList.remove('active'));
+    });
+
+    // Project card click
+    document.querySelectorAll('.project-card').forEach(card => {
+      card.addEventListener('click', () => {
+        console.log('Navigate to project');
+      });
+    });
+  </script>
+</body>
+</html>

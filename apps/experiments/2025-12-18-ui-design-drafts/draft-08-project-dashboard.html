@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Manager - Project Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #111111;
+            --bg-card: #1a1a1a;
+            --bg-card-hover: #222222;
+            --border-primary: #333333;
+            --border-accent: #00ff41;
+            --text-primary: #ffffff;
+            --text-secondary: #888888;
+            --text-tertiary: #555555;
+            --accent-green: #00ff41;
+            --accent-red: #ff004d;
+            --accent-yellow: #ffed00;
+            --accent-blue: #00e0ff;
+            --shadow-glow: 0 0 20px rgba(0, 255, 65, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Noise texture overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='4' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* Scanline effect */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 0, 0, 0.1) 2px,
+                rgba(0, 0, 0, 0.1) 4px
+            );
+            pointer-events: none;
+            z-index: 9998;
+        }
+
+        /* Header */
+        .header {
+            position: sticky;
+            top: 0;
+            background: var(--bg-secondary);
+            border-bottom: 2px solid var(--border-accent);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            box-shadow: var(--shadow-glow);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .logo {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--accent-green);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            position: relative;
+            padding: 0.5rem 1rem;
+            border: 2px solid var(--accent-green);
+            background: rgba(0, 255, 65, 0.05);
+        }
+
+        .logo::before {
+            content: '>';
+            margin-right: 0.5rem;
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 1.5rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-family: 'DM Mono', monospace;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .project-switcher {
+            position: relative;
+        }
+
+        .switcher-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-primary);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .switcher-btn:hover {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.2);
+        }
+
+        .switcher-btn::after {
+            content: '▼';
+            font-size: 0.7rem;
+        }
+
+        .notification-bell {
+            position: relative;
+            background: var(--bg-card);
+            border: 1px solid var(--border-primary);
+            color: var(--text-primary);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .notification-bell:hover {
+            border-color: var(--accent-yellow);
+            box-shadow: 0 0 10px rgba(255, 237, 0, 0.2);
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--accent-red);
+            color: white;
+            font-size: 0.7rem;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        .dashboard-header {
+            margin-bottom: 3rem;
+        }
+
+        .dashboard-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+            position: relative;
+            display: inline-block;
+        }
+
+        .dashboard-title::before {
+            content: '┌─────────────────────────────';
+            position: absolute;
+            top: -1rem;
+            left: 0;
+            font-size: 0.8rem;
+            color: var(--border-accent);
+        }
+
+        .dashboard-title::after {
+            content: '└─────────────────────────────';
+            position: absolute;
+            bottom: -1rem;
+            left: 0;
+            font-size: 0.8rem;
+            color: var(--border-accent);
+        }
+
+        .dashboard-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            font-family: 'DM Mono', monospace;
+            margin-top: 1.5rem;
+        }
+
+        /* Projects Grid */
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 2rem;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Project Card */
+        .project-card {
+            background: var(--bg-card);
+            border: 2px solid var(--border-primary);
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .project-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg,
+                var(--accent-green) 0%,
+                transparent 50%,
+                var(--accent-green) 100%
+            );
+            transform: scaleX(0);
+            transition: transform 0.3s;
+        }
+
+        .project-card:hover {
+            border-color: var(--accent-green);
+            background: var(--bg-card-hover);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .project-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .project-card:nth-child(4n+1) { animation-delay: 0.1s; }
+        .project-card:nth-child(4n+2) { animation-delay: 0.2s; }
+        .project-card:nth-child(4n+3) { animation-delay: 0.3s; }
+        .project-card:nth-child(4n+4) { animation-delay: 0.4s; }
+
+        .card-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .project-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--accent-green);
+        }
+
+        .project-status {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border: 1px solid;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .status-active {
+            color: var(--accent-green);
+            border-color: var(--accent-green);
+            background: rgba(0, 255, 65, 0.1);
+        }
+
+        .status-idle {
+            color: var(--text-secondary);
+            border-color: var(--border-primary);
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        .project-path {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-family: 'DM Mono', monospace;
+            margin-bottom: 1.5rem;
+            word-break: break-all;
+        }
+
+        .project-path::before {
+            content: '$ pwd > ';
+            color: var(--accent-blue);
+        }
+
+        .project-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-green);
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-top: 0.5rem;
+        }
+
+        .recent-activity {
+            border-top: 1px solid var(--border-primary);
+            padding-top: 1rem;
+        }
+
+        .activity-title {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.75rem;
+        }
+
+        .activity-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-family: 'DM Mono', monospace;
+        }
+
+        .activity-icon {
+            width: 6px;
+            height: 6px;
+            background: var(--accent-green);
+            flex-shrink: 0;
+        }
+
+        .activity-time {
+            color: var(--text-tertiary);
+            font-size: 0.75rem;
+            margin-left: auto;
+        }
+
+        .card-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border-primary);
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-primary);
+            background: transparent;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--accent-green);
+            transition: left 0.3s;
+            z-index: -1;
+        }
+
+        .btn:hover {
+            color: var(--bg-primary);
+            border-color: var(--accent-green);
+        }
+
+        .btn:hover::before {
+            left: 0;
+        }
+
+        .btn-primary {
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        /* New Project Card */
+        .new-project-card {
+            background: transparent;
+            border: 2px dashed var(--border-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .new-project-card:hover {
+            border-color: var(--accent-green);
+            background: rgba(0, 255, 65, 0.02);
+        }
+
+        .new-project-icon {
+            font-size: 4rem;
+            color: var(--text-tertiary);
+            margin-bottom: 1rem;
+        }
+
+        .new-project-text {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        /* Terminal View (Hidden by default, shown when project clicked) */
+        .terminal-view {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-primary);
+            z-index: 200;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+            }
+            to {
+                transform: translateX(0);
+            }
+        }
+
+        .terminal-header {
+            background: var(--bg-secondary);
+            border-bottom: 2px solid var(--accent-green);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .back-btn {
+            background: transparent;
+            border: 1px solid var(--accent-green);
+            color: var(--accent-green);
+            padding: 0.5rem 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .back-btn:hover {
+            background: var(--accent-green);
+            color: var(--bg-primary);
+        }
+
+        .back-btn::before {
+            content: '←';
+        }
+
+        .terminal-project-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--accent-green);
+            text-transform: uppercase;
+        }
+
+        .terminal-panes {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px;
+            background: var(--border-primary);
+            height: calc(100vh - 80px);
+        }
+
+        .terminal-pane {
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pane-header {
+            background: var(--bg-secondary);
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-primary);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .pane-header::before {
+            content: '> ';
+            color: var(--accent-green);
+        }
+
+        .pane-content {
+            flex: 1;
+            background: var(--bg-primary);
+            padding: 1rem;
+            font-family: 'DM Mono', monospace;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            overflow-y: auto;
+        }
+
+        /* Notification Panel */
+        .notification-panel {
+            position: fixed;
+            top: 80px;
+            right: 0;
+            width: 400px;
+            max-height: calc(100vh - 100px);
+            background: var(--bg-secondary);
+            border-left: 2px solid var(--accent-yellow);
+            transform: translateX(100%);
+            transition: transform 0.3s;
+            z-index: 150;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .notification-panel.open {
+            transform: translateX(0);
+        }
+
+        .notification-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .notification-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .close-notifications {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .notification-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .notification-group {
+            margin-bottom: 2rem;
+        }
+
+        .notification-group-title {
+            font-size: 0.85rem;
+            color: var(--accent-green);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-primary);
+        }
+
+        .notification-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border-primary);
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        .notification-item-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .notification-item-title {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .notification-item-time {
+            color: var(--text-tertiary);
+            font-size: 0.75rem;
+        }
+
+        .notification-item-body {
+            color: var(--text-secondary);
+            font-family: 'DM Mono', monospace;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .projects-grid {
+                grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 1rem;
+            }
+
+            .status-bar {
+                display: none;
+            }
+
+            .container {
+                padding: 2rem 1rem;
+            }
+
+            .projects-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .terminal-panes {
+                grid-template-columns: 1fr;
+            }
+
+            .notification-panel {
+                width: 100%;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-primary);
+            border: 1px solid var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-green);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">Claude Manager</div>
+            <div class="status-bar">
+                <div class="status-item">
+                    <div class="status-dot"></div>
+                    <span>SYSTEM: ONLINE</span>
+                </div>
+                <div class="status-item">
+                    <span>AGENTS: 7 ACTIVE</span>
+                </div>
+                <div class="status-item">
+                    <span>UPTIME: 14:32:07</span>
+                </div>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="project-switcher">
+                <button class="switcher-btn">Quick Jump</button>
+            </div>
+            <button class="notification-bell" onclick="toggleNotifications()">
+                ⚠
+                <span class="notification-badge">3</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Dashboard -->
+    <main class="container">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">Projects</h1>
+            <p class="dashboard-subtitle">Manage and monitor your Claude Code agent instances</p>
+        </div>
+
+        <div class="projects-grid">
+            <!-- Active Project Card 1 -->
+            <article class="project-card" onclick="openProject('sales-trainer')">
+                <div class="card-header">
+                    <h2 class="project-name">Sales Trainer</h2>
+                    <span class="project-status status-active">Active</span>
+                </div>
+                <div class="card-body">
+                    <div class="project-path">/mnt/claude/helios/sales-trainer-prod</div>
+                    <div class="project-stats">
+                        <div class="stat">
+                            <div class="stat-value">3</div>
+                            <div class="stat-label">Agents</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">47</div>
+                            <div class="stat-label">Tasks</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">2.4h</div>
+                            <div class="stat-label">Runtime</div>
+                        </div>
+                    </div>
+                    <div class="recent-activity">
+                        <h3 class="activity-title">Recent Activity</h3>
+                        <div class="activity-list">
+                            <div class="activity-item">
+                                <div class="activity-icon"></div>
+                                <span>Auth refactor completed</span>
+                                <span class="activity-time">5m ago</span>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-icon"></div>
+                                <span>Tests passing: 142/142</span>
+                                <span class="activity-time">12m ago</span>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-icon"></div>
+                                <span>PR #23 created</span>
+                                <span class="activity-time">28m ago</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-primary">Open Project</button>
+                    <button class="btn">Settings</button>
+                </div>
+            </article>
+
+            <!-- Active Project Card 2 -->
+            <article class="project-card" onclick="openProject('claude-manager')">
+                <div class="card-header">
+                    <h2 class="project-name">Claude Manager</h2>
+                    <span class="project-status status-active">Active</span>
+                </div>
+                <div class="card-body">
+                    <div class="project-path">/mnt/claude/personal/claudeManager</div>
+                    <div class="project-stats">
+                        <div class="stat">
+                            <div class="stat-value">2</div>
+                            <div class="stat-label">Agents</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">31</div>
+                            <div class="stat-label">Tasks</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">1.7h</div>
+                            <div class="stat-label">Runtime</div>
+                        </div>
+                    </div>
+                    <div class="recent-activity">
+                        <h3 class="activity-title">Recent Activity</h3>
+                        <div class="activity-list">
+                            <div class="activity-item">
+                                <div class="activity-icon"></div>
+                                <span>Terminal WebSocket working</span>
+                                <span class="activity-time">3m ago</span>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-icon"></div>
+                                <span>UI components created</span>
+                                <span class="activity-time">15m ago</span>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-icon"></div>
+                                <span>Database schema migrated</span>
+                                <span class="activity-time">42m ago</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-primary">Open Project</button>
+                    <button class="btn">Settings</button>
+                </div>
+            </article>
+
+            <!-- Idle Project Card -->
+            <article class="project-card" onclick="openProject('analytics-dashboard')">
+                <div class="card-header">
+                    <h2 class="project-name">Analytics Dashboard</h2>
+                    <span class="project-status status-idle">Idle</span>
+                </div>
+                <div class="card-body">
+                    <div class="project-path">/mnt/claude/projects/analytics-dashboard</div>
+                    <div class="project-stats">
+                        <div class="stat">
+                            <div class="stat-value">0</div>
+                            <div class="stat-label">Agents</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">18</div>
+                            <div class="stat-label">Tasks</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">0h</div>
+                            <div class="stat-label">Runtime</div>
+                        </div>
+                    </div>
+                    <div class="recent-activity">
+                        <h3 class="activity-title">Recent Activity</h3>
+                        <div class="activity-list">
+                            <div class="activity-item">
+                                <div class="activity-icon"></div>
+                                <span>Agent stopped gracefully</span>
+                                <span class="activity-time">2h ago</span>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-icon"></div>
+                                <span>Chart library integrated</span>
+                                <span class="activity-time">3h ago</span>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-icon"></div>
+                                <span>API endpoints tested</span>
+                                <span class="activity-time">4h ago</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-primary">Open Project</button>
+                    <button class="btn">Settings</button>
+                </div>
+            </article>
+
+            <!-- Active Project Card 3 -->
+            <article class="project-card" onclick="openProject('api-gateway')">
+                <div class="card-header">
+                    <h2 class="project-name">API Gateway</h2>
+                    <span class="project-status status-active">Active</span>
+                </div>
+                <div class="card-body">
+                    <div class="project-path">/mnt/claude/infrastructure/api-gateway</div>
+                    <div class="project-stats">
+                        <div class="stat">
+                            <div class="stat-value">2</div>
+                            <div class="stat-label">Agents</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">56</div>
+                            <div class="stat-label">Tasks</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">3.1h</div>
+                            <div class="stat-label">Runtime</div>
+                        </div>
+                    </div>
+                    <div class="recent-activity">
+                        <h3 class="activity-title">Recent Activity</h3>
+                        <div class="activity-list">
+                            <div class="activity-item">
+                                <div class="activity-icon"></div>
+                                <span>Rate limiting implemented</span>
+                                <span class="activity-time">8m ago</span>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-icon"></div>
+                                <span>Load tests completed</span>
+                                <span class="activity-time">22m ago</span>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-icon"></div>
+                                <span>Security audit passed</span>
+                                <span class="activity-time">1h ago</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-primary">Open Project</button>
+                    <button class="btn">Settings</button>
+                </div>
+            </article>
+
+            <!-- Idle Project Card 2 -->
+            <article class="project-card" onclick="openProject('docs-site')">
+                <div class="card-header">
+                    <h2 class="project-name">Docs Site</h2>
+                    <span class="project-status status-idle">Idle</span>
+                </div>
+                <div class="card-body">
+                    <div class="project-path">/mnt/claude/projects/documentation-site</div>
+                    <div class="project-stats">
+                        <div class="stat">
+                            <div class="stat-value">0</div>
+                            <div class="stat-label">Agents</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">12</div>
+                            <div class="stat-label">Tasks</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">0h</div>
+                            <div class="stat-label">Runtime</div>
+                        </div>
+                    </div>
+                    <div class="recent-activity">
+                        <h3 class="activity-title">Recent Activity</h3>
+                        <div class="activity-list">
+                            <div class="activity-item">
+                                <div class="activity-icon"></div>
+                                <span>Search functionality added</span>
+                                <span class="activity-time">1d ago</span>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-icon"></div>
+                                <span>Content migrated</span>
+                                <span class="activity-time">1d ago</span>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-icon"></div>
+                                <span>Theme customized</span>
+                                <span class="activity-time">2d ago</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-primary">Open Project</button>
+                    <button class="btn">Settings</button>
+                </div>
+            </article>
+
+            <!-- New Project Card -->
+            <article class="new-project-card" onclick="createNewProject()">
+                <div class="new-project-icon">+</div>
+                <div class="new-project-text">New Project</div>
+            </article>
+        </div>
+    </main>
+
+    <!-- Terminal View (Hidden) -->
+    <div class="terminal-view" id="terminalView">
+        <div class="terminal-header">
+            <button class="back-btn" onclick="closeProject()">Back to Dashboard</button>
+            <div class="terminal-project-name" id="terminalProjectName"></div>
+            <div></div>
+        </div>
+        <div class="terminal-panes">
+            <div class="terminal-pane">
+                <div class="pane-header">Agent 1: Frontend Development</div>
+                <div class="pane-content">
+                    <div>$ claude-code start</div>
+                    <div style="color: var(--accent-green);">✓ Agent initialized</div>
+                    <div style="color: var(--accent-green);">✓ Working directory: /mnt/claude/helios/sales-trainer-prod</div>
+                    <div style="margin-top: 1rem;">Analyzing component structure...</div>
+                    <div>Found 47 React components</div>
+                    <div style="margin-top: 1rem; color: var(--accent-green);">Ready for input_</div>
+                </div>
+            </div>
+            <div class="terminal-pane">
+                <div class="pane-header">Agent 2: Backend Development</div>
+                <div class="pane-content">
+                    <div>$ claude-code start</div>
+                    <div style="color: var(--accent-green);">✓ Agent initialized</div>
+                    <div style="color: var(--accent-green);">✓ Working directory: /mnt/claude/helios/sales-trainer-prod</div>
+                    <div style="margin-top: 1rem;">Scanning API routes...</div>
+                    <div>Found 12 endpoints</div>
+                    <div style="margin-top: 1rem;">Running test suite...</div>
+                    <div style="color: var(--accent-green);">✓ All tests passed (142/142)</div>
+                    <div style="margin-top: 1rem; color: var(--accent-green);">Ready for input_</div>
+                </div>
+            </div>
+            <div class="terminal-pane">
+                <div class="pane-header">Agent 3: Testing & QA</div>
+                <div class="pane-content">
+                    <div>$ claude-code start</div>
+                    <div style="color: var(--accent-green);">✓ Agent initialized</div>
+                    <div style="color: var(--accent-green);">✓ Working directory: /mnt/claude/helios/sales-trainer-prod</div>
+                    <div style="margin-top: 1rem;">Monitoring test coverage...</div>
+                    <div>Coverage: 87.3%</div>
+                    <div style="margin-top: 1rem; color: var(--accent-green);">Ready for input_</div>
+                </div>
+            </div>
+            <div class="terminal-pane">
+                <div class="pane-header">System Logs</div>
+                <div class="pane-content">
+                    <div style="color: var(--text-tertiary);">[14:32:07] System initialized</div>
+                    <div style="color: var(--text-tertiary);">[14:32:12] Agent 1 started</div>
+                    <div style="color: var(--text-tertiary);">[14:32:15] Agent 2 started</div>
+                    <div style="color: var(--text-tertiary);">[14:32:18] Agent 3 started</div>
+                    <div style="color: var(--accent-yellow); margin-top: 1rem;">[14:35:42] WARNING: High memory usage detected</div>
+                    <div style="color: var(--accent-green); margin-top: 1rem;">[14:38:15] Build completed successfully</div>
+                    <div style="color: var(--accent-green);">[14:42:03] Tests passed</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Panel -->
+    <aside class="notification-panel" id="notificationPanel">
+        <div class="notification-header">
+            <h2 class="notification-title">Notifications</h2>
+            <button class="close-notifications" onclick="toggleNotifications()">×</button>
+        </div>
+        <div class="notification-content">
+            <div class="notification-group">
+                <h3 class="notification-group-title">Sales Trainer</h3>
+                <div class="notification-item">
+                    <div class="notification-item-header">
+                        <span class="notification-item-title">Build Completed</span>
+                        <span class="notification-item-time">5m ago</span>
+                    </div>
+                    <div class="notification-item-body">
+                        Production build finished successfully. All tests passed (142/142).
+                    </div>
+                </div>
+                <div class="notification-item">
+                    <div class="notification-item-header">
+                        <span class="notification-item-title">PR Ready for Review</span>
+                        <span class="notification-item-time">28m ago</span>
+                    </div>
+                    <div class="notification-item-body">
+                        Pull request #23 "Refactor authentication flow" is ready for review.
+                    </div>
+                </div>
+            </div>
+
+            <div class="notification-group">
+                <h3 class="notification-group-title">Claude Manager</h3>
+                <div class="notification-item">
+                    <div class="notification-item-header">
+                        <span class="notification-item-title">Database Migration Complete</span>
+                        <span class="notification-item-time">42m ago</span>
+                    </div>
+                    <div class="notification-item-body">
+                        Schema updated successfully. 3 new tables created.
+                    </div>
+                </div>
+            </div>
+
+            <div class="notification-group">
+                <h3 class="notification-group-title">API Gateway</h3>
+                <div class="notification-item">
+                    <div class="notification-item-header">
+                        <span class="notification-item-title">Security Audit Passed</span>
+                        <span class="notification-item-time">1h ago</span>
+                    </div>
+                    <div class="notification-item-body">
+                        All security checks passed. No vulnerabilities detected.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <script>
+        // Toggle notification panel
+        function toggleNotifications() {
+            const panel = document.getElementById('notificationPanel');
+            panel.classList.toggle('open');
+        }
+
+        // Open project terminal view
+        function openProject(projectName) {
+            const terminalView = document.getElementById('terminalView');
+            const terminalProjectName = document.getElementById('terminalProjectName');
+            terminalProjectName.textContent = projectName.toUpperCase().replace(/-/g, ' ');
+            terminalView.style.display = 'block';
+        }
+
+        // Close project terminal view
+        function closeProject() {
+            const terminalView = document.getElementById('terminalView');
+            terminalView.style.display = 'none';
+        }
+
+        // Create new project
+        function createNewProject() {
+            alert('New project creation would open a modal here');
+        }
+
+        // Close notification panel when clicking outside
+        document.addEventListener('click', function(event) {
+            const panel = document.getElementById('notificationPanel');
+            const bell = document.querySelector('.notification-bell');
+
+            if (panel.classList.contains('open') &&
+                !panel.contains(event.target) &&
+                !bell.contains(event.target)) {
+                panel.classList.remove('open');
+            }
+        });
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(event) {
+            // Escape key closes terminal view or notification panel
+            if (event.key === 'Escape') {
+                const terminalView = document.getElementById('terminalView');
+                const notificationPanel = document.getElementById('notificationPanel');
+
+                if (terminalView.style.display === 'block') {
+                    closeProject();
+                } else if (notificationPanel.classList.contains('open')) {
+                    toggleNotifications();
+                }
+            }
+
+            // N key toggles notifications (Shift + N to prevent conflict with typing)
+            if (event.shiftKey && event.key === 'N') {
+                event.preventDefault();
+                toggleNotifications();
+            }
+        });
+
+        // Simulate real-time updates
+        setInterval(() => {
+            const statusDots = document.querySelectorAll('.status-dot');
+            statusDots.forEach(dot => {
+                dot.style.animation = 'none';
+                setTimeout(() => {
+                    dot.style.animation = 'pulse 2s infinite';
+                }, 10);
+            });
+        }, 5000);
+
+        // Add cursor blink effect to terminal
+        const terminalContents = document.querySelectorAll('.pane-content');
+        terminalContents.forEach(content => {
+            const lastLine = content.querySelector('div:last-child');
+            if (lastLine && lastLine.textContent.includes('Ready for input_')) {
+                setInterval(() => {
+                    lastLine.textContent = lastLine.textContent.endsWith('_') ?
+                        lastLine.textContent.slice(0, -1) :
+                        lastLine.textContent + '_';
+                }, 530);
+            }
+        });
+    </script>
+</body>
+</html>

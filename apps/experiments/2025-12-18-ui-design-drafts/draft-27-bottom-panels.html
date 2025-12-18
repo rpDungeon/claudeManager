@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Manager - Bottom Panel Layout</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --color-bg-primary: #0d0e12;
+            --color-bg-secondary: #16181f;
+            --color-bg-tertiary: #1e2029;
+            --color-bg-elevated: #252832;
+            --color-border: #2a2d3a;
+            --color-border-hover: #3a3f52;
+            --color-text-primary: #e4e6eb;
+            --color-text-secondary: #9ca3af;
+            --color-text-tertiary: #6b7280;
+            --color-accent-blue: #3b82f6;
+            --color-accent-blue-dim: #1e3a8a;
+            --color-accent-amber: #f59e0b;
+            --color-accent-green: #10b981;
+            --color-accent-red: #ef4444;
+            --color-accent-purple: #8b5cf6;
+
+            --font-mono: 'IBM Plex Mono', monospace;
+            --font-sans: 'Inter', sans-serif;
+
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.7);
+            --shadow-glow-blue: 0 0 20px rgba(59, 130, 246, 0.15);
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Main Layout Container */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Top Section - 60% */
+        .workspace-section {
+            display: flex;
+            height: 60vh;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        /* Projects Sidebar */
+        .projects-sidebar {
+            width: 280px;
+            background: var(--color-bg-secondary);
+            border-right: 1px solid var(--color-border);
+            display: flex;
+            flex-direction: column;
+            animation: slideInLeft 0.4s ease-out;
+        }
+
+        @keyframes slideInLeft {
+            from {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .sidebar-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--color-bg-tertiary);
+        }
+
+        .sidebar-title {
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-text-secondary);
+        }
+
+        .sidebar-action {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            background: var(--color-bg-elevated);
+            border: 1px solid var(--color-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--color-text-secondary);
+            font-size: 16px;
+        }
+
+        .sidebar-action:hover {
+            background: var(--color-accent-blue);
+            border-color: var(--color-accent-blue);
+            color: white;
+            transform: scale(1.05);
+            box-shadow: var(--shadow-glow-blue);
+        }
+
+        .projects-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .project-item {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+            position: relative;
+            animation: fadeInUp 0.3s ease-out backwards;
+        }
+
+        .project-item:nth-child(1) { animation-delay: 0.05s; }
+        .project-item:nth-child(2) { animation-delay: 0.1s; }
+        .project-item:nth-child(3) { animation-delay: 0.15s; }
+        .project-item:nth-child(4) { animation-delay: 0.2s; }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .project-item:hover {
+            background: var(--color-bg-tertiary);
+            border-color: var(--color-border-hover);
+        }
+
+        .project-item.active {
+            background: var(--color-bg-elevated);
+            border-color: var(--color-accent-blue);
+            box-shadow: var(--shadow-glow-blue);
+        }
+
+        .project-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 60%;
+            background: var(--color-accent-blue);
+            border-radius: 0 2px 2px 0;
+        }
+
+        .project-name {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            color: var(--color-text-primary);
+        }
+
+        .project-path {
+            font-size: 12px;
+            color: var(--color-text-tertiary);
+            font-family: var(--font-mono);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .project-stats {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+            font-size: 11px;
+            font-family: var(--font-mono);
+        }
+
+        .project-stat {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--color-text-tertiary);
+        }
+
+        .stat-indicator {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--color-accent-green);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .stat-indicator.amber {
+            background: var(--color-accent-amber);
+        }
+
+        /* Multi-Project Workspace */
+        .multi-workspace {
+            flex: 1;
+            display: flex;
+            gap: 1px;
+            background: var(--color-border);
+        }
+
+        .workspace-pane {
+            flex: 1;
+            background: var(--color-bg-primary);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            animation: fadeIn 0.5s ease-out backwards;
+        }
+
+        .workspace-pane:nth-child(1) { animation-delay: 0.2s; }
+        .workspace-pane:nth-child(2) { animation-delay: 0.3s; }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .workspace-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--color-bg-secondary);
+        }
+
+        .workspace-project-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .workspace-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--color-accent-blue);
+            box-shadow: 0 0 10px var(--color-accent-blue);
+        }
+
+        .workspace-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .workspace-action-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            background: transparent;
+            border: none;
+            color: var(--color-text-tertiary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .workspace-action-btn:hover {
+            background: var(--color-bg-elevated);
+            color: var(--color-text-primary);
+        }
+
+        /* Tab Groups */
+        .tab-groups {
+            display: flex;
+            border-bottom: 1px solid var(--color-border);
+            background: var(--color-bg-secondary);
+            overflow-x: auto;
+        }
+
+        .tab-group {
+            display: flex;
+            border-right: 1px solid var(--color-border);
+        }
+
+        .tab {
+            padding: 10px 16px;
+            font-size: 13px;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+        }
+
+        .tab:hover {
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-primary);
+        }
+
+        .tab.active {
+            color: var(--color-text-primary);
+            border-bottom-color: var(--color-accent-blue);
+            background: var(--color-bg-primary);
+        }
+
+        .tab-close {
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            font-size: 12px;
+        }
+
+        .tab:hover .tab-close {
+            opacity: 1;
+        }
+
+        .tab-close:hover {
+            color: var(--color-accent-red);
+        }
+
+        /* Terminal Content Area */
+        .terminal-content {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .terminal-line {
+            margin-bottom: 4px;
+            animation: terminalType 0.3s ease-out backwards;
+        }
+
+        .terminal-line:nth-child(1) { animation-delay: 0.4s; }
+        .terminal-line:nth-child(2) { animation-delay: 0.45s; }
+        .terminal-line:nth-child(3) { animation-delay: 0.5s; }
+        .terminal-line:nth-child(4) { animation-delay: 0.55s; }
+
+        @keyframes terminalType {
+            from {
+                opacity: 0;
+                transform: translateX(-4px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .terminal-prompt {
+            color: var(--color-accent-blue);
+        }
+
+        .terminal-success {
+            color: var(--color-accent-green);
+        }
+
+        .terminal-warning {
+            color: var(--color-accent-amber);
+        }
+
+        .terminal-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background: var(--color-accent-blue);
+            animation: blink 1s step-end infinite;
+            margin-left: 2px;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        /* Bottom Panel Section - 40% */
+        .bottom-panel-section {
+            height: 40vh;
+            background: var(--color-bg-secondary);
+            display: flex;
+            flex-direction: column;
+            border-top: 2px solid var(--color-accent-blue-dim);
+            position: relative;
+            animation: slideInUp 0.5s ease-out 0.3s backwards;
+        }
+
+        @keyframes slideInUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .bottom-panel-section::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg,
+                transparent 0%,
+                var(--color-accent-blue) 20%,
+                var(--color-accent-blue) 80%,
+                transparent 100%);
+            box-shadow: 0 0 20px var(--color-accent-blue);
+        }
+
+        /* Bottom Panel Tabs */
+        .bottom-panel-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--color-border);
+            background: var(--color-bg-tertiary);
+            padding: 0 8px;
+        }
+
+        .bottom-tab {
+            padding: 12px 20px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+        }
+
+        .bottom-tab:hover {
+            color: var(--color-text-primary);
+            background: var(--color-bg-elevated);
+        }
+
+        .bottom-tab.active {
+            color: var(--color-accent-blue);
+            border-bottom-color: var(--color-accent-blue);
+            background: var(--color-bg-secondary);
+        }
+
+        .tab-badge {
+            background: var(--color-accent-red);
+            color: white;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 10px;
+            min-width: 18px;
+            text-align: center;
+        }
+
+        .tab-badge.amber {
+            background: var(--color-accent-amber);
+        }
+
+        .tab-badge.green {
+            background: var(--color-accent-green);
+        }
+
+        /* Bottom Panel Content */
+        .bottom-panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        /* Activity Feed (in bottom panel) */
+        .activity-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 12px;
+        }
+
+        .activity-card {
+            background: var(--color-bg-elevated);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 16px;
+            transition: all 0.2s ease;
+            animation: scaleIn 0.3s ease-out backwards;
+        }
+
+        .activity-card:nth-child(1) { animation-delay: 0.5s; }
+        .activity-card:nth-child(2) { animation-delay: 0.55s; }
+        .activity-card:nth-child(3) { animation-delay: 0.6s; }
+        .activity-card:nth-child(4) { animation-delay: 0.65s; }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .activity-card:hover {
+            border-color: var(--color-accent-blue);
+            box-shadow: var(--shadow-glow-blue);
+            transform: translateY(-2px);
+        }
+
+        .activity-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .activity-agent {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .agent-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            background: linear-gradient(135deg, var(--color-accent-blue), var(--color-accent-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .activity-time {
+            font-size: 11px;
+            color: var(--color-text-tertiary);
+            font-family: var(--font-mono);
+        }
+
+        .activity-message {
+            font-size: 13px;
+            color: var(--color-text-secondary);
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .activity-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            font-family: var(--font-mono);
+        }
+
+        .activity-status.running {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--color-accent-blue);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .activity-status.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--color-accent-green);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .activity-status.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--color-accent-red);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        /* Problems List */
+        .problems-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .problem-item {
+            background: var(--color-bg-elevated);
+            border-left: 3px solid var(--color-accent-red);
+            padding: 12px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            animation: slideInRight 0.3s ease-out backwards;
+        }
+
+        .problem-item:nth-child(1) { animation-delay: 0.5s; }
+        .problem-item:nth-child(2) { animation-delay: 0.55s; }
+        .problem-item:nth-child(3) { animation-delay: 0.6s; }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .problem-item:hover {
+            background: var(--color-bg-tertiary);
+            transform: translateX(4px);
+        }
+
+        .problem-item.warning {
+            border-left-color: var(--color-accent-amber);
+        }
+
+        .problem-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .problem-icon {
+            font-size: 14px;
+        }
+
+        .problem-message {
+            font-size: 13px;
+            color: var(--color-text-primary);
+            font-weight: 500;
+        }
+
+        .problem-location {
+            font-size: 12px;
+            color: var(--color-text-tertiary);
+            font-family: var(--font-mono);
+            margin-left: 22px;
+        }
+
+        /* Agent Log */
+        .agent-log {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .log-entry {
+            padding: 8px 12px;
+            border-left: 2px solid transparent;
+            margin-bottom: 2px;
+            transition: all 0.2s ease;
+            animation: logAppear 0.3s ease-out backwards;
+        }
+
+        .log-entry:nth-child(1) { animation-delay: 0.5s; }
+        .log-entry:nth-child(2) { animation-delay: 0.52s; }
+        .log-entry:nth-child(3) { animation-delay: 0.54s; }
+        .log-entry:nth-child(4) { animation-delay: 0.56s; }
+        .log-entry:nth-child(5) { animation-delay: 0.58s; }
+        .log-entry:nth-child(6) { animation-delay: 0.6s; }
+
+        @keyframes logAppear {
+            from {
+                opacity: 0;
+                transform: translateY(-4px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .log-entry:hover {
+            background: var(--color-bg-elevated);
+            border-left-color: var(--color-accent-blue);
+        }
+
+        .log-timestamp {
+            color: var(--color-text-tertiary);
+            margin-right: 12px;
+        }
+
+        .log-level {
+            margin-right: 12px;
+            font-weight: 600;
+        }
+
+        .log-level.info {
+            color: var(--color-accent-blue);
+        }
+
+        .log-level.success {
+            color: var(--color-accent-green);
+        }
+
+        .log-level.warning {
+            color: var(--color-accent-amber);
+        }
+
+        .log-level.error {
+            color: var(--color-accent-red);
+        }
+
+        .log-message {
+            color: var(--color-text-secondary);
+        }
+
+        /* Output Panel */
+        .output-content {
+            font-family: var(--font-mono);
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            color: var(--color-text-secondary);
+        }
+
+        /* Status Bar */
+        .status-bar {
+            height: 28px;
+            background: var(--color-accent-blue-dim);
+            border-top: 1px solid var(--color-accent-blue);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 16px;
+            font-size: 12px;
+            color: var(--color-text-primary);
+            animation: slideInUp 0.4s ease-out 0.6s backwards;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .status-item:hover {
+            color: var(--color-accent-blue);
+        }
+
+        .status-icon {
+            font-size: 14px;
+        }
+
+        .status-separator {
+            width: 1px;
+            height: 16px;
+            background: var(--color-border);
+        }
+
+        .status-value {
+            font-family: var(--font-mono);
+            color: var(--color-text-secondary);
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--color-bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--color-bg-elevated);
+            border-radius: 5px;
+            border: 2px solid var(--color-bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--color-border-hover);
+        }
+
+        /* Panel content containers */
+        .panel-content-hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Section: 60% - Projects + Multi-Workspace -->
+        <div class="workspace-section">
+            <!-- Projects Sidebar -->
+            <div class="projects-sidebar">
+                <div class="sidebar-header">
+                    <div class="sidebar-title">Projects</div>
+                    <button class="sidebar-action">+</button>
+                </div>
+                <div class="projects-list">
+                    <div class="project-item active">
+                        <div class="project-name">claude-manager</div>
+                        <div class="project-path">~/personal/claudeManager</div>
+                        <div class="project-stats">
+                            <div class="project-stat">
+                                <span class="stat-indicator"></span>
+                                <span>2 agents</span>
+                            </div>
+                            <div class="project-stat">
+                                <span>4 terminals</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="project-item">
+                        <div class="project-name">sales-trainer</div>
+                        <div class="project-path">~/helios/sales-trainer</div>
+                        <div class="project-stats">
+                            <div class="project-stat">
+                                <span class="stat-indicator amber"></span>
+                                <span>1 agent</span>
+                            </div>
+                            <div class="project-stat">
+                                <span>2 terminals</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="project-item">
+                        <div class="project-name">api-gateway</div>
+                        <div class="project-path">~/work/api-gateway</div>
+                        <div class="project-stats">
+                            <div class="project-stat">
+                                <span>0 agents</span>
+                            </div>
+                            <div class="project-stat">
+                                <span>1 terminal</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="project-item">
+                        <div class="project-name">discord-bot</div>
+                        <div class="project-path">~/personal/discord-bot</div>
+                        <div class="project-stats">
+                            <div class="project-stat">
+                                <span>0 agents</span>
+                            </div>
+                            <div class="project-stat">
+                                <span>3 terminals</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Multi-Project Workspace -->
+            <div class="multi-workspace">
+                <!-- Workspace Pane 1 -->
+                <div class="workspace-pane">
+                    <div class="workspace-header">
+                        <div class="workspace-project-name">
+                            <span class="workspace-indicator"></span>
+                            <span>claude-manager</span>
+                        </div>
+                        <div class="workspace-actions">
+                            <button class="workspace-action-btn">⊞</button>
+                            <button class="workspace-action-btn">⋮</button>
+                        </div>
+                    </div>
+                    <div class="tab-groups">
+                        <div class="tab-group">
+                            <div class="tab active">
+                                <span>terminal-1</span>
+                                <span class="tab-close">×</span>
+                            </div>
+                            <div class="tab">
+                                <span>terminal-2</span>
+                                <span class="tab-close">×</span>
+                            </div>
+                            <div class="tab">
+                                <span>backend</span>
+                                <span class="tab-close">×</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="terminal-content">
+                        <div class="terminal-line">
+                            <span class="terminal-prompt">~/personal/claudeManager $</span> bun run dev
+                        </div>
+                        <div class="terminal-line terminal-success">
+                            ✓ Backend started on http://localhost:3000
+                        </div>
+                        <div class="terminal-line terminal-success">
+                            ✓ Frontend started on http://localhost:5173
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-prompt">~/personal/claudeManager $</span> <span class="terminal-cursor"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Workspace Pane 2 -->
+                <div class="workspace-pane">
+                    <div class="workspace-header">
+                        <div class="workspace-project-name">
+                            <span class="workspace-indicator" style="background: var(--color-accent-amber); box-shadow: 0 0 10px var(--color-accent-amber);"></span>
+                            <span>sales-trainer</span>
+                        </div>
+                        <div class="workspace-actions">
+                            <button class="workspace-action-btn">⊞</button>
+                            <button class="workspace-action-btn">⋮</button>
+                        </div>
+                    </div>
+                    <div class="tab-groups">
+                        <div class="tab-group">
+                            <div class="tab active">
+                                <span>main</span>
+                                <span class="tab-close">×</span>
+                            </div>
+                            <div class="tab">
+                                <span>test</span>
+                                <span class="tab-close">×</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="terminal-content">
+                        <div class="terminal-line">
+                            <span class="terminal-prompt">~/helios/sales-trainer $</span> npm run build
+                        </div>
+                        <div class="terminal-line">
+                            Building for production...
+                        </div>
+                        <div class="terminal-line terminal-warning">
+                            ⚠ Warning: Large bundle size detected (2.3MB)
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-prompt">~/helios/sales-trainer $</span> <span class="terminal-cursor"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Panel Section: 40% - Activity, Problems, Agent Log, Output -->
+        <div class="bottom-panel-section">
+            <div class="bottom-panel-tabs">
+                <div class="bottom-tab active">
+                    <span>🔥</span>
+                    <span>Activity</span>
+                    <span class="tab-badge green">4</span>
+                </div>
+                <div class="bottom-tab">
+                    <span>⚠</span>
+                    <span>Problems</span>
+                    <span class="tab-badge">3</span>
+                </div>
+                <div class="bottom-tab">
+                    <span>📋</span>
+                    <span>Agent Log</span>
+                    <span class="tab-badge amber">126</span>
+                </div>
+                <div class="bottom-tab">
+                    <span>📤</span>
+                    <span>Output</span>
+                </div>
+            </div>
+
+            <div class="bottom-panel-content">
+                <!-- Activity Panel (visible by default) -->
+                <div class="activity-grid" id="activity-panel">
+                    <div class="activity-card">
+                        <div class="activity-header">
+                            <div class="activity-agent">
+                                <div class="agent-avatar">A1</div>
+                                <span>Agent-Frontend</span>
+                            </div>
+                            <div class="activity-time">2m ago</div>
+                        </div>
+                        <div class="activity-message">
+                            Implementing CommonSidebar component with paneforge integration
+                        </div>
+                        <span class="activity-status running">
+                            <span>●</span> RUNNING
+                        </span>
+                    </div>
+
+                    <div class="activity-card">
+                        <div class="activity-header">
+                            <div class="activity-agent">
+                                <div class="agent-avatar" style="background: linear-gradient(135deg, var(--color-accent-green), var(--color-accent-blue));">A2</div>
+                                <span>Agent-Backend</span>
+                            </div>
+                            <div class="activity-time">5m ago</div>
+                        </div>
+                        <div class="activity-message">
+                            WebSocket PTY handler completed with error handling
+                        </div>
+                        <span class="activity-status success">
+                            <span>✓</span> SUCCESS
+                        </span>
+                    </div>
+
+                    <div class="activity-card">
+                        <div class="activity-header">
+                            <div class="activity-agent">
+                                <div class="agent-avatar" style="background: linear-gradient(135deg, var(--color-accent-amber), var(--color-accent-red));">A3</div>
+                                <span>Agent-Database</span>
+                            </div>
+                            <div class="activity-time">12m ago</div>
+                        </div>
+                        <div class="activity-message">
+                            Migration failed: unique constraint violation on session_id
+                        </div>
+                        <span class="activity-status error">
+                            <span>✕</span> ERROR
+                        </span>
+                    </div>
+
+                    <div class="activity-card">
+                        <div class="activity-header">
+                            <div class="activity-agent">
+                                <div class="agent-avatar" style="background: linear-gradient(135deg, var(--color-accent-purple), var(--color-accent-blue));">A4</div>
+                                <span>Agent-Testing</span>
+                            </div>
+                            <div class="activity-time">18m ago</div>
+                        </div>
+                        <div class="activity-message">
+                            Running E2E tests for terminal creation and management
+                        </div>
+                        <span class="activity-status running">
+                            <span>●</span> RUNNING
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Problems Panel (hidden by default) -->
+                <div class="problems-list panel-content-hidden" id="problems-panel">
+                    <div class="problem-item">
+                        <div class="problem-header">
+                            <span class="problem-icon">🔴</span>
+                            <span class="problem-message">Type 'SessionId' is not assignable to type 'string'</span>
+                        </div>
+                        <div class="problem-location">apps/backend/src/auth/auth.service.ts:42:18</div>
+                    </div>
+
+                    <div class="problem-item warning">
+                        <div class="problem-header">
+                            <span class="problem-icon">🟡</span>
+                            <span class="problem-message">Unused variable 'userId' detected</span>
+                        </div>
+                        <div class="problem-location">apps/backend/src/terminal/terminal.service.ts:87:12</div>
+                    </div>
+
+                    <div class="problem-item">
+                        <div class="problem-header">
+                            <span class="problem-icon">🔴</span>
+                            <span class="problem-message">Cannot find module './types'</span>
+                        </div>
+                        <div class="problem-location">apps/frontend/src/lib/features/terminal/Terminal.component.svelte:3:25</div>
+                    </div>
+                </div>
+
+                <!-- Agent Log Panel (hidden by default) -->
+                <div class="agent-log panel-content-hidden" id="log-panel">
+                    <div class="log-entry">
+                        <span class="log-timestamp">14:23:45</span>
+                        <span class="log-level info">[INFO]</span>
+                        <span class="log-message">Agent-Frontend: Starting task execution</span>
+                    </div>
+                    <div class="log-entry">
+                        <span class="log-timestamp">14:23:47</span>
+                        <span class="log-level info">[INFO]</span>
+                        <span class="log-message">Agent-Frontend: Reading file CommonSidebar.component.svelte</span>
+                    </div>
+                    <div class="log-entry">
+                        <span class="log-timestamp">14:23:48</span>
+                        <span class="log-level success">[SUCCESS]</span>
+                        <span class="log-message">Agent-Frontend: File read completed (2.4KB)</span>
+                    </div>
+                    <div class="log-entry">
+                        <span class="log-timestamp">14:23:52</span>
+                        <span class="log-level warning">[WARN]</span>
+                        <span class="log-message">Agent-Backend: Deprecated API usage detected in terminal.service.ts</span>
+                    </div>
+                    <div class="log-entry">
+                        <span class="log-timestamp">14:24:03</span>
+                        <span class="log-level error">[ERROR]</span>
+                        <span class="log-message">Agent-Database: Migration rollback initiated due to constraint violation</span>
+                    </div>
+                    <div class="log-entry">
+                        <span class="log-timestamp">14:24:15</span>
+                        <span class="log-level info">[INFO]</span>
+                        <span class="log-message">Agent-Testing: Test suite execution started (42 tests)</span>
+                    </div>
+                </div>
+
+                <!-- Output Panel (hidden by default) -->
+                <div class="output-content panel-content-hidden" id="output-panel">
+$ bun run backend:dev
+
+[Backend] Starting ElysiaJS server...
+[Backend] ✓ Database connected: ./data/claude-manager.db
+[Backend] ✓ WebSocket server initialized on ws://localhost:3000/ws
+[Backend] ✓ Server listening on http://localhost:3000
+[Backend]
+[Backend] Routes registered:
+[Backend]   POST   /api/auth/login
+[Backend]   GET    /api/projects
+[Backend]   POST   /api/projects
+[Backend]   GET    /api/terminals/:id
+[Backend]   POST   /api/terminals
+[Backend]   WS     /ws/terminal/:id
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-item">
+                <span class="status-icon">◉</span>
+                <span>4 Active Agents</span>
+            </div>
+            <div class="status-separator"></div>
+            <div class="status-item">
+                <span class="status-icon">⚡</span>
+                <span>7 Terminals</span>
+            </div>
+            <div class="status-separator"></div>
+            <div class="status-item">
+                <span class="status-icon">📁</span>
+                <span>4 Projects</span>
+            </div>
+            <div class="status-separator"></div>
+            <div class="status-item">
+                <span>CPU:</span>
+                <span class="status-value">42%</span>
+            </div>
+            <div class="status-separator"></div>
+            <div class="status-item">
+                <span>MEM:</span>
+                <span class="status-value">6.2 / 16 GB</span>
+            </div>
+            <div style="flex: 1;"></div>
+            <div class="status-item">
+                <span class="status-icon">🟢</span>
+                <span>Connected</span>
+            </div>
+            <div class="status-separator"></div>
+            <div class="status-item">
+                <span>14:24:32</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching functionality for bottom panel
+        document.querySelectorAll('.bottom-tab').forEach((tab, index) => {
+            tab.addEventListener('click', () => {
+                // Remove active class from all tabs
+                document.querySelectorAll('.bottom-tab').forEach(t => t.classList.remove('active'));
+
+                // Add active class to clicked tab
+                tab.classList.add('active');
+
+                // Hide all panels
+                document.getElementById('activity-panel').classList.add('panel-content-hidden');
+                document.getElementById('problems-panel').classList.add('panel-content-hidden');
+                document.getElementById('log-panel').classList.add('panel-content-hidden');
+                document.getElementById('output-panel').classList.add('panel-content-hidden');
+
+                // Show corresponding panel
+                const panels = ['activity-panel', 'problems-panel', 'log-panel', 'output-panel'];
+                document.getElementById(panels[index]).classList.remove('panel-content-hidden');
+            });
+        });
+
+        // Simulate live updates
+        setInterval(() => {
+            const timestamp = document.querySelector('.status-bar .status-item:last-child span');
+            const now = new Date();
+            timestamp.textContent = now.toTimeString().split(' ')[0];
+        }, 1000);
+    </script>
+</body>
+</html>

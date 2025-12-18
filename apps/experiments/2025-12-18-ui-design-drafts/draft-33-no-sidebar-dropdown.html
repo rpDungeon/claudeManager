@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Manager - Draft 33: No Sidebar Dropdown</title>
+  <style>
+    /* ============================================
+       RESET & BASE
+       ============================================ */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* ============================================
+       LAYOUT STRUCTURE
+       ============================================ */
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* ============================================
+       TOP BAR - Minimal header with project dropdown
+       ============================================ */
+    .top-bar {
+      height: 40px;
+      background: #111111;
+      border-bottom: 1px solid #1a1a1a;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+
+    .logo {
+      font-size: 13px;
+      font-weight: 600;
+      color: #00ff88;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+      font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+    }
+
+    .project-dropdown {
+      position: relative;
+      margin-left: auto;
+    }
+
+    .dropdown-trigger {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 13px;
+      color: #e0e0e0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.15s ease;
+    }
+
+    .dropdown-trigger:hover {
+      background: #222222;
+      border-color: #333333;
+    }
+
+    .dropdown-icon {
+      width: 16px;
+      height: 16px;
+      fill: #888888;
+      transition: transform 0.2s ease;
+    }
+
+    .dropdown-trigger:hover .dropdown-icon {
+      fill: #aaaaaa;
+    }
+
+    /* ============================================
+       WORKSPACE - Side by side projects
+       ============================================ */
+    .workspace {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: #0a0a0a;
+      overflow: hidden;
+    }
+
+    /* ============================================
+       PROJECT CONTAINER
+       ============================================ */
+    .project-container {
+      background: #0f0f0f;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Project tabs bar */
+    .project-tabs {
+      height: 36px;
+      background: #141414;
+      border-bottom: 1px solid #1a1a1a;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      gap: 4px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .project-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .project-tab {
+      padding: 6px 12px;
+      font-size: 12px;
+      color: #888888;
+      background: transparent;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+      font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+    }
+
+    .project-tab:hover {
+      background: #1a1a1a;
+      color: #aaaaaa;
+    }
+
+    .project-tab.active {
+      background: #1f1f1f;
+      color: #00ff88;
+    }
+
+    .project-tab-close {
+      margin-left: 8px;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+
+    .project-tab:hover .project-tab-close {
+      opacity: 1;
+    }
+
+    .project-tab.active .project-tab-close {
+      opacity: 0.7;
+    }
+
+    /* New session button */
+    .new-session-btn {
+      margin-left: auto;
+      padding: 6px 10px;
+      font-size: 11px;
+      color: #00ff88;
+      background: transparent;
+      border: 1px solid #1a1a1a;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+    }
+
+    .new-session-btn:hover {
+      background: #1a1a1a;
+      border-color: #00ff88;
+    }
+
+    /* ============================================
+       TERMINAL AREA - CRT aesthetic, maximum space
+       ============================================ */
+    .terminal-area {
+      flex: 1;
+      background: #000000;
+      padding: 16px;
+      overflow: hidden;
+      position: relative;
+      font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    /* CRT scanlines effect */
+    .terminal-area::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0) 50%,
+        rgba(0, 0, 0, 0.05) 50%
+      );
+      background-size: 100% 4px;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* CRT glow effect */
+    .terminal-area::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(ellipse at center, rgba(0, 255, 136, 0.03) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .terminal-content {
+      position: relative;
+      z-index: 3;
+      color: #00ff88;
+      text-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
+    }
+
+    .terminal-line {
+      margin-bottom: 4px;
+    }
+
+    .terminal-prompt {
+      color: #00ff88;
+      opacity: 0.8;
+    }
+
+    .terminal-cursor {
+      display: inline-block;
+      width: 8px;
+      height: 16px;
+      background: #00ff88;
+      animation: blink 1s infinite;
+      margin-left: 2px;
+      vertical-align: middle;
+    }
+
+    @keyframes blink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+
+    .terminal-output {
+      color: #a0a0a0;
+      opacity: 0.9;
+    }
+
+    .terminal-error {
+      color: #ff5555;
+    }
+
+    .terminal-success {
+      color: #00ff88;
+    }
+
+    /* ============================================
+       BOTTOM BAR - Tmux-style status bar
+       ============================================ */
+    .bottom-bar {
+      height: 28px;
+      background: #0a0a0a;
+      border-top: 1px solid #1a1a1a;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      font-size: 11px;
+      font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+      flex-shrink: 0;
+    }
+
+    .status-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      color: #888888;
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-label {
+      color: #00ff88;
+      font-weight: 600;
+    }
+
+    .status-value {
+      color: #e0e0e0;
+    }
+
+    .status-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      color: #888888;
+    }
+
+    .status-indicator {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #00ff88;
+      box-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+    }
+
+    .status-indicator.inactive {
+      background: #555555;
+      box-shadow: none;
+    }
+
+    /* ============================================
+       SCROLLBAR STYLING
+       ============================================ */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #0a0a0a;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #2a2a2a;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #333333;
+    }
+
+    /* ============================================
+       RESPONSIVE ADJUSTMENTS
+       ============================================ */
+    @media (max-width: 1200px) {
+      .workspace {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr 1fr;
+      }
+    }
+
+    /* ============================================
+       UTILITY CLASSES
+       ============================================ */
+    .text-muted {
+      color: #666666;
+    }
+
+    .text-accent {
+      color: #00ff88;
+    }
+
+    .text-dim {
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- TOP BAR -->
+    <div class="top-bar">
+      <div class="logo">Claude Manager</div>
+
+      <div class="project-dropdown">
+        <button class="dropdown-trigger">
+          <span>All Projects</span>
+          <svg class="dropdown-icon" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- WORKSPACE - Side by side projects -->
+    <div class="workspace">
+      <!-- PROJECT 1: Sales Trainer -->
+      <div class="project-container">
+        <div class="project-tabs">
+          <button class="project-tab active">
+            main-development
+            <span class="project-tab-close">×</span>
+          </button>
+          <button class="project-tab">
+            feature-auth
+            <span class="project-tab-close">×</span>
+          </button>
+          <button class="project-tab">
+            fix-ui-bug
+            <span class="project-tab-close">×</span>
+          </button>
+          <button class="new-session-btn">+ New</button>
+        </div>
+
+        <div class="terminal-area">
+          <div class="terminal-content">
+            <div class="terminal-line">
+              <span class="terminal-prompt">~/helios/sales-trainer $</span> npm run dev
+            </div>
+            <div class="terminal-line terminal-output">
+              <span class="text-muted">[16:42:33]</span> Starting development server...
+            </div>
+            <div class="terminal-line terminal-success">
+              <span class="text-muted">[16:42:35]</span> ✓ Local: http://localhost:5173/
+            </div>
+            <div class="terminal-line terminal-success">
+              <span class="text-muted">[16:42:35]</span> ✓ Network: http://192.168.1.10:5173/
+            </div>
+            <div class="terminal-line terminal-output">
+              <span class="text-muted">[16:42:36]</span> ready in 2.3s
+            </div>
+            <div class="terminal-line">
+              <span class="terminal-prompt">~/helios/sales-trainer $</span><span class="terminal-cursor"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROJECT 2: Claude Manager -->
+      <div class="project-container">
+        <div class="project-tabs">
+          <button class="project-tab active">
+            backend-api
+            <span class="project-tab-close">×</span>
+          </button>
+          <button class="project-tab">
+            frontend-ui
+            <span class="project-tab-close">×</span>
+          </button>
+          <button class="new-session-btn">+ New</button>
+        </div>
+
+        <div class="terminal-area">
+          <div class="terminal-content">
+            <div class="terminal-line">
+              <span class="terminal-prompt">~/personal/claudeManager $</span> bun run dev
+            </div>
+            <div class="terminal-line terminal-output">
+              <span class="text-muted">[16:43:01]</span> $ bun run --filter '*' dev
+            </div>
+            <div class="terminal-line terminal-success">
+              <span class="text-muted">[16:43:02]</span> backend:dev ✓ ElysiaJS listening on http://localhost:3000
+            </div>
+            <div class="terminal-line terminal-success">
+              <span class="text-muted">[16:43:03]</span> frontend:dev ✓ SvelteKit running on http://localhost:5174
+            </div>
+            <div class="terminal-line terminal-output">
+              <span class="text-muted">[16:43:04]</span> WebSocket server ready on ws://localhost:3000/pty
+            </div>
+            <div class="terminal-line terminal-output">
+              <span class="text-muted">[16:43:05]</span> Database connected: ./data/claude-manager.db
+            </div>
+            <div class="terminal-line">
+              <span class="terminal-prompt">~/personal/claudeManager $</span><span class="terminal-cursor"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOTTOM BAR - Tmux-style status -->
+    <div class="bottom-bar">
+      <div class="status-left">
+        <div class="status-item">
+          <span class="status-label">[sales-trainer]</span>
+          <span class="status-value">3 sessions</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">[claudeManager]</span>
+          <span class="status-value">2 sessions</span>
+        </div>
+      </div>
+
+      <div class="status-right">
+        <div class="status-item">
+          <span class="status-indicator"></span>
+          <span class="status-value">5 active</span>
+        </div>
+        <div class="status-item">
+          <span class="status-value">16:43:28</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Simple interactivity for demo purposes
+    document.querySelectorAll('.project-tab').forEach(tab => {
+      tab.addEventListener('click', function(e) {
+        if (!e.target.classList.contains('project-tab-close')) {
+          const parent = this.parentElement;
+          parent.querySelectorAll('.project-tab').forEach(t => t.classList.remove('active'));
+          this.classList.add('active');
+        }
+      });
+    });
+
+    document.querySelectorAll('.project-tab-close').forEach(close => {
+      close.addEventListener('click', function(e) {
+        e.stopPropagation();
+        this.parentElement.remove();
+      });
+    });
+
+    // Update clock
+    function updateClock() {
+      const now = new Date();
+      const time = now.toTimeString().split(' ')[0];
+      document.querySelectorAll('.status-right .status-value').forEach((el, i) => {
+        if (i === document.querySelectorAll('.status-right .status-value').length - 1) {
+          el.textContent = time;
+        }
+      });
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+  </script>
+</body>
+</html>

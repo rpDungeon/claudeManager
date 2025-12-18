@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Manager - Dense Tree View</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #0a0a0f;
+      --bg-secondary: #12121a;
+      --bg-tertiary: #1a1a24;
+      --bg-sidebar: #0d0d14;
+      --border: #252530;
+      --border-light: #32323e;
+
+      --text-primary: #e4e4e7;
+      --text-secondary: #a1a1aa;
+      --text-tertiary: #71717a;
+      --text-dim: #52525b;
+
+      --accent-blue: #3b82f6;
+      --accent-green: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-red: #ef4444;
+      --accent-purple: #8b5cf6;
+
+      --status-active: #10b981;
+      --status-paused: #f59e0b;
+      --status-error: #ef4444;
+      --status-idle: #71717a;
+
+      --font-mono: 'IBM Plex Mono', monospace;
+      --font-sans: 'Inter', system-ui, sans-serif;
+
+      --sidebar-width: 200px;
+      --topbar-height: 32px;
+      --bottombar-height: 22px;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      overflow: hidden;
+      height: 100vh;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    /* Layout */
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    .topbar {
+      height: var(--topbar-height);
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .topbar-logo {
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+      text-transform: uppercase;
+    }
+
+    .topbar-divider {
+      width: 1px;
+      height: 14px;
+      background: var(--border);
+    }
+
+    .topbar-tabs {
+      display: flex;
+      gap: 2px;
+    }
+
+    .topbar-tab {
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      background: transparent;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .topbar-tab:hover {
+      color: var(--text-secondary);
+      background: var(--bg-tertiary);
+    }
+
+    .topbar-tab.active {
+      color: var(--text-primary);
+      background: var(--bg-tertiary);
+    }
+
+    .main-content {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: var(--sidebar-width);
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .sidebar-header {
+      padding: 8px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .sidebar-title {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .sidebar-actions {
+      display: flex;
+      gap: 3px;
+    }
+
+    .icon-btn {
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      border-radius: 3px;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-size: 12px;
+    }
+
+    .icon-btn:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+    }
+
+    .sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .sidebar-content::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .sidebar-content::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .sidebar-content::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+
+    .sidebar-content::-webkit-scrollbar-thumb:hover {
+      background: var(--border-light);
+    }
+
+    /* Tree View */
+    .tree {
+      padding: 4px;
+    }
+
+    .tree-node {
+      margin-bottom: 1px;
+    }
+
+    .tree-node-header {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 4px;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.12s ease;
+      font-size: 11px;
+    }
+
+    .tree-node-header:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .tree-node.active > .tree-node-header {
+      background: var(--bg-tertiary);
+    }
+
+    .tree-toggle {
+      width: 12px;
+      height: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-dim);
+      font-size: 8px;
+      flex-shrink: 0;
+      transition: transform 0.15s ease;
+    }
+
+    .tree-node.collapsed .tree-toggle {
+      transform: rotate(-90deg);
+    }
+
+    .tree-icon {
+      width: 13px;
+      height: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .tree-label {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 500;
+      color: var(--text-primary);
+      font-size: 11px;
+    }
+
+    .tree-meta {
+      font-size: 9px;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      flex-shrink: 0;
+    }
+
+    .tree-status {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .tree-status.active { background: var(--status-active); }
+    .tree-status.paused { background: var(--status-paused); }
+    .tree-status.error { background: var(--status-error); }
+    .tree-status.idle { background: var(--status-idle); }
+
+    .tree-children {
+      margin-left: 12px;
+      border-left: 1px solid var(--border);
+      padding-left: 4px;
+      margin-top: 1px;
+    }
+
+    .tree-node.collapsed > .tree-children {
+      display: none;
+    }
+
+    /* Session nodes */
+    .tree-node.session .tree-node-header {
+      padding-left: 4px;
+    }
+
+    .tree-node.session .tree-label {
+      font-weight: 400;
+      color: var(--text-secondary);
+      font-size: 10px;
+    }
+
+    .tree-node.session.active .tree-label {
+      color: var(--text-primary);
+    }
+
+    /* Terminal View */
+    .terminal-view {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .pane-container {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 1px;
+      background: var(--border);
+      overflow: hidden;
+    }
+
+    .terminal-pane {
+      background: var(--bg-primary);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .terminal-header {
+      height: 24px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .terminal-tabs {
+      flex: 1;
+      display: flex;
+      gap: 1px;
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+
+    .terminal-tabs::-webkit-scrollbar {
+      height: 0;
+    }
+
+    .terminal-tab {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 0 8px;
+      height: 20px;
+      background: transparent;
+      border: none;
+      border-radius: 3px 3px 0 0;
+      font-size: 10px;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      transition: all 0.12s ease;
+      white-space: nowrap;
+      font-family: var(--font-mono);
+    }
+
+    .terminal-tab:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+    }
+
+    .terminal-tab.active {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+    }
+
+    .terminal-tab-close {
+      width: 12px;
+      height: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-dim);
+      font-size: 10px;
+      border-radius: 2px;
+      transition: all 0.12s ease;
+    }
+
+    .terminal-tab-close:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+    }
+
+    .terminal-controls {
+      display: flex;
+      gap: 3px;
+    }
+
+    .terminal-body {
+      flex: 1;
+      background: #000000;
+      padding: 8px;
+      overflow: hidden;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      line-height: 1.5;
+      color: #00ff41;
+      position: relative;
+    }
+
+    .terminal-body::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        repeating-linear-gradient(
+          0deg,
+          rgba(0, 255, 65, 0.03) 0px,
+          transparent 1px,
+          transparent 2px,
+          rgba(0, 255, 65, 0.03) 3px
+        );
+      pointer-events: none;
+      opacity: 0.5;
+    }
+
+    .terminal-line {
+      margin-bottom: 2px;
+    }
+
+    .terminal-prompt {
+      color: #00ff41;
+      opacity: 0.7;
+    }
+
+    .terminal-command {
+      color: #00ff41;
+    }
+
+    .terminal-output {
+      color: #00d636;
+      opacity: 0.85;
+    }
+
+    .terminal-cursor {
+      display: inline-block;
+      width: 7px;
+      height: 14px;
+      background: #00ff41;
+      margin-left: 2px;
+      animation: blink 1s step-end infinite;
+    }
+
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+
+    /* Bottom Bar */
+    .bottombar {
+      height: var(--bottombar-height);
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      gap: 12px;
+      font-size: 10px;
+      flex-shrink: 0;
+    }
+
+    .bottombar-section {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .bottombar-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-tertiary);
+      font-family: var(--font-mono);
+    }
+
+    .bottombar-item-label {
+      color: var(--text-dim);
+    }
+
+    .bottombar-item-value {
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .bottombar-divider {
+      width: 1px;
+      height: 12px;
+      background: var(--border);
+    }
+
+    .bottombar-status {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .bottombar-status.active { background: var(--status-active); }
+    .bottombar-status.error { background: var(--status-error); }
+    .bottombar-status.idle { background: var(--status-idle); }
+
+    /* Resize Handle */
+    .resize-handle {
+      position: absolute;
+      background: transparent;
+      z-index: 10;
+    }
+
+    .resize-handle.horizontal {
+      width: 100%;
+      height: 4px;
+      cursor: row-resize;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .resize-handle.vertical {
+      width: 4px;
+      height: 100%;
+      cursor: col-resize;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .resize-handle:hover {
+      background: var(--accent-blue);
+      opacity: 0.3;
+    }
+
+    /* Animations */
+    @keyframes slideInFromLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .tree-node {
+      animation: slideInFromLeft 0.2s ease backwards;
+    }
+
+    .tree-node:nth-child(1) { animation-delay: 0.02s; }
+    .tree-node:nth-child(2) { animation-delay: 0.04s; }
+    .tree-node:nth-child(3) { animation-delay: 0.06s; }
+    .tree-node:nth-child(4) { animation-delay: 0.08s; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .terminal-pane {
+      animation: fadeIn 0.3s ease;
+    }
+
+    /* Utility */
+    .flex-1 { flex: 1; }
+    .ml-auto { margin-left: auto; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Bar -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-logo">Claude Manager</div>
+        <div class="topbar-divider"></div>
+        <div class="topbar-tabs">
+          <button class="topbar-tab active">Dashboard</button>
+          <button class="topbar-tab">Workspace</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="sidebar-header">
+          <div class="sidebar-title">Projects</div>
+          <div class="sidebar-actions">
+            <button class="icon-btn" title="Add Project">+</button>
+            <button class="icon-btn" title="Collapse All">−</button>
+          </div>
+        </div>
+        <div class="sidebar-content">
+          <div class="tree">
+            <!-- Project 1 -->
+            <div class="tree-node active">
+              <div class="tree-node-header">
+                <span class="tree-toggle">▼</span>
+                <span class="tree-icon">📁</span>
+                <span class="tree-label">web-scraper</span>
+                <span class="tree-status active"></span>
+                <span class="tree-meta">3</span>
+              </div>
+              <div class="tree-children">
+                <div class="tree-node session active">
+                  <div class="tree-node-header">
+                    <span class="tree-toggle"></span>
+                    <span class="tree-icon">💬</span>
+                    <span class="tree-label">fix-pagination</span>
+                    <span class="tree-status active"></span>
+                    <span class="tree-meta">12m</span>
+                  </div>
+                </div>
+                <div class="tree-node session">
+                  <div class="tree-node-header">
+                    <span class="tree-toggle"></span>
+                    <span class="tree-icon">💬</span>
+                    <span class="tree-label">add-retry-logic</span>
+                    <span class="tree-status paused"></span>
+                    <span class="tree-meta">1h</span>
+                  </div>
+                </div>
+                <div class="tree-node session">
+                  <div class="tree-node-header">
+                    <span class="tree-toggle"></span>
+                    <span class="tree-icon">💬</span>
+                    <span class="tree-label">debug-timeout</span>
+                    <span class="tree-status idle"></span>
+                    <span class="tree-meta">2d</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Project 2 -->
+            <div class="tree-node">
+              <div class="tree-node-header">
+                <span class="tree-toggle">▼</span>
+                <span class="tree-icon">📁</span>
+                <span class="tree-label">api-backend</span>
+                <span class="tree-status paused"></span>
+                <span class="tree-meta">2</span>
+              </div>
+              <div class="tree-children">
+                <div class="tree-node session">
+                  <div class="tree-node-header">
+                    <span class="tree-toggle"></span>
+                    <span class="tree-icon">💬</span>
+                    <span class="tree-label">auth-endpoints</span>
+                    <span class="tree-status paused"></span>
+                    <span class="tree-meta">45m</span>
+                  </div>
+                </div>
+                <div class="tree-node session">
+                  <div class="tree-node-header">
+                    <span class="tree-toggle"></span>
+                    <span class="tree-icon">💬</span>
+                    <span class="tree-label">rate-limiting</span>
+                    <span class="tree-status error"></span>
+                    <span class="tree-meta">3h</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Project 3 (collapsed) -->
+            <div class="tree-node collapsed">
+              <div class="tree-node-header">
+                <span class="tree-toggle">▼</span>
+                <span class="tree-icon">📁</span>
+                <span class="tree-label">mobile-app</span>
+                <span class="tree-status idle"></span>
+                <span class="tree-meta">1</span>
+              </div>
+              <div class="tree-children">
+                <div class="tree-node session">
+                  <div class="tree-node-header">
+                    <span class="tree-toggle"></span>
+                    <span class="tree-icon">💬</span>
+                    <span class="tree-label">ui-redesign</span>
+                    <span class="tree-status idle"></span>
+                    <span class="tree-meta">1w</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Project 4 (collapsed) -->
+            <div class="tree-node collapsed">
+              <div class="tree-node-header">
+                <span class="tree-toggle">▼</span>
+                <span class="tree-icon">📁</span>
+                <span class="tree-label">data-pipeline</span>
+                <span class="tree-status idle"></span>
+                <span class="tree-meta">0</span>
+              </div>
+              <div class="tree-children">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Terminal View -->
+      <div class="terminal-view">
+        <div class="pane-container">
+          <!-- Pane 1: Top Left -->
+          <div class="terminal-pane">
+            <div class="terminal-header">
+              <div class="terminal-tabs">
+                <button class="terminal-tab active">
+                  <span>bash</span>
+                  <span class="terminal-tab-close">×</span>
+                </button>
+                <button class="terminal-tab">
+                  <span>npm</span>
+                  <span class="terminal-tab-close">×</span>
+                </button>
+              </div>
+              <div class="terminal-controls">
+                <button class="icon-btn" title="Split">⊞</button>
+                <button class="icon-btn" title="Settings">⚙</button>
+              </div>
+            </div>
+            <div class="terminal-body">
+              <div class="terminal-line">
+                <span class="terminal-prompt">~/web-scraper $</span>
+                <span class="terminal-command"> git status</span>
+              </div>
+              <div class="terminal-line terminal-output">On branch fix-pagination</div>
+              <div class="terminal-line terminal-output">Your branch is up to date with 'origin/fix-pagination'.</div>
+              <div class="terminal-line terminal-output"></div>
+              <div class="terminal-line terminal-output">Changes not staged for commit:</div>
+              <div class="terminal-line terminal-output">  modified:   src/scraper.ts</div>
+              <div class="terminal-line terminal-output">  modified:   src/utils.ts</div>
+              <div class="terminal-line terminal-output"></div>
+              <div class="terminal-line">
+                <span class="terminal-prompt">~/web-scraper $</span>
+                <span class="terminal-cursor"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pane 2: Top Right -->
+          <div class="terminal-pane">
+            <div class="terminal-header">
+              <div class="terminal-tabs">
+                <button class="terminal-tab active">
+                  <span>server</span>
+                  <span class="terminal-tab-close">×</span>
+                </button>
+              </div>
+              <div class="terminal-controls">
+                <button class="icon-btn" title="Split">⊞</button>
+                <button class="icon-btn" title="Settings">⚙</button>
+              </div>
+            </div>
+            <div class="terminal-body">
+              <div class="terminal-line">
+                <span class="terminal-prompt">~/web-scraper $</span>
+                <span class="terminal-command"> bun run dev</span>
+              </div>
+              <div class="terminal-line terminal-output">$ bun --watch src/index.ts</div>
+              <div class="terminal-line terminal-output">[HMR] Server started on http://localhost:3000</div>
+              <div class="terminal-line terminal-output">[HMR] Watching for changes...</div>
+              <div class="terminal-line terminal-output"></div>
+              <div class="terminal-line terminal-output">[12:34:56] GET /api/scrape - 200 (142ms)</div>
+              <div class="terminal-line terminal-output">[12:35:12] GET /api/scrape - 200 (98ms)</div>
+              <div class="terminal-line terminal-output">[12:35:28] GET /api/scrape - 200 (156ms)</div>
+            </div>
+          </div>
+
+          <!-- Pane 3: Bottom Left -->
+          <div class="terminal-pane">
+            <div class="terminal-header">
+              <div class="terminal-tabs">
+                <button class="terminal-tab active">
+                  <span>tests</span>
+                  <span class="terminal-tab-close">×</span>
+                </button>
+              </div>
+              <div class="terminal-controls">
+                <button class="icon-btn" title="Split">⊞</button>
+                <button class="icon-btn" title="Settings">⚙</button>
+              </div>
+            </div>
+            <div class="terminal-body">
+              <div class="terminal-line">
+                <span class="terminal-prompt">~/web-scraper $</span>
+                <span class="terminal-command"> bun test</span>
+              </div>
+              <div class="terminal-line terminal-output">bun test v1.0.15</div>
+              <div class="terminal-line terminal-output"></div>
+              <div class="terminal-line terminal-output">✓ scraper.test.ts</div>
+              <div class="terminal-line terminal-output">  ✓ should handle pagination (142ms)</div>
+              <div class="terminal-line terminal-output">  ✓ should retry on timeout (98ms)</div>
+              <div class="terminal-line terminal-output">  ✓ should parse HTML correctly (12ms)</div>
+              <div class="terminal-line terminal-output"></div>
+              <div class="terminal-line terminal-output">3 tests passed [252ms]</div>
+            </div>
+          </div>
+
+          <!-- Pane 4: Bottom Right -->
+          <div class="terminal-pane">
+            <div class="terminal-header">
+              <div class="terminal-tabs">
+                <button class="terminal-tab active">
+                  <span>claude</span>
+                  <span class="terminal-tab-close">×</span>
+                </button>
+              </div>
+              <div class="terminal-controls">
+                <button class="icon-btn" title="Split">⊞</button>
+                <button class="icon-btn" title="Settings">⚙</button>
+              </div>
+            </div>
+            <div class="terminal-body">
+              <div class="terminal-line">
+                <span class="terminal-prompt">~/web-scraper $</span>
+                <span class="terminal-command"> claude code</span>
+              </div>
+              <div class="terminal-line terminal-output">Claude Code v0.1.0</div>
+              <div class="terminal-line terminal-output">Session: fix-pagination (abc123)</div>
+              <div class="terminal-line terminal-output"></div>
+              <div class="terminal-line terminal-output">You: fix the pagination logic in scraper.ts</div>
+              <div class="terminal-line terminal-output"></div>
+              <div class="terminal-line terminal-output">Claude: I'll help fix the pagination. Let me analyze...</div>
+              <div class="terminal-line terminal-output"></div>
+              <div class="terminal-line">
+                <span class="terminal-prompt">></span>
+                <span class="terminal-cursor"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Bar -->
+    <div class="bottombar">
+      <div class="bottombar-section">
+        <div class="bottombar-status active"></div>
+        <div class="bottombar-item">
+          <span class="bottombar-item-value">web-scraper</span>
+        </div>
+      </div>
+      <div class="bottombar-divider"></div>
+      <div class="bottombar-section">
+        <div class="bottombar-item">
+          <span class="bottombar-item-label">Session:</span>
+          <span class="bottombar-item-value">fix-pagination</span>
+        </div>
+      </div>
+      <div class="bottombar-divider"></div>
+      <div class="bottombar-section">
+        <div class="bottombar-item">
+          <span class="bottombar-item-label">Panes:</span>
+          <span class="bottombar-item-value">4</span>
+        </div>
+      </div>
+      <div class="bottombar-divider"></div>
+      <div class="bottombar-section">
+        <div class="bottombar-item">
+          <span class="bottombar-item-label">Mem:</span>
+          <span class="bottombar-item-value">2.3GB</span>
+        </div>
+      </div>
+      <div class="bottombar-divider"></div>
+      <div class="bottombar-section">
+        <div class="bottombar-item">
+          <span class="bottombar-item-label">CPU:</span>
+          <span class="bottombar-item-value">12%</span>
+        </div>
+      </div>
+      <div class="bottombar-divider"></div>
+      <div class="bottombar-section">
+        <div class="bottombar-item">
+          <span class="bottombar-item-value">~/web-scraper</span>
+        </div>
+      </div>
+      <div class="bottombar-section ml-auto">
+        <div class="bottombar-item">
+          <span class="bottombar-item-value">12:35:42</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Tree node collapse/expand
+    document.querySelectorAll('.tree-node-header').forEach(header => {
+      header.addEventListener('click', (e) => {
+        const node = header.closest('.tree-node');
+        if (!node.classList.contains('session')) {
+          node.classList.toggle('collapsed');
+        } else {
+          // Select session
+          document.querySelectorAll('.tree-node').forEach(n => n.classList.remove('active'));
+          node.classList.add('active');
+        }
+      });
+    });
+
+    // Terminal tab switching
+    document.querySelectorAll('.terminal-tab').forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        if (e.target.classList.contains('terminal-tab-close')) {
+          tab.remove();
+          return;
+        }
+        const tabs = tab.closest('.terminal-tabs');
+        tabs.querySelectorAll('.terminal-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+      });
+    });
+
+    // Topbar tab switching
+    document.querySelectorAll('.topbar-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.topbar-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+      });
+    });
+
+    // Update time in bottom bar
+    function updateTime() {
+      const timeElement = document.querySelector('.bottombar-section.ml-auto .bottombar-item-value');
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      timeElement.textContent = `${hours}:${minutes}:${seconds}`;
+    }
+    setInterval(updateTime, 1000);
+    updateTime();
+
+    // Simulate terminal cursor blinking in multiple panes
+    setInterval(() => {
+      document.querySelectorAll('.terminal-cursor').forEach(cursor => {
+        cursor.style.opacity = cursor.style.opacity === '0' ? '1' : '0';
+      });
+    }, 530);
+  </script>
+</body>
+</html>

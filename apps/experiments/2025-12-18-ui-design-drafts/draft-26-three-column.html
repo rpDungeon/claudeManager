@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Manager - Three Column Layout</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Color System - Industrial Command Center */
+      --bg-primary: #0a0e14;
+      --bg-secondary: #101419;
+      --bg-tertiary: #151a21;
+      --bg-elevated: #1a1f27;
+      --bg-hover: #1f2531;
+      --bg-active: #252b38;
+
+      --border-subtle: #1f2531;
+      --border-default: #2a3140;
+      --border-emphasis: #3a4354;
+
+      --text-primary: #e6edf3;
+      --text-secondary: #8b949e;
+      --text-tertiary: #636c76;
+      --text-inverse: #0a0e14;
+
+      --accent-amber: #ffb454;
+      --accent-amber-dim: #d4883a;
+      --accent-cyan: #39c5cf;
+      --accent-cyan-dim: #2a9aa3;
+      --accent-green: #3fb950;
+      --accent-red: #f85149;
+      --accent-purple: #bc8cff;
+      --accent-blue: #539bf5;
+
+      /* Typography */
+      --font-mono: 'JetBrains Mono', 'Consolas', monospace;
+      --font-sans: 'Instrument Sans', -apple-system, system-ui, sans-serif;
+
+      /* Spacing */
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 12px;
+      --space-lg: 16px;
+      --space-xl: 24px;
+
+      /* Layout */
+      --sidebar-width: 250px;
+      --activity-width: 300px;
+      --status-height: 28px;
+
+      /* Shadows & Effects */
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
+      --glow-amber: 0 0 20px rgba(255, 180, 84, 0.15);
+      --glow-cyan: 0 0 20px rgba(57, 197, 207, 0.15);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      overflow: hidden;
+      height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Main Layout Grid */
+    .app-container {
+      display: grid;
+      grid-template-columns: var(--sidebar-width) 1fr var(--activity-width);
+      grid-template-rows: 1fr var(--status-height);
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* Left Sidebar - Projects */
+    .sidebar-left {
+      grid-column: 1;
+      grid-row: 1;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-default);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      padding: var(--space-lg);
+      border-bottom: 1px solid var(--border-subtle);
+      background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+    }
+
+    .sidebar-title {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-secondary);
+      margin-bottom: var(--space-sm);
+    }
+
+    .sidebar-action {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-default);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .sidebar-action:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-emphasis);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .sidebar-action:active {
+      transform: translateY(0);
+    }
+
+    .icon-plus {
+      width: 14px;
+      height: 14px;
+      color: var(--accent-amber);
+    }
+
+    .projects-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-md);
+    }
+
+    /* Custom Scrollbar */
+    .projects-list::-webkit-scrollbar,
+    .activity-feed::-webkit-scrollbar,
+    .terminal-output::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .projects-list::-webkit-scrollbar-track,
+    .activity-feed::-webkit-scrollbar-track,
+    .terminal-output::-webkit-scrollbar-track {
+      background: var(--bg-tertiary);
+    }
+
+    .projects-list::-webkit-scrollbar-thumb,
+    .activity-feed::-webkit-scrollbar-thumb,
+    .terminal-output::-webkit-scrollbar-thumb {
+      background: var(--border-emphasis);
+      border-radius: 4px;
+    }
+
+    .projects-list::-webkit-scrollbar-thumb:hover,
+    .activity-feed::-webkit-scrollbar-thumb:hover,
+    .terminal-output::-webkit-scrollbar-thumb:hover {
+      background: var(--text-tertiary);
+    }
+
+    .project-item {
+      margin-bottom: var(--space-md);
+      animation: fadeInUp 0.3s ease forwards;
+      opacity: 0;
+    }
+
+    .project-item:nth-child(1) { animation-delay: 0.05s; }
+    .project-item:nth-child(2) { animation-delay: 0.1s; }
+    .project-item:nth-child(3) { animation-delay: 0.15s; }
+    .project-item:nth-child(4) { animation-delay: 0.2s; }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .project-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .project-header:hover {
+      background: var(--bg-elevated);
+      border-color: var(--border-default);
+    }
+
+    .project-header.active {
+      background: var(--bg-active);
+      border-color: var(--accent-amber);
+      box-shadow: var(--glow-amber);
+    }
+
+    .project-icon {
+      width: 20px;
+      height: 20px;
+      color: var(--accent-amber);
+      flex-shrink: 0;
+    }
+
+    .project-name {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .project-count {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      background: var(--bg-primary);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .sessions-list {
+      margin-top: var(--space-sm);
+      padding-left: var(--space-lg);
+      border-left: 1px solid var(--border-subtle);
+      margin-left: 10px;
+    }
+
+    .session-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-xs) var(--space-md);
+      margin-bottom: var(--space-xs);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .session-item:hover {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+    }
+
+    .session-item.active {
+      background: var(--bg-hover);
+      color: var(--accent-cyan);
+      font-weight: 500;
+    }
+
+    .session-status {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      flex-shrink: 0;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .session-status.paused {
+      background: var(--accent-amber);
+      animation: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .session-name {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Center Workspace */
+    .workspace {
+      grid-column: 2;
+      grid-row: 1;
+      background: var(--bg-primary);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .workspace-header {
+      padding: var(--space-lg);
+      border-bottom: 1px solid var(--border-default);
+      background: var(--bg-secondary);
+      display: flex;
+      align-items: center;
+      gap: var(--space-lg);
+    }
+
+    .tab-groups {
+      display: flex;
+      gap: var(--space-sm);
+      flex: 1;
+      overflow-x: auto;
+    }
+
+    .tab-group {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-default);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .tab-group:hover {
+      background: var(--bg-elevated);
+      border-color: var(--border-emphasis);
+    }
+
+    .tab-group.active {
+      background: var(--bg-active);
+      border-color: var(--accent-cyan);
+      box-shadow: var(--glow-cyan);
+    }
+
+    .tab-group-icon {
+      width: 16px;
+      height: 16px;
+      color: var(--accent-cyan);
+    }
+
+    .tab-group-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .workspace-actions {
+      display: flex;
+      gap: var(--space-sm);
+    }
+
+    .workspace-btn {
+      padding: var(--space-sm) var(--space-md);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-default);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .workspace-btn:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-emphasis);
+    }
+
+    .workspace-content {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--border-default);
+      overflow: hidden;
+    }
+
+    .pane {
+      background: var(--bg-primary);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .pane-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-md);
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-default);
+    }
+
+    .pane-tabs {
+      display: flex;
+      gap: var(--space-xs);
+      flex: 1;
+    }
+
+    .pane-tab {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-xs) var(--space-md);
+      background: var(--bg-tertiary);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .pane-tab:hover {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+    }
+
+    .pane-tab.active {
+      background: var(--bg-active);
+      color: var(--accent-amber);
+      font-weight: 500;
+    }
+
+    .pane-controls {
+      display: flex;
+      gap: var(--space-xs);
+    }
+
+    .pane-control-btn {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      color: var(--text-tertiary);
+    }
+
+    .pane-control-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .terminal-output {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-lg);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .terminal-line {
+      margin-bottom: var(--space-xs);
+      animation: terminalType 0.3s ease forwards;
+      opacity: 0;
+    }
+
+    @keyframes terminalType {
+      from {
+        opacity: 0;
+        transform: translateX(-4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .terminal-prompt {
+      color: var(--accent-cyan);
+      font-weight: 600;
+    }
+
+    .terminal-command {
+      color: var(--accent-amber);
+    }
+
+    .terminal-output-text {
+      color: var(--text-secondary);
+    }
+
+    .terminal-error {
+      color: var(--accent-red);
+    }
+
+    .terminal-success {
+      color: var(--accent-green);
+    }
+
+    /* Right Sidebar - Activity Feed */
+    .sidebar-right {
+      grid-column: 3;
+      grid-row: 1;
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border-default);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .activity-header {
+      padding: var(--space-lg);
+      border-bottom: 1px solid var(--border-subtle);
+      background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+    }
+
+    .activity-title {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-secondary);
+      margin-bottom: var(--space-sm);
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .activity-live {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      font-size: 11px;
+      color: var(--accent-green);
+      font-weight: 600;
+    }
+
+    .live-indicator {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .activity-filters {
+      display: flex;
+      gap: var(--space-xs);
+      margin-top: var(--space-md);
+    }
+
+    .activity-filter {
+      padding: var(--space-xs) var(--space-md);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .activity-filter:hover {
+      background: var(--bg-elevated);
+      border-color: var(--border-default);
+      color: var(--text-primary);
+    }
+
+    .activity-filter.active {
+      background: var(--bg-active);
+      border-color: var(--accent-purple);
+      color: var(--accent-purple);
+    }
+
+    .activity-feed {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-md);
+    }
+
+    .activity-item {
+      padding: var(--space-md);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      margin-bottom: var(--space-md);
+      transition: all 0.15s ease;
+      animation: slideInRight 0.3s ease forwards;
+      opacity: 0;
+    }
+
+    .activity-item:nth-child(1) { animation-delay: 0.05s; }
+    .activity-item:nth-child(2) { animation-delay: 0.1s; }
+    .activity-item:nth-child(3) { animation-delay: 0.15s; }
+    .activity-item:nth-child(4) { animation-delay: 0.2s; }
+    .activity-item:nth-child(5) { animation-delay: 0.25s; }
+
+    @keyframes slideInRight {
+      from {
+        opacity: 0;
+        transform: translateX(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .activity-item:hover {
+      background: var(--bg-elevated);
+      border-color: var(--border-default);
+      transform: translateX(-2px);
+    }
+
+    .activity-header-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-sm);
+    }
+
+    .activity-type {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .activity-type.info { background: var(--accent-blue); }
+    .activity-type.success { background: var(--accent-green); }
+    .activity-type.warning { background: var(--accent-amber); }
+    .activity-type.error { background: var(--accent-red); }
+
+    .activity-time {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      font-family: var(--font-mono);
+    }
+
+    .activity-project {
+      font-size: 11px;
+      color: var(--accent-cyan);
+      font-weight: 500;
+      margin-left: auto;
+    }
+
+    .activity-message {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-bottom: var(--space-sm);
+    }
+
+    .activity-message strong {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .activity-meta {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--text-tertiary);
+    }
+
+    .problems-panel {
+      border-top: 1px solid var(--border-default);
+      background: var(--bg-tertiary);
+    }
+
+    .problems-header {
+      padding: var(--space-md);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+
+    .problems-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .problems-count {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent-red);
+      background: var(--bg-primary);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .problems-list {
+      padding: 0 var(--space-md) var(--space-md);
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .problem-item {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-sm);
+      padding: var(--space-sm);
+      background: var(--bg-secondary);
+      border-radius: 4px;
+      margin-bottom: var(--space-xs);
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .problem-icon {
+      width: 12px;
+      height: 12px;
+      color: var(--accent-red);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .problem-text {
+      flex: 1;
+      line-height: 1.4;
+    }
+
+    /* Bottom Status Bar */
+    .status-bar {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border-emphasis);
+      display: flex;
+      align-items: center;
+      padding: 0 var(--space-lg);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      gap: var(--space-xl);
+    }
+
+    .status-section {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .status-label {
+      color: var(--text-tertiary);
+      font-weight: 500;
+    }
+
+    .status-value {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .status-value.high {
+      color: var(--accent-red);
+    }
+
+    .status-value.medium {
+      color: var(--accent-amber);
+    }
+
+    .status-value.good {
+      color: var(--accent-green);
+    }
+
+    .status-separator {
+      width: 1px;
+      height: 14px;
+      background: var(--border-default);
+    }
+
+    .status-time {
+      margin-left: auto;
+      color: var(--accent-cyan);
+      font-weight: 600;
+    }
+
+    /* Icons (Simple SVG) */
+    svg {
+      fill: currentColor;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Left Sidebar: Projects & Sessions -->
+    <aside class="sidebar-left">
+      <div class="sidebar-header">
+        <div class="sidebar-title">Projects</div>
+        <button class="sidebar-action">
+          <svg class="icon-plus" viewBox="0 0 24 24">
+            <path d="M12 5v14m-7-7h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          New Project
+        </button>
+      </div>
+
+      <div class="projects-list">
+        <div class="project-item">
+          <div class="project-header active">
+            <svg class="project-icon" viewBox="0 0 24 24">
+              <path d="M3 7v10c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2z"/>
+              <path d="M8 11h8M8 15h4" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <span class="project-name">sales-trainer</span>
+            <span class="project-count">3</span>
+          </div>
+          <div class="sessions-list">
+            <div class="session-item active">
+              <span class="session-status"></span>
+              <span class="session-name">refactor-auth</span>
+            </div>
+            <div class="session-item">
+              <span class="session-status"></span>
+              <span class="session-name">add-analytics</span>
+            </div>
+            <div class="session-item">
+              <span class="session-status paused"></span>
+              <span class="session-name">fix-ui-bugs</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="project-item">
+          <div class="project-header">
+            <svg class="project-icon" viewBox="0 0 24 24">
+              <path d="M3 7v10c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2z"/>
+              <path d="M8 11h8M8 15h4" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <span class="project-name">claude-manager</span>
+            <span class="project-count">2</span>
+          </div>
+          <div class="sessions-list">
+            <div class="session-item">
+              <span class="session-status"></span>
+              <span class="session-name">ui-design</span>
+            </div>
+            <div class="session-item">
+              <span class="session-status"></span>
+              <span class="session-name">websocket-pty</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="project-item">
+          <div class="project-header">
+            <svg class="project-icon" viewBox="0 0 24 24">
+              <path d="M3 7v10c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2z"/>
+              <path d="M8 11h8M8 15h4" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <span class="project-name">api-gateway</span>
+            <span class="project-count">1</span>
+          </div>
+          <div class="sessions-list">
+            <div class="session-item">
+              <span class="session-status"></span>
+              <span class="session-name">rate-limiting</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="project-item">
+          <div class="project-header">
+            <svg class="project-icon" viewBox="0 0 24 24">
+              <path d="M3 7v10c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2z"/>
+              <path d="M8 11h8M8 15h4" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <span class="project-name">docs-site</span>
+            <span class="project-count">1</span>
+          </div>
+          <div class="sessions-list">
+            <div class="session-item">
+              <span class="session-status paused"></span>
+              <span class="session-name">migration-guide</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Center Workspace -->
+    <main class="workspace">
+      <div class="workspace-header">
+        <div class="tab-groups">
+          <div class="tab-group active">
+            <svg class="tab-group-icon" viewBox="0 0 24 24">
+              <rect x="3" y="3" width="7" height="7" rx="1" fill="currentColor"/>
+              <rect x="14" y="3" width="7" height="7" rx="1" fill="currentColor"/>
+              <rect x="3" y="14" width="7" height="7" rx="1" fill="currentColor"/>
+              <rect x="14" y="14" width="7" height="7" rx="1" fill="currentColor"/>
+            </svg>
+            <span class="tab-group-name">sales-trainer</span>
+          </div>
+          <div class="tab-group">
+            <svg class="tab-group-icon" viewBox="0 0 24 24">
+              <rect x="3" y="3" width="7" height="7" rx="1" fill="currentColor"/>
+              <rect x="14" y="3" width="7" height="7" rx="1" fill="currentColor"/>
+              <rect x="3" y="14" width="7" height="7" rx="1" fill="currentColor"/>
+              <rect x="14" y="14" width="7" height="7" rx="1" fill="currentColor"/>
+            </svg>
+            <span class="tab-group-name">claude-manager</span>
+          </div>
+        </div>
+        <div class="workspace-actions">
+          <button class="workspace-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24">
+              <path d="M12 5v14m-7-7h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            Split
+          </button>
+          <button class="workspace-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24">
+              <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+            </svg>
+            Layout
+          </button>
+        </div>
+      </div>
+
+      <div class="workspace-content">
+        <!-- Pane 1 -->
+        <div class="pane">
+          <div class="pane-header">
+            <div class="pane-tabs">
+              <div class="pane-tab active">
+                <span>refactor-auth</span>
+              </div>
+              <div class="pane-tab">
+                <span>add-analytics</span>
+              </div>
+            </div>
+            <div class="pane-controls">
+              <button class="pane-control-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24">
+                  <path d="M12 5v14m-7-7h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </button>
+              <button class="pane-control-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24">
+                  <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="terminal-output">
+            <div class="terminal-line" style="animation-delay: 0.1s">
+              <span class="terminal-prompt">claude@sales-trainer</span>
+              <span class="terminal-output-text"> ~</span>
+              <span class="terminal-command"> $ npm run dev</span>
+            </div>
+            <div class="terminal-line" style="animation-delay: 0.2s">
+              <span class="terminal-output-text">> sales-trainer@1.0.0 dev</span>
+            </div>
+            <div class="terminal-line" style="animation-delay: 0.3s">
+              <span class="terminal-output-text">> vite --port 5173</span>
+            </div>
+            <div class="terminal-line" style="animation-delay: 0.4s">
+              <span class="terminal-success">✓</span>
+              <span class="terminal-output-text"> Server started</span>
+            </div>
+            <div class="terminal-line" style="animation-delay: 0.5s">
+              <span class="terminal-output-text">  Local:   </span>
+              <span class="terminal-command">http://localhost:5173</span>
+            </div>
+            <div class="terminal-line" style="animation-delay: 0.6s">
+              <span class="terminal-output-text">  Network: </span>
+              <span class="terminal-command">http://192.168.1.10:5173</span>
+            </div>
+            <div class="terminal-line" style="animation-delay: 0.7s">
+              <span class="terminal-prompt">claude@sales-trainer</span>
+              <span class="terminal-output-text"> ~</span>
+              <span class="terminal-command"> $ git status</span>
+            </div>
+            <div class="terminal-line" style="animation-delay: 0.8s">
+              <span class="terminal-output-text">On branch </span>
+              <span class="terminal-command">refactor-auth</span>
+            </div>
+            <div class="terminal-line" style="animation-delay: 0.9s">
+              <span class="terminal-output-text">Changes not staged for commit:</span>
+            </div>
+            <div class="terminal-line" style="animation-delay: 1.0s">
+              <span class="terminal-output-text">  modified:   </span>
+              <span class="terminal-command">src/auth/auth.service.ts</span>
+            </div>
+            <div class="terminal-line" style="animation-delay: 1.1s">
+              <span class="terminal-output-text">  modified:   </span>
+              <span class="terminal-command">src/auth/auth.types.ts</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pane 2 -->
+        <div class="pane">
+          <div class="pane-header">
+            <div class="pane-tabs">
+              <div class="pane-tab active">
+                <span>logs</span>
+              </div>
+              <div class="pane-tab">
+                <span>tests</span>
+              </div>
+            </div>
+            <div class="pane-controls">
+              <button class="pane-control-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24">
+                  <path d="M12 5v14m-7-7h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </button>
+              <button class="pane-control-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24">
+                  <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="terminal-output">
+            <div class="terminal-line" style="animation-delay: 0.1s">
+              <span class="terminal-output-text">[12:34:56] </span>
+              <span class="terminal-success">INFO</span>
+              <span class="terminal-output-text"> Server initialized</span>
+            </div>
+            <div class="terminal-line" style="animation-delay: 0.2s">
+              <span class="terminal-output-text">[12:34:57] </span>
+              <span class="terminal-success">INFO</span>
+              <span class="terminal-output-text"> Database connected</span>
+            </div>
+            <div class="terminal-line" style="animation-delay: 0.3s">
+              <span class="terminal-output-text">[12:34:58] </span>
+              <span class="terminal-success">INFO</span>
+              <span class="terminal-output-text"> Auth middleware loaded</span>
+            </div>
+            <div class="terminal-line" style="animation-delay: 0.4s">
+              <span class="terminal-output-text">[12:35:12] </span>
+              <span class="terminal-command">POST</span>
+              <span class="terminal-output-text"> /api/auth/login - 200 (143ms)</span>
+            </div>
+            <div class="terminal-line" style="animation-delay: 0.5s">
+              <span class="terminal-output-text">[12:35:15] </span>
+              <span class="terminal-command">GET</span>
+              <span class="terminal-output-text"> /api/user/profile - 200 (23ms)</span>
+            </div>
+            <div class="terminal-line" style="animation-delay: 0.6s">
+              <span class="terminal-output-text">[12:35:18] </span>
+              <span class="terminal-error">WARN</span>
+              <span class="terminal-output-text"> Rate limit approaching for IP 192.168.1.50</span>
+            </div>
+            <div class="terminal-line" style="animation-delay: 0.7s">
+              <span class="terminal-output-text">[12:35:22] </span>
+              <span class="terminal-command">GET</span>
+              <span class="terminal-output-text"> /api/sessions - 200 (34ms)</span>
+            </div>
+            <div class="terminal-line" style="animation-delay: 0.8s">
+              <span class="terminal-output-text">[12:35:25] </span>
+              <span class="terminal-success">INFO</span>
+              <span class="terminal-output-text"> WebSocket client connected</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Right Sidebar: Activity Feed -->
+    <aside class="sidebar-right">
+      <div class="activity-header">
+        <div class="activity-title">
+          Activity
+          <div class="activity-live">
+            <span class="live-indicator"></span>
+            LIVE
+          </div>
+        </div>
+        <div class="activity-filters">
+          <button class="activity-filter active">All</button>
+          <button class="activity-filter">Git</button>
+          <button class="activity-filter">Tasks</button>
+          <button class="activity-filter">Errors</button>
+        </div>
+      </div>
+
+      <div class="activity-feed">
+        <div class="activity-item">
+          <div class="activity-header-row">
+            <span class="activity-type success"></span>
+            <span class="activity-time">12:35:42</span>
+            <span class="activity-project">sales-trainer</span>
+          </div>
+          <div class="activity-message">
+            Successfully committed <strong>3 files</strong> to branch refactor-auth
+          </div>
+          <div class="activity-meta">
+            git commit -m "Refactor auth service"
+          </div>
+        </div>
+
+        <div class="activity-item">
+          <div class="activity-header-row">
+            <span class="activity-type info"></span>
+            <span class="activity-time">12:34:18</span>
+            <span class="activity-project">claude-manager</span>
+          </div>
+          <div class="activity-message">
+            Started session <strong>ui-design</strong> in websocket-pty worktree
+          </div>
+          <div class="activity-meta">
+            /mnt/claude/personal/claude-manager-task-ui
+          </div>
+        </div>
+
+        <div class="activity-item">
+          <div class="activity-header-row">
+            <span class="activity-type warning"></span>
+            <span class="activity-time">12:33:05</span>
+            <span class="activity-project">sales-trainer</span>
+          </div>
+          <div class="activity-message">
+            Test suite <strong>auth.test.ts</strong> has 2 failing tests
+          </div>
+          <div class="activity-meta">
+            npm test -- auth.test.ts
+          </div>
+        </div>
+
+        <div class="activity-item">
+          <div class="activity-header-row">
+            <span class="activity-type success"></span>
+            <span class="activity-time">12:31:22</span>
+            <span class="activity-project">api-gateway</span>
+          </div>
+          <div class="activity-message">
+            Deployed <strong>rate-limiting</strong> feature to staging
+          </div>
+          <div class="activity-meta">
+            deployment-id: d7f3c9a2
+          </div>
+        </div>
+
+        <div class="activity-item">
+          <div class="activity-header-row">
+            <span class="activity-type error"></span>
+            <span class="activity-time">12:29:47</span>
+            <span class="activity-project">sales-trainer</span>
+          </div>
+          <div class="activity-message">
+            Build failed: <strong>TypeScript</strong> compilation errors detected
+          </div>
+          <div class="activity-meta">
+            Found 4 errors in 2 files
+          </div>
+        </div>
+      </div>
+
+      <div class="problems-panel">
+        <div class="problems-header">
+          <div class="problems-title">
+            Problems
+            <span class="problems-count">3</span>
+          </div>
+          <svg width="12" height="12" viewBox="0 0 24 24" style="color: var(--text-tertiary)">
+            <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="problems-list">
+          <div class="problem-item">
+            <svg class="problem-icon" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" fill="currentColor"/>
+              <path d="M12 8v4m0 4h.01" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <div class="problem-text">
+              <strong>auth.service.ts:42</strong> - Type 'string | undefined' is not assignable to type 'string'
+            </div>
+          </div>
+          <div class="problem-item">
+            <svg class="problem-icon" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" fill="currentColor"/>
+              <path d="M12 8v4m0 4h.01" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <div class="problem-text">
+              <strong>auth.types.ts:18</strong> - Property 'role' does not exist on type 'User'
+            </div>
+          </div>
+          <div class="problem-item">
+            <svg class="problem-icon" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" fill="currentColor"/>
+              <path d="M12 8v4m0 4h.01" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <div class="problem-text">
+              <strong>middleware.ts:27</strong> - Argument of type 'null' is not assignable to parameter
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Bottom Status Bar -->
+    <footer class="status-bar">
+      <div class="status-section">
+        <span class="status-label">CPU</span>
+        <span class="status-value medium">34%</span>
+      </div>
+
+      <span class="status-separator"></span>
+
+      <div class="status-section">
+        <span class="status-label">MEM</span>
+        <span class="status-value good">2.4GB / 16GB</span>
+      </div>
+
+      <span class="status-separator"></span>
+
+      <div class="status-section">
+        <span class="status-label">SESSIONS</span>
+        <span class="status-value">7 active</span>
+      </div>
+
+      <span class="status-separator"></span>
+
+      <div class="status-section">
+        <span class="status-label">PROJECTS</span>
+        <span class="status-value">4</span>
+      </div>
+
+      <span class="status-separator"></span>
+
+      <div class="status-section">
+        <span class="status-label">BRANCH</span>
+        <span class="status-value" style="color: var(--accent-amber)">refactor-auth</span>
+      </div>
+
+      <div class="status-time">14:35:42 UTC</div>
+    </footer>
+  </div>
+</body>
+</html>

@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Manager - Mission Control</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-bg-primary: #0a0e14;
+            --color-bg-secondary: #12171f;
+            --color-bg-tertiary: #1a2028;
+            --color-bg-elevated: #1f2730;
+
+            --color-border: #2a3442;
+            --color-border-bright: #3d4a5c;
+
+            --color-text-primary: #e6edf3;
+            --color-text-secondary: #9ba6b2;
+            --color-text-tertiary: #6e7985;
+
+            --color-accent-amber: #ffa940;
+            --color-accent-amber-dim: #d88a2e;
+            --color-accent-amber-bright: #ffc069;
+
+            --color-status-active: #52c41a;
+            --color-status-warning: #faad14;
+            --color-status-error: #f5222d;
+            --color-status-paused: #1890ff;
+            --color-status-completed: #722ed1;
+
+            --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+            --font-sans: 'IBM Plex Sans', -apple-system, system-ui, sans-serif;
+
+            --border-radius-sm: 2px;
+            --border-radius-md: 4px;
+            --border-radius-lg: 6px;
+
+            --transition-fast: 120ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Subtle scan-line effect */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(255, 169, 64, 0.01) 0px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            z-index: 9999;
+            animation: scanline 8s linear infinite;
+        }
+
+        @keyframes scanline {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(100px); }
+        }
+
+        /* Layout */
+        .app-container {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            height: 100vh;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            background: var(--color-bg-secondary);
+            border-bottom: 1px solid var(--color-border);
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            padding: 0 16px;
+            height: 56px;
+            position: relative;
+            z-index: 100;
+        }
+
+        .top-bar::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg,
+                transparent 0%,
+                var(--color-accent-amber) 50%,
+                transparent 100%);
+            opacity: 0.3;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: var(--font-mono);
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            color: var(--color-accent-amber);
+            text-transform: uppercase;
+        }
+
+        .logo-icon {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, var(--color-accent-amber-bright), var(--color-accent-amber-dim));
+            border-radius: var(--border-radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            position: relative;
+        }
+
+        .logo-icon::after {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: var(--border-radius-sm);
+            padding: 2px;
+            background: linear-gradient(135deg, var(--color-accent-amber-bright), var(--color-accent-amber-dim));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0.3;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--color-text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--color-status-active);
+            box-shadow: 0 0 12px var(--color-status-active);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .project-tabs {
+            display: flex;
+            gap: 4px;
+            padding: 0 16px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .project-tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .project-tab {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: var(--border-radius-md);
+            font-family: var(--font-sans);
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            white-space: nowrap;
+            position: relative;
+        }
+
+        .project-tab:hover {
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-primary);
+        }
+
+        .project-tab.active {
+            background: var(--color-bg-elevated);
+            border-color: var(--color-border-bright);
+            color: var(--color-accent-amber);
+        }
+
+        .project-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--color-accent-amber);
+        }
+
+        .project-tab-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            background: var(--color-bg-tertiary);
+            border-radius: 9px;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .project-tab.active .project-tab-count {
+            background: var(--color-accent-amber);
+            color: var(--color-bg-primary);
+        }
+
+        .top-bar-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .top-bar-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: transparent;
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-md);
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            font-size: 16px;
+        }
+
+        .top-bar-button:hover {
+            background: var(--color-bg-elevated);
+            border-color: var(--color-border-bright);
+            color: var(--color-accent-amber);
+        }
+
+        /* Main Content Area */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            height: calc(100vh - 56px);
+            position: relative;
+        }
+
+        .main-content.sidebar-collapsed {
+            grid-template-columns: 1fr 0;
+        }
+
+        /* Terminal Area */
+        .terminal-area {
+            display: flex;
+            flex-direction: column;
+            background: var(--color-bg-primary);
+            border-right: 1px solid var(--color-border);
+        }
+
+        .terminal-tabs {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            padding: 8px 12px;
+            background: var(--color-bg-secondary);
+            border-bottom: 1px solid var(--color-border);
+            overflow-x: auto;
+            scrollbar-width: thin;
+        }
+
+        .terminal-tab {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: var(--color-bg-tertiary);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-sm);
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            min-width: 120px;
+        }
+
+        .terminal-tab:hover {
+            background: var(--color-bg-elevated);
+            border-color: var(--color-border-bright);
+        }
+
+        .terminal-tab.active {
+            background: var(--color-bg-primary);
+            border-color: var(--color-accent-amber);
+            color: var(--color-text-primary);
+        }
+
+        .terminal-tab-status {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--color-status-active);
+            flex-shrink: 0;
+        }
+
+        .terminal-tab-close {
+            margin-left: auto;
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--border-radius-sm);
+            opacity: 0.5;
+            transition: all var(--transition-fast);
+        }
+
+        .terminal-tab-close:hover {
+            background: var(--color-status-error);
+            opacity: 1;
+        }
+
+        .terminal-panes {
+            flex: 1;
+            display: grid;
+            grid-template-rows: 1fr 1fr;
+            gap: 1px;
+            background: var(--color-border);
+            overflow: hidden;
+        }
+
+        .terminal-pane {
+            background: var(--color-bg-primary);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .terminal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: var(--color-bg-secondary);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .terminal-title {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .terminal-controls {
+            display: flex;
+            gap: 4px;
+        }
+
+        .terminal-control-btn {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--border-radius-sm);
+            background: transparent;
+            border: none;
+            color: var(--color-text-tertiary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            font-size: 12px;
+        }
+
+        .terminal-control-btn:hover {
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-primary);
+        }
+
+        .terminal-content {
+            flex: 1;
+            padding: 12px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--color-text-primary);
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--color-border) var(--color-bg-primary);
+        }
+
+        .terminal-line {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 4px;
+            animation: terminalLineAppear 0.2s ease-out;
+        }
+
+        @keyframes terminalLineAppear {
+            from {
+                opacity: 0;
+                transform: translateX(-4px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .terminal-prompt {
+            color: var(--color-accent-amber);
+            user-select: none;
+        }
+
+        .terminal-text {
+            color: var(--color-text-primary);
+        }
+
+        .terminal-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background: var(--color-accent-amber);
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        /* Notification Sidebar */
+        .notification-sidebar {
+            background: var(--color-bg-secondary);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: all var(--transition-base);
+        }
+
+        .notification-sidebar.collapsed {
+            transform: translateX(100%);
+        }
+
+        .notification-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .notification-header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .notification-title {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--color-accent-amber);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .notification-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .notification-action-btn {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-sm);
+            color: var(--color-text-tertiary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            font-size: 12px;
+        }
+
+        .notification-action-btn:hover {
+            background: var(--color-bg-tertiary);
+            border-color: var(--color-border-bright);
+            color: var(--color-text-primary);
+        }
+
+        .notification-filters {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .filter-chip {
+            padding: 4px 10px;
+            background: var(--color-bg-tertiary);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--color-text-tertiary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-chip:hover {
+            border-color: var(--color-border-bright);
+            color: var(--color-text-secondary);
+        }
+
+        .filter-chip.active {
+            background: var(--color-accent-amber);
+            border-color: var(--color-accent-amber);
+            color: var(--color-bg-primary);
+        }
+
+        .notification-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            padding: 12px 16px;
+            background: var(--color-bg-tertiary);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .stat-value {
+            font-family: var(--font-mono);
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--color-text-primary);
+        }
+
+        .stat-label {
+            font-family: var(--font-mono);
+            font-size: 9px;
+            font-weight: 600;
+            color: var(--color-text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .notification-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--color-border) var(--color-bg-secondary);
+        }
+
+        .notification-item {
+            background: var(--color-bg-tertiary);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-md);
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            animation: notificationSlideIn 0.3s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        @keyframes notificationSlideIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .notification-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--color-accent-amber);
+        }
+
+        .notification-item.status-active::before {
+            background: var(--color-status-active);
+        }
+
+        .notification-item.status-error::before {
+            background: var(--color-status-error);
+        }
+
+        .notification-item.status-warning::before {
+            background: var(--color-status-warning);
+        }
+
+        .notification-item.status-completed::before {
+            background: var(--color-status-completed);
+        }
+
+        .notification-item:hover {
+            background: var(--color-bg-elevated);
+            border-color: var(--color-border-bright);
+            transform: translateX(-2px);
+        }
+
+        .notification-item-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .notification-item-title {
+            font-family: var(--font-sans);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            line-height: 1.4;
+        }
+
+        .notification-item-time {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: var(--color-text-tertiary);
+            white-space: nowrap;
+        }
+
+        .notification-item-body {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+
+        .notification-item-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .notification-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 6px;
+            background: var(--color-bg-primary);
+            border-radius: var(--border-radius-sm);
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: var(--color-text-tertiary);
+        }
+
+        .notification-tag-icon {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        /* Collapse Toggle */
+        .sidebar-collapse-toggle {
+            position: absolute;
+            left: -16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 32px;
+            height: 64px;
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-right: none;
+            border-radius: var(--border-radius-md) 0 0 var(--border-radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            color: var(--color-text-tertiary);
+            z-index: 10;
+        }
+
+        .sidebar-collapse-toggle:hover {
+            background: var(--color-bg-elevated);
+            color: var(--color-accent-amber);
+            left: -20px;
+        }
+
+        /* Status Colors */
+        .status-active { color: var(--color-status-active); }
+        .status-warning { color: var(--color-status-warning); }
+        .status-error { color: var(--color-status-error); }
+        .status-paused { color: var(--color-status-paused); }
+        .status-completed { color: var(--color-status-completed); }
+
+        /* Scrollbar Styles */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--color-bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--color-border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--color-border-bright);
+        }
+
+        /* Activity Pulse Animation */
+        @keyframes activityPulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(255, 169, 64, 0.7);
+            }
+            50% {
+                box-shadow: 0 0 0 8px rgba(255, 169, 64, 0);
+            }
+        }
+
+        .activity-pulse {
+            animation: activityPulse 2s ease-out infinite;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1200px) {
+            .notification-sidebar {
+                width: 320px;
+            }
+
+            .main-content {
+                grid-template-columns: 1fr 320px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="logo-section">
+                <div class="logo-icon">⚡</div>
+                <span>Claude Manager</span>
+            </div>
+
+            <div class="project-tabs">
+                <button class="project-tab active">
+                    <span>Sales Trainer</span>
+                    <span class="project-tab-count">3</span>
+                </button>
+                <button class="project-tab">
+                    <span>Auth Service</span>
+                    <span class="project-tab-count">2</span>
+                </button>
+                <button class="project-tab">
+                    <span>Dashboard UI</span>
+                    <span class="project-tab-count">1</span>
+                </button>
+                <button class="project-tab">
+                    <span>API Gateway</span>
+                    <span class="project-tab-count">4</span>
+                </button>
+            </div>
+
+            <div class="top-bar-actions">
+                <div class="status-indicator">
+                    <div class="status-dot"></div>
+                    <span>4 Active</span>
+                </div>
+                <button class="top-bar-button" title="Settings">⚙</button>
+                <button class="top-bar-button" title="New Session">+</button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Terminal Area -->
+            <div class="terminal-area">
+                <div class="terminal-tabs">
+                    <div class="terminal-tab active">
+                        <span class="terminal-tab-status"></span>
+                        <span>main-dev</span>
+                        <span class="terminal-tab-close">×</span>
+                    </div>
+                    <div class="terminal-tab">
+                        <span class="terminal-tab-status" style="background: var(--color-status-warning);"></span>
+                        <span>feature-auth</span>
+                        <span class="terminal-tab-close">×</span>
+                    </div>
+                    <div class="terminal-tab">
+                        <span class="terminal-tab-status" style="background: var(--color-status-paused);"></span>
+                        <span>hotfix-login</span>
+                        <span class="terminal-tab-close">×</span>
+                    </div>
+                    <button class="top-bar-button" style="margin-left: 8px;">+</button>
+                </div>
+
+                <div class="terminal-panes">
+                    <!-- Top Pane -->
+                    <div class="terminal-pane">
+                        <div class="terminal-header">
+                            <span class="terminal-title">Terminal 1 - Claude Session #a3f9</span>
+                            <div class="terminal-controls">
+                                <button class="terminal-control-btn" title="Split Horizontal">⊟</button>
+                                <button class="terminal-control-btn" title="Split Vertical">⊞</button>
+                                <button class="terminal-control-btn" title="Maximize">□</button>
+                                <button class="terminal-control-btn" title="Close">×</button>
+                            </div>
+                        </div>
+                        <div class="terminal-content">
+                            <div class="terminal-line">
+                                <span class="terminal-prompt">❯</span>
+                                <span class="terminal-text">claude chat start --project sales-trainer</span>
+                            </div>
+                            <div class="terminal-line">
+                                <span class="terminal-prompt">&nbsp;</span>
+                                <span class="terminal-text" style="color: var(--color-status-active);">✓ Connected to Claude Code</span>
+                            </div>
+                            <div class="terminal-line">
+                                <span class="terminal-prompt">&nbsp;</span>
+                                <span class="terminal-text" style="color: var(--color-text-secondary);">Session ID: a3f9b2c1</span>
+                            </div>
+                            <div class="terminal-line">
+                                <span class="terminal-prompt">&nbsp;</span>
+                                <span class="terminal-text" style="color: var(--color-text-secondary);">Working directory: /mnt/projects/sales-trainer</span>
+                            </div>
+                            <div class="terminal-line" style="margin-top: 12px;">
+                                <span class="terminal-prompt">You:</span>
+                                <span class="terminal-text">Refactor the authentication module to use JWT tokens</span>
+                            </div>
+                            <div class="terminal-line" style="margin-top: 8px;">
+                                <span class="terminal-prompt" style="color: var(--color-accent-amber-bright);">Claude:</span>
+                                <span class="terminal-text">I'll help you refactor the authentication module. Let me first analyze the current implementation...</span>
+                            </div>
+                            <div class="terminal-line">
+                                <span class="terminal-prompt">&nbsp;</span>
+                                <span class="terminal-text" style="color: var(--color-status-active);">✓ Read src/auth/auth.service.ts</span>
+                            </div>
+                            <div class="terminal-line">
+                                <span class="terminal-prompt">&nbsp;</span>
+                                <span class="terminal-text" style="color: var(--color-status-active);">✓ Read src/auth/auth.types.ts</span>
+                            </div>
+                            <div class="terminal-line">
+                                <span class="terminal-prompt">&nbsp;</span>
+                                <span class="terminal-text" style="color: var(--color-status-warning);">⚠ Found session-based auth, converting to JWT...</span>
+                            </div>
+                            <div class="terminal-line">
+                                <span class="terminal-prompt">&nbsp;</span>
+                                <span class="terminal-text">Installing dependencies: jsonwebtoken, @types/jsonwebtoken</span>
+                            </div>
+                            <div class="terminal-line" style="margin-top: 8px;">
+                                <span class="terminal-prompt">&nbsp;</span>
+                                <span class="terminal-cursor"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Pane -->
+                    <div class="terminal-pane">
+                        <div class="terminal-header">
+                            <span class="terminal-title">Terminal 2 - Test Runner</span>
+                            <div class="terminal-controls">
+                                <button class="terminal-control-btn" title="Split Horizontal">⊟</button>
+                                <button class="terminal-control-btn" title="Split Vertical">⊞</button>
+                                <button class="terminal-control-btn" title="Maximize">□</button>
+                                <button class="terminal-control-btn" title="Close">×</button>
+                            </div>
+                        </div>
+                        <div class="terminal-content">
+                            <div class="terminal-line">
+                                <span class="terminal-prompt">❯</span>
+                                <span class="terminal-text">bun test --watch</span>
+                            </div>
+                            <div class="terminal-line">
+                                <span class="terminal-prompt">&nbsp;</span>
+                                <span class="terminal-text" style="color: var(--color-text-secondary);">Bun Test v1.0.0</span>
+                            </div>
+                            <div class="terminal-line" style="margin-top: 8px;">
+                                <span class="terminal-prompt">&nbsp;</span>
+                                <span class="terminal-text" style="color: var(--color-status-active);">✓ auth.service.test.ts (12 tests) 234ms</span>
+                            </div>
+                            <div class="terminal-line">
+                                <span class="terminal-prompt">&nbsp;</span>
+                                <span class="terminal-text" style="color: var(--color-status-active);">✓ auth.middleware.test.ts (8 tests) 156ms</span>
+                            </div>
+                            <div class="terminal-line">
+                                <span class="terminal-prompt">&nbsp;</span>
+                                <span class="terminal-text" style="color: var(--color-status-error);">✗ auth.router.test.ts (3/5 tests) 89ms</span>
+                            </div>
+                            <div class="terminal-line" style="margin-left: 24px;">
+                                <span class="terminal-text" style="color: var(--color-status-error);">• POST /auth/login should return JWT token</span>
+                            </div>
+                            <div class="terminal-line" style="margin-left: 24px;">
+                                <span class="terminal-text" style="color: var(--color-status-error);">• POST /auth/refresh should refresh token</span>
+                            </div>
+                            <div class="terminal-line" style="margin-top: 12px;">
+                                <span class="terminal-prompt">&nbsp;</span>
+                                <span class="terminal-text" style="color: var(--color-text-secondary);">Tests: 2 failed, 23 passed, 25 total</span>
+                            </div>
+                            <div class="terminal-line">
+                                <span class="terminal-prompt">&nbsp;</span>
+                                <span class="terminal-text" style="color: var(--color-text-tertiary);">Watching for file changes...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notification Sidebar -->
+            <div class="notification-sidebar">
+                <button class="sidebar-collapse-toggle" onclick="toggleSidebar()">›</button>
+
+                <div class="notification-header">
+                    <div class="notification-header-top">
+                        <span class="notification-title">Activity Feed</span>
+                        <div class="notification-actions">
+                            <button class="notification-action-btn" title="Filter">⚡</button>
+                            <button class="notification-action-btn" title="Settings">⚙</button>
+                            <button class="notification-action-btn" title="Clear All">✓</button>
+                        </div>
+                    </div>
+                    <div class="notification-filters">
+                        <button class="filter-chip active">All</button>
+                        <button class="filter-chip">Active</button>
+                        <button class="filter-chip">Errors</button>
+                        <button class="filter-chip">Completed</button>
+                    </div>
+                </div>
+
+                <div class="notification-stats">
+                    <div class="stat-item">
+                        <div class="stat-value status-active">4</div>
+                        <div class="stat-label">Active</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">12</div>
+                        <div class="stat-label">Today</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value status-error">2</div>
+                        <div class="stat-label">Errors</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value status-completed">8</div>
+                        <div class="stat-label">Done</div>
+                    </div>
+                </div>
+
+                <div class="notification-list">
+                    <!-- Active Notifications -->
+                    <div class="notification-item status-active">
+                        <div class="notification-item-header">
+                            <div class="notification-item-title">Installing JWT dependencies</div>
+                            <div class="notification-item-time">Now</div>
+                        </div>
+                        <div class="notification-item-body">
+                            Running: bun add jsonwebtoken @types/jsonwebtoken
+                        </div>
+                        <div class="notification-item-meta">
+                            <span class="notification-tag">
+                                <span class="notification-tag-icon status-active"></span>
+                                Sales Trainer
+                            </span>
+                            <span class="notification-tag">Session #a3f9</span>
+                        </div>
+                    </div>
+
+                    <div class="notification-item status-error">
+                        <div class="notification-item-header">
+                            <div class="notification-item-title">Test failures detected</div>
+                            <div class="notification-item-time">1m ago</div>
+                        </div>
+                        <div class="notification-item-body">
+                            2 tests failing in auth.router.test.ts - JWT token validation
+                        </div>
+                        <div class="notification-item-meta">
+                            <span class="notification-tag">
+                                <span class="notification-tag-icon status-error"></span>
+                                Sales Trainer
+                            </span>
+                            <span class="notification-tag">Test Runner</span>
+                        </div>
+                    </div>
+
+                    <div class="notification-item status-active">
+                        <div class="notification-item-header">
+                            <div class="notification-item-title">Code analysis in progress</div>
+                            <div class="notification-item-time">2m ago</div>
+                        </div>
+                        <div class="notification-item-body">
+                            Reading authentication module files and analyzing dependencies
+                        </div>
+                        <div class="notification-item-meta">
+                            <span class="notification-tag">
+                                <span class="notification-tag-icon status-active"></span>
+                                Sales Trainer
+                            </span>
+                            <span class="notification-tag">Session #a3f9</span>
+                        </div>
+                    </div>
+
+                    <div class="notification-item status-warning">
+                        <div class="notification-item-header">
+                            <div class="notification-item-title">Breaking change detected</div>
+                            <div class="notification-item-time">3m ago</div>
+                        </div>
+                        <div class="notification-item-body">
+                            Converting from session-based to JWT auth will require database migration
+                        </div>
+                        <div class="notification-item-meta">
+                            <span class="notification-tag">
+                                <span class="notification-tag-icon status-warning"></span>
+                                Sales Trainer
+                            </span>
+                            <span class="notification-tag">Session #a3f9</span>
+                        </div>
+                    </div>
+
+                    <div class="notification-item status-completed">
+                        <div class="notification-item-header">
+                            <div class="notification-item-title">Session connected successfully</div>
+                            <div class="notification-item-time">5m ago</div>
+                        </div>
+                        <div class="notification-item-body">
+                            Claude Code session a3f9b2c1 started in sales-trainer project
+                        </div>
+                        <div class="notification-item-meta">
+                            <span class="notification-tag">
+                                <span class="notification-tag-icon status-completed"></span>
+                                Sales Trainer
+                            </span>
+                            <span class="notification-tag">Session #a3f9</span>
+                        </div>
+                    </div>
+
+                    <!-- API Gateway Project -->
+                    <div class="notification-item status-active">
+                        <div class="notification-item-header">
+                            <div class="notification-item-title">Building rate limiter middleware</div>
+                            <div class="notification-item-time">8m ago</div>
+                        </div>
+                        <div class="notification-item-body">
+                            Implementing Redis-based rate limiting with sliding window algorithm
+                        </div>
+                        <div class="notification-item-meta">
+                            <span class="notification-tag">
+                                <span class="notification-tag-icon status-active"></span>
+                                API Gateway
+                            </span>
+                            <span class="notification-tag">Session #d7e2</span>
+                        </div>
+                    </div>
+
+                    <div class="notification-item status-completed">
+                        <div class="notification-item-header">
+                            <div class="notification-item-title">CORS configuration updated</div>
+                            <div class="notification-item-time">12m ago</div>
+                        </div>
+                        <div class="notification-item-body">
+                            Added production domains to allowed origins list
+                        </div>
+                        <div class="notification-item-meta">
+                            <span class="notification-tag">
+                                <span class="notification-tag-icon status-completed"></span>
+                                API Gateway
+                            </span>
+                            <span class="notification-tag">Session #d7e2</span>
+                        </div>
+                    </div>
+
+                    <!-- Dashboard UI Project -->
+                    <div class="notification-item status-active">
+                        <div class="notification-item-header">
+                            <div class="notification-item-title">Creating analytics dashboard</div>
+                            <div class="notification-item-time">15m ago</div>
+                        </div>
+                        <div class="notification-item-body">
+                            Building real-time charts with Chart.js and WebSocket data feed
+                        </div>
+                        <div class="notification-item-meta">
+                            <span class="notification-tag">
+                                <span class="notification-tag-icon status-active"></span>
+                                Dashboard UI
+                            </span>
+                            <span class="notification-tag">Session #k9m3</span>
+                        </div>
+                    </div>
+
+                    <div class="notification-item status-completed">
+                        <div class="notification-item-header">
+                            <div class="notification-item-title">Responsive layout implemented</div>
+                            <div class="notification-item-time">22m ago</div>
+                        </div>
+                        <div class="notification-item-body">
+                            Dashboard now fully responsive with mobile-first approach
+                        </div>
+                        <div class="notification-item-meta">
+                            <span class="notification-tag">
+                                <span class="notification-tag-icon status-completed"></span>
+                                Dashboard UI
+                            </span>
+                            <span class="notification-tag">Session #k9m3</span>
+                        </div>
+                    </div>
+
+                    <div class="notification-item status-completed">
+                        <div class="notification-item-header">
+                            <div class="notification-item-title">Color theme system added</div>
+                            <div class="notification-item-time">28m ago</div>
+                        </div>
+                        <div class="notification-item-body">
+                            Implemented dark/light theme toggle with CSS variables
+                        </div>
+                        <div class="notification-item-meta">
+                            <span class="notification-tag">
+                                <span class="notification-tag-icon status-completed"></span>
+                                Dashboard UI
+                            </span>
+                            <span class="notification-tag">Session #k9m3</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.notification-sidebar');
+            const mainContent = document.querySelector('.main-content');
+            const toggle = document.querySelector('.sidebar-collapse-toggle');
+
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('sidebar-collapsed');
+            toggle.textContent = sidebar.classList.contains('collapsed') ? '‹' : '›';
+        }
+
+        // Simulate live terminal updates
+        function addTerminalLine(content, color = 'var(--color-text-primary)') {
+            const terminalContent = document.querySelector('.terminal-content');
+            const line = document.createElement('div');
+            line.className = 'terminal-line';
+            line.innerHTML = `
+                <span class="terminal-prompt">&nbsp;</span>
+                <span class="terminal-text" style="color: ${color};">${content}</span>
+            `;
+
+            // Remove cursor
+            const cursor = terminalContent.querySelector('.terminal-cursor');
+            if (cursor) cursor.remove();
+
+            // Add new line
+            terminalContent.appendChild(line);
+
+            // Add cursor back
+            const cursorLine = document.createElement('div');
+            cursorLine.className = 'terminal-line';
+            cursorLine.innerHTML = `
+                <span class="terminal-prompt">&nbsp;</span>
+                <span class="terminal-cursor"></span>
+            `;
+            terminalContent.appendChild(cursorLine);
+
+            // Scroll to bottom
+            terminalContent.scrollTop = terminalContent.scrollHeight;
+        }
+
+        // Simulate activity
+        let activityCounter = 0;
+        setInterval(() => {
+            activityCounter++;
+
+            if (activityCounter % 8 === 0) {
+                addTerminalLine('✓ Dependencies installed successfully', 'var(--color-status-active)');
+            } else if (activityCounter % 5 === 0) {
+                addTerminalLine('Creating JWT service...', 'var(--color-text-secondary)');
+            }
+        }, 3000);
+
+        // Add interactive hover effects to notification items
+        document.querySelectorAll('.notification-item').forEach(item => {
+            item.addEventListener('click', function() {
+                // Pulse effect on click
+                this.style.transform = 'translateX(-4px)';
+                setTimeout(() => {
+                    this.style.transform = 'translateX(-2px)';
+                }, 100);
+            });
+        });
+
+        // Filter chip interactions
+        document.querySelectorAll('.filter-chip').forEach(chip => {
+            chip.addEventListener('click', function() {
+                document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+
+                // Simulate filtering (in real app, would filter notification list)
+                const filterType = this.textContent.toLowerCase();
+                console.log('Filtering by:', filterType);
+            });
+        });
+
+        // Project tab switching
+        document.querySelectorAll('.project-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.project-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // Terminal tab switching
+        document.querySelectorAll('.terminal-tab').forEach(tab => {
+            tab.addEventListener('click', function(e) {
+                if (e.target.classList.contains('terminal-tab-close')) {
+                    // Close tab
+                    this.style.opacity = '0';
+                    setTimeout(() => this.remove(), 200);
+                } else {
+                    // Switch tab
+                    document.querySelectorAll('.terminal-tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

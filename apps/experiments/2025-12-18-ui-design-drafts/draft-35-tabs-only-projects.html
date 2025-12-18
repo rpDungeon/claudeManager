@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Manager - Browser-Style Tabs</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* CRT Green Theme */
+            --crt-green: #00ff41;
+            --crt-green-dim: #00cc33;
+            --crt-green-bright: #66ff99;
+            --crt-bg: #0a0e0a;
+            --crt-bg-lighter: #0f140f;
+            --crt-border: #1a2e1a;
+
+            /* UI Colors */
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #111111;
+            --bg-tertiary: #1a1a1a;
+            --bg-hover: #222222;
+            --border: #2a2a2a;
+            --border-light: #333333;
+
+            /* Tab Colors */
+            --tab-inactive: #151515;
+            --tab-active: var(--crt-bg);
+            --tab-hover: #1d1d1d;
+
+            /* Text */
+            --text-primary: #e5e5e5;
+            --text-secondary: #999999;
+            --text-muted: #666666;
+
+            /* Accents */
+            --accent-green: var(--crt-green);
+            --accent-blue: #3b82f6;
+            --accent-red: #ef4444;
+            --accent-yellow: #f59e0b;
+
+            /* Fonts */
+            --font-mono: 'JetBrains Mono', monospace;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ============================================
+           TOP BAR - Project Tabs (Browser-style)
+           ============================================ */
+        .top-bar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: stretch;
+            height: 40px;
+            user-select: none;
+        }
+
+        .app-icon {
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            background: var(--bg-primary);
+            border-right: 1px solid var(--border);
+            font-size: 18px;
+            color: var(--accent-green);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            gap: 8px;
+        }
+
+        .app-icon-symbol {
+            font-size: 20px;
+        }
+
+        .project-tabs-container {
+            display: flex;
+            flex: 1;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .project-tabs-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .project-tab {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 16px;
+            min-width: 180px;
+            max-width: 240px;
+            background: var(--tab-inactive);
+            border-right: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.15s ease;
+            position: relative;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .project-tab:hover {
+            background: var(--tab-hover);
+        }
+
+        .project-tab.active {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        .project-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--accent-green);
+        }
+
+        .project-tab-icon {
+            font-size: 14px;
+            opacity: 0.7;
+        }
+
+        .project-tab.active .project-tab-icon {
+            opacity: 1;
+            color: var(--accent-green);
+        }
+
+        .project-tab-label {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .project-tab-close {
+            opacity: 0;
+            font-size: 16px;
+            color: var(--text-muted);
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .project-tab:hover .project-tab-close {
+            opacity: 1;
+        }
+
+        .project-tab-close:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .new-project-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border);
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 18px;
+            transition: all 0.15s ease;
+        }
+
+        .new-project-btn:hover {
+            background: var(--tab-hover);
+            color: var(--text-primary);
+        }
+
+        /* ============================================
+           SESSION TABS (Under project tabs)
+           ============================================ */
+        .session-tabs-bar {
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            height: 36px;
+            padding: 0 12px;
+            gap: 4px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .session-tabs-bar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .session-tab {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            background: transparent;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .session-tab:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-light);
+        }
+
+        .session-tab.active {
+            background: var(--crt-bg);
+            border-color: var(--crt-border);
+            color: var(--accent-green);
+        }
+
+        .session-tab-indicator {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--text-muted);
+        }
+
+        .session-tab.active .session-tab-indicator {
+            background: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
+        }
+
+        .session-tab-close {
+            opacity: 0;
+            font-size: 14px;
+            color: var(--text-muted);
+            transition: opacity 0.15s ease;
+            margin-left: 4px;
+        }
+
+        .session-tab:hover .session-tab-close {
+            opacity: 1;
+        }
+
+        .new-session-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+            margin-left: auto;
+        }
+
+        .new-session-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-light);
+            color: var(--text-primary);
+        }
+
+        /* ============================================
+           TERMINAL AREA (CRT Aesthetic)
+           ============================================ */
+        .terminal-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--crt-bg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* CRT Scanlines Effect */
+        .terminal-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.15) 0px,
+                transparent 1px,
+                transparent 2px,
+                rgba(0, 0, 0, 0.15) 3px
+            );
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* CRT Glow Effect */
+        .terminal-container::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(
+                ellipse at center,
+                transparent 0%,
+                rgba(0, 0, 0, 0.4) 100%
+            );
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .terminal-content {
+            flex: 1;
+            padding: 24px;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--accent-green);
+            overflow-y: auto;
+            position: relative;
+            z-index: 0;
+            text-shadow: 0 0 2px var(--accent-green);
+        }
+
+        .terminal-line {
+            margin-bottom: 4px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .terminal-prompt {
+            color: var(--crt-green-bright);
+            opacity: 0.9;
+        }
+
+        .terminal-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background: var(--accent-green);
+            animation: blink 1s step-end infinite;
+            box-shadow: 0 0 4px var(--accent-green);
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        /* ============================================
+           BOTTOM BAR (Tmux-style)
+           ============================================ */
+        .bottom-bar {
+            background: var(--crt-bg-lighter);
+            border-top: 1px solid var(--crt-border);
+            height: 28px;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--crt-green-dim);
+            user-select: none;
+        }
+
+        .status-left {
+            display: flex;
+            gap: 16px;
+            flex: 1;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-item-label {
+            opacity: 0.7;
+        }
+
+        .status-item-value {
+            color: var(--accent-green);
+            font-weight: 600;
+        }
+
+        .status-right {
+            display: flex;
+            gap: 16px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            box-shadow: 0 0 6px var(--accent-green);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status-time {
+            opacity: 0.8;
+        }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 768px) {
+            .project-tab {
+                min-width: 140px;
+                max-width: 180px;
+                padding: 0 12px;
+            }
+
+            .terminal-content {
+                padding: 16px;
+                font-size: 13px;
+            }
+
+            .bottom-bar {
+                font-size: 11px;
+                padding: 0 12px;
+            }
+
+            .status-left,
+            .status-right {
+                gap: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Bar - Project Tabs -->
+    <div class="top-bar">
+        <div class="app-icon">
+            <span class="app-icon-symbol">◆</span>
+            <span>CLAUDE</span>
+        </div>
+
+        <div class="project-tabs-container">
+            <div class="project-tab">
+                <span class="project-tab-icon">📁</span>
+                <span class="project-tab-label">ecommerce-app</span>
+                <span class="project-tab-close">×</span>
+            </div>
+
+            <div class="project-tab active">
+                <span class="project-tab-icon">📦</span>
+                <span class="project-tab-label">api-gateway</span>
+                <span class="project-tab-close">×</span>
+            </div>
+
+            <div class="project-tab">
+                <span class="project-tab-icon">🎨</span>
+                <span class="project-tab-label">design-system</span>
+                <span class="project-tab-close">×</span>
+            </div>
+        </div>
+
+        <div class="new-project-btn">+</div>
+    </div>
+
+    <!-- Session Tabs Bar -->
+    <div class="session-tabs-bar">
+        <div class="session-tab">
+            <span class="session-tab-indicator"></span>
+            <span>auth-refactor</span>
+            <span class="session-tab-close">×</span>
+        </div>
+
+        <div class="session-tab active">
+            <span class="session-tab-indicator"></span>
+            <span>database-migration</span>
+            <span class="session-tab-close">×</span>
+        </div>
+
+        <div class="session-tab">
+            <span class="session-tab-indicator"></span>
+            <span>api-tests</span>
+            <span class="session-tab-close">×</span>
+        </div>
+
+        <button class="new-session-btn">+ New Session</button>
+    </div>
+
+    <!-- Terminal Area (CRT Style) -->
+    <div class="terminal-container">
+        <div class="terminal-content">
+            <div class="terminal-line">
+                <span class="terminal-prompt">claude@api-gateway:~/database-migration$</span>
+                <span>git status</span>
+            </div>
+            <div class="terminal-line">
+                <span style="opacity: 0.8;">On branch feat/database-migration</span>
+            </div>
+            <div class="terminal-line">
+                <span style="opacity: 0.8;">Changes not staged for commit:</span>
+            </div>
+            <div class="terminal-line">
+                <span style="padding-left: 24px; opacity: 0.8;">modified:   src/db/schema.ts</span>
+            </div>
+            <div class="terminal-line">
+                <span style="padding-left: 24px; opacity: 0.8;">modified:   src/migrations/001_initial.sql</span>
+            </div>
+            <div class="terminal-line">
+                <span style="padding-left: 24px; opacity: 0.8;">new file:   src/migrations/002_add_users.sql</span>
+            </div>
+            <div class="terminal-line" style="margin-top: 16px;">
+                <span class="terminal-prompt">claude@api-gateway:~/database-migration$</span>
+                <span>drizzle-kit generate</span>
+            </div>
+            <div class="terminal-line">
+                <span style="opacity: 0.8;">Generating migration... ████████████████ 100%</span>
+            </div>
+            <div class="terminal-line">
+                <span style="color: var(--crt-green-bright);">✓ Migration generated successfully</span>
+            </div>
+            <div class="terminal-line">
+                <span style="opacity: 0.8;">  - Created: drizzle/0001_add_users.sql</span>
+            </div>
+            <div class="terminal-line" style="margin-top: 16px;">
+                <span class="terminal-prompt">claude@api-gateway:~/database-migration$</span>
+                <span class="terminal-cursor"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Bar (Tmux-style) -->
+    <div class="bottom-bar">
+        <div class="status-left">
+            <div class="status-item">
+                <span class="status-item-label">SESSION</span>
+                <span class="status-item-value">database-migration</span>
+            </div>
+            <div class="status-item">
+                <span class="status-item-label">PROJECT</span>
+                <span class="status-item-value">api-gateway</span>
+            </div>
+            <div class="status-item">
+                <span class="status-item-label">BRANCH</span>
+                <span class="status-item-value">feat/database-migration</span>
+            </div>
+        </div>
+
+        <div class="status-right">
+            <div class="status-indicator">
+                <span class="status-dot"></span>
+                <span>CONNECTED</span>
+            </div>
+            <div class="status-time">14:23:17</div>
+        </div>
+    </div>
+
+    <script>
+        // Update time in bottom bar
+        function updateTime() {
+            const timeElement = document.querySelector('.status-time');
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', {
+                hour12: false,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            timeElement.textContent = timeString;
+        }
+
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // Tab interactions
+        document.querySelectorAll('.project-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                if (!e.target.classList.contains('project-tab-close')) {
+                    document.querySelectorAll('.project-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                }
+            });
+        });
+
+        document.querySelectorAll('.session-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                if (!e.target.classList.contains('session-tab-close')) {
+                    document.querySelectorAll('.session-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                }
+            });
+        });
+
+        // Close button handlers
+        document.querySelectorAll('.project-tab-close, .session-tab-close').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const tab = btn.closest('.project-tab, .session-tab');
+                tab.style.transform = 'scale(0.95)';
+                tab.style.opacity = '0';
+                setTimeout(() => tab.remove(), 150);
+            });
+        });
+
+        // New project/session button handlers
+        document.querySelector('.new-project-btn')?.addEventListener('click', () => {
+            console.log('Create new project');
+        });
+
+        document.querySelector('.new-session-btn')?.addEventListener('click', () => {
+            console.log('Create new session');
+        });
+    </script>
+</body>
+</html>

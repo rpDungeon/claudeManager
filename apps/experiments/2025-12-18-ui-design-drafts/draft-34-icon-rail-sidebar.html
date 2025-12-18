@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Manager - Draft 34: Icon Rail Sidebar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Color System */
+            --bg-primary: #0a0e14;
+            --bg-secondary: #0f1419;
+            --bg-tertiary: #151b23;
+            --bg-elevated: #1a2129;
+
+            --border-subtle: #1f2937;
+            --border-medium: #374151;
+            --border-bright: #4b5563;
+
+            --text-primary: #e5e7eb;
+            --text-secondary: #9ca3af;
+            --text-tertiary: #6b7280;
+            --text-dim: #4b5563;
+
+            --accent-primary: #3b82f6;
+            --accent-hover: #2563eb;
+            --accent-active: #1d4ed8;
+
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+
+            /* CRT Terminal Colors */
+            --terminal-bg: #000000;
+            --terminal-text: #00ff00;
+            --terminal-glow: rgba(0, 255, 0, 0.3);
+            --scanline-color: rgba(0, 255, 0, 0.05);
+
+            /* Layout */
+            --rail-width: 48px;
+            --flyout-width: 280px;
+            --bottom-bar-height: 32px;
+
+            /* Typography */
+            --font-mono: 'JetBrains Mono', monospace;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+            /* Transitions */
+            --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-medium: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Main Layout */
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Icon Rail */
+        .icon-rail {
+            width: var(--rail-width);
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-subtle);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px 0;
+            gap: 8px;
+            z-index: 100;
+        }
+
+        .rail-logo {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-active));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+        }
+
+        .rail-divider {
+            width: 24px;
+            height: 1px;
+            background: var(--border-subtle);
+            margin: 4px 0;
+        }
+
+        .project-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            position: relative;
+            transition: all var(--transition-fast);
+            border: 2px solid transparent;
+        }
+
+        .project-icon:hover {
+            transform: translateX(2px);
+            border-color: var(--border-medium);
+        }
+
+        .project-icon.active {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        .project-icon.active::before {
+            content: '';
+            position: absolute;
+            left: -12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 20px;
+            background: var(--accent-primary);
+            border-radius: 0 2px 2px 0;
+        }
+
+        .project-icon-1 {
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            color: white;
+        }
+
+        .project-icon-2 {
+            background: linear-gradient(135deg, #ec4899, #be185d);
+            color: white;
+        }
+
+        .project-icon .status-dot {
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 2px solid var(--bg-secondary);
+        }
+
+        .status-dot.active {
+            background: var(--success);
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+        }
+
+        .status-dot.paused {
+            background: var(--warning);
+        }
+
+        .rail-spacer {
+            flex: 1;
+        }
+
+        .rail-settings {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            color: var(--text-tertiary);
+        }
+
+        .rail-settings:hover {
+            background: var(--bg-elevated);
+            color: var(--text-secondary);
+        }
+
+        /* Flyout Panel */
+        .flyout-container {
+            position: fixed;
+            left: var(--rail-width);
+            top: 0;
+            bottom: var(--bottom-bar-height);
+            width: var(--flyout-width);
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-subtle);
+            transform: translateX(-100%);
+            transition: transform var(--transition-medium);
+            z-index: 90;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 4px 0 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .flyout-container.visible {
+            transform: translateX(0);
+        }
+
+        .flyout-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .flyout-project-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .flyout-project-path {
+            font-size: 12px;
+            font-family: var(--font-mono);
+            color: var(--text-tertiary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .flyout-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        .flyout-section {
+            margin-bottom: 20px;
+        }
+
+        .flyout-section-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+            padding: 0 4px;
+        }
+
+        .session-item {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .session-item:hover {
+            background: var(--bg-elevated);
+            border-color: var(--border-medium);
+            transform: translateX(2px);
+        }
+
+        .session-item.active {
+            border-color: var(--accent-primary);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .session-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .session-id {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .session-status {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 500;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .session-status.active {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+        }
+
+        .session-status.paused {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+        }
+
+        .session-status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .session-meta {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            margin-bottom: 8px;
+        }
+
+        .session-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .session-btn {
+            flex: 1;
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: 500;
+            border-radius: 4px;
+            border: 1px solid var(--border-medium);
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .session-btn:hover {
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            border-color: var(--border-bright);
+        }
+
+        .session-btn.primary {
+            background: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+        }
+
+        .session-btn.primary:hover {
+            background: var(--accent-hover);
+            border-color: var(--accent-hover);
+        }
+
+        .flyout-footer {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .new-session-btn {
+            width: 100%;
+            padding: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 6px;
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .new-session-btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Mode Toggle */
+        .mode-toggle {
+            height: 48px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 12px;
+        }
+
+        .toggle-group {
+            display: flex;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            padding: 3px;
+            gap: 2px;
+        }
+
+        .toggle-btn {
+            padding: 6px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 4px;
+            background: transparent;
+            color: var(--text-secondary);
+            border: none;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .toggle-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .toggle-btn.active {
+            background: var(--accent-primary);
+            color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .mode-info {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-tertiary);
+            font-family: var(--font-mono);
+        }
+
+        /* Terminal Container */
+        .terminal-container {
+            flex: 1;
+            position: relative;
+            background: var(--terminal-bg);
+            overflow: hidden;
+        }
+
+        /* CRT Terminal Effect */
+        .terminal-screen {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            padding: 20px;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--terminal-text);
+            overflow-y: auto;
+        }
+
+        /* Scanlines Effect */
+        .terminal-screen::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                var(--scanline-color) 2px,
+                var(--scanline-color) 4px
+            );
+            pointer-events: none;
+            z-index: 10;
+            animation: scanline-flicker 8s linear infinite;
+        }
+
+        @keyframes scanline-flicker {
+            0%, 100% { opacity: 0.05; }
+            50% { opacity: 0.08; }
+        }
+
+        /* CRT Glow Effect */
+        .terminal-screen::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(
+                ellipse at center,
+                transparent 0%,
+                rgba(0, 0, 0, 0.3) 100%
+            );
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .terminal-content {
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 0 5px var(--terminal-glow);
+        }
+
+        .terminal-line {
+            margin-bottom: 4px;
+        }
+
+        .terminal-prompt {
+            color: #00ff00;
+            font-weight: 600;
+        }
+
+        .terminal-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background: var(--terminal-text);
+            animation: blink 1s step-end infinite;
+            margin-left: 2px;
+            vertical-align: text-bottom;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .terminal-output-dim {
+            color: #00aa00;
+        }
+
+        .terminal-output-error {
+            color: #ff5555;
+        }
+
+        .terminal-output-success {
+            color: #00ff00;
+        }
+
+        /* Bottom Status Bar (Tmux-style) */
+        .bottom-bar {
+            height: var(--bottom-bar-height);
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--text-secondary);
+            gap: 16px;
+        }
+
+        .bar-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .bar-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .bar-label {
+            color: var(--text-tertiary);
+        }
+
+        .bar-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .bar-spacer {
+            flex: 1;
+        }
+
+        .bar-status {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+            border-radius: 3px;
+            font-weight: 500;
+        }
+
+        .bar-status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Scrollbar Styling */
+        .terminal-screen::-webkit-scrollbar,
+        .flyout-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .terminal-screen::-webkit-scrollbar-track,
+        .flyout-content::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        .terminal-screen::-webkit-scrollbar-thumb,
+        .flyout-content::-webkit-scrollbar-thumb {
+            background: var(--border-medium);
+            border-radius: 4px;
+        }
+
+        .terminal-screen::-webkit-scrollbar-thumb:hover,
+        .flyout-content::-webkit-scrollbar-thumb:hover {
+            background: var(--border-bright);
+        }
+
+        /* Icons (SVG) */
+        .icon {
+            width: 16px;
+            height: 16px;
+            display: inline-block;
+        }
+
+        .icon-small {
+            width: 14px;
+            height: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Icon Rail -->
+        <div class="icon-rail">
+            <div class="rail-logo">CM</div>
+            <div class="rail-divider"></div>
+
+            <!-- Project 1 -->
+            <div class="project-icon project-icon-1 active" data-project="1">
+                ST
+                <div class="status-dot active"></div>
+            </div>
+
+            <!-- Project 2 -->
+            <div class="project-icon project-icon-2" data-project="2">
+                AP
+                <div class="status-dot paused"></div>
+            </div>
+
+            <div class="rail-spacer"></div>
+
+            <!-- Settings -->
+            <div class="rail-settings">
+                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Flyout Panel -->
+        <div class="flyout-container visible" id="flyout">
+            <div class="flyout-header">
+                <div class="flyout-project-name">Sales Trainer</div>
+                <div class="flyout-project-path">/mnt/helios/sales-trainer-prod</div>
+            </div>
+
+            <div class="flyout-content">
+                <div class="flyout-section">
+                    <div class="flyout-section-title">Active Sessions</div>
+
+                    <div class="session-item active">
+                        <div class="session-header">
+                            <div class="session-id">chat_7x9k2m</div>
+                            <div class="session-status active">
+                                <div class="session-status-dot"></div>
+                                Active
+                            </div>
+                        </div>
+                        <div class="session-meta">Started 2h 34m ago • Terminal 1</div>
+                        <div class="session-actions">
+                            <button class="session-btn primary">Resume</button>
+                            <button class="session-btn">Pause</button>
+                        </div>
+                    </div>
+
+                    <div class="session-item">
+                        <div class="session-header">
+                            <div class="session-id">chat_5a3n8p</div>
+                            <div class="session-status active">
+                                <div class="session-status-dot"></div>
+                                Active
+                            </div>
+                        </div>
+                        <div class="session-meta">Started 45m ago • Terminal 2</div>
+                        <div class="session-actions">
+                            <button class="session-btn primary">Resume</button>
+                            <button class="session-btn">Pause</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flyout-section">
+                    <div class="flyout-section-title">Paused Sessions</div>
+
+                    <div class="session-item">
+                        <div class="session-header">
+                            <div class="session-id">chat_1m4k7t</div>
+                            <div class="session-status paused">
+                                <div class="session-status-dot"></div>
+                                Paused
+                            </div>
+                        </div>
+                        <div class="session-meta">Paused 3d ago • Terminal 3</div>
+                        <div class="session-actions">
+                            <button class="session-btn primary">Resume</button>
+                            <button class="session-btn">Archive</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flyout-footer">
+                <button class="new-session-btn">
+                    <svg class="icon-small" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    New Session
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Mode Toggle -->
+            <div class="mode-toggle">
+                <div class="toggle-group">
+                    <button class="toggle-btn">Dashboard</button>
+                    <button class="toggle-btn active">Workspace</button>
+                </div>
+                <div class="mode-info">
+                    <span>Session:</span>
+                    <span style="color: var(--text-primary);">chat_7x9k2m</span>
+                    <span style="color: var(--text-dim);">|</span>
+                    <span>Terminal:</span>
+                    <span style="color: var(--text-primary);">1</span>
+                </div>
+            </div>
+
+            <!-- Terminal Container -->
+            <div class="terminal-container">
+                <div class="terminal-screen">
+                    <div class="terminal-content">
+                        <div class="terminal-line">
+                            <span class="terminal-prompt">claude@sales-trainer</span>
+                            <span style="color: #00aaff;">:</span>
+                            <span style="color: #00aaff;">~/sales-trainer-prod</span>
+                            <span style="color: #00ff00;">$</span>
+                            <span> npm run dev</span>
+                        </div>
+                        <div class="terminal-line terminal-output-dim"></div>
+                        <div class="terminal-line terminal-output-success">
+                            > sales-trainer@1.0.0 dev
+                        </div>
+                        <div class="terminal-line terminal-output-success">
+                            > next dev
+                        </div>
+                        <div class="terminal-line terminal-output-dim"></div>
+                        <div class="terminal-line terminal-output-dim">
+                            ▲ Next.js 14.2.5
+                        </div>
+                        <div class="terminal-line terminal-output-dim">
+                            - Local:        http://localhost:3000
+                        </div>
+                        <div class="terminal-line terminal-output-dim">
+                            - Network:      http://192.168.1.100:3000
+                        </div>
+                        <div class="terminal-line terminal-output-dim"></div>
+                        <div class="terminal-line terminal-output-success">
+                            ✓ Ready in 2.3s
+                        </div>
+                        <div class="terminal-line terminal-output-dim"></div>
+                        <div class="terminal-line terminal-output-dim">
+                            ○ Compiling / ...
+                        </div>
+                        <div class="terminal-line terminal-output-success">
+                            ✓ Compiled / in 1.2s (450 modules)
+                        </div>
+                        <div class="terminal-line terminal-output-dim"></div>
+                        <div class="terminal-line">
+                            <span class="terminal-prompt">claude@sales-trainer</span>
+                            <span style="color: #00aaff;">:</span>
+                            <span style="color: #00aaff;">~/sales-trainer-prod</span>
+                            <span style="color: #00ff00;">$</span>
+                            <span class="terminal-cursor"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Status Bar -->
+            <div class="bottom-bar">
+                <div class="bar-section">
+                    <div class="bar-item">
+                        <span class="bar-label">[0]</span>
+                        <span class="bar-value">sales-trainer</span>
+                    </div>
+                    <div class="bar-item">
+                        <span class="bar-label">Terminal</span>
+                        <span class="bar-value">1:main</span>
+                    </div>
+                </div>
+
+                <div class="bar-spacer"></div>
+
+                <div class="bar-section">
+                    <div class="bar-status">
+                        <div class="bar-status-dot"></div>
+                        Connected
+                    </div>
+                    <div class="bar-item">
+                        <span class="bar-label">Uptime:</span>
+                        <span class="bar-value">2h 34m</span>
+                    </div>
+                    <div class="bar-item">
+                        <span class="bar-value">18 Dec 2025 14:32</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Flyout Toggle
+        const projectIcons = document.querySelectorAll('.project-icon');
+        const flyout = document.getElementById('flyout');
+        let currentProject = '1';
+
+        projectIcons.forEach(icon => {
+            icon.addEventListener('click', () => {
+                const projectId = icon.getAttribute('data-project');
+
+                // Toggle active state
+                projectIcons.forEach(i => i.classList.remove('active'));
+                icon.classList.add('active');
+
+                // Toggle flyout visibility
+                if (currentProject === projectId && flyout.classList.contains('visible')) {
+                    flyout.classList.remove('visible');
+                    currentProject = null;
+                } else {
+                    flyout.classList.add('visible');
+                    currentProject = projectId;
+
+                    // Update flyout content based on project
+                    if (projectId === '2') {
+                        document.querySelector('.flyout-project-name').textContent = 'API Platform';
+                        document.querySelector('.flyout-project-path').textContent = '/mnt/helios/api-platform-prod';
+                    } else {
+                        document.querySelector('.flyout-project-name').textContent = 'Sales Trainer';
+                        document.querySelector('.flyout-project-path').textContent = '/mnt/helios/sales-trainer-prod';
+                    }
+                }
+            });
+        });
+
+        // Close flyout when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.project-icon') &&
+                !e.target.closest('.flyout-container')) {
+                flyout.classList.remove('visible');
+            }
+        });
+
+        // Mode Toggle
+        const toggleBtns = document.querySelectorAll('.toggle-btn');
+        toggleBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                toggleBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+
+        // Session Item Click
+        const sessionItems = document.querySelectorAll('.session-item');
+        sessionItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                // Don't activate if clicking a button
+                if (e.target.classList.contains('session-btn')) return;
+
+                sessionItems.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+            });
+        });
+
+        // Terminal Cursor Animation Enhancement
+        const cursor = document.querySelector('.terminal-cursor');
+        setInterval(() => {
+            cursor.style.opacity = cursor.style.opacity === '0' ? '1' : '0';
+        }, 530);
+    </script>
+</body>
+</html>

@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Manager - Compact Dense UI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Dark Theme Colors */
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #141414;
+            --bg-tertiary: #1a1a1a;
+            --bg-hover: #222222;
+            --border-color: #2a2a2a;
+            --border-active: #3a3a3a;
+
+            /* Text Colors */
+            --text-primary: #e5e5e5;
+            --text-secondary: #a0a0a0;
+            --text-tertiary: #666666;
+
+            /* Accent Colors */
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
+            --accent-purple: #8b5cf6;
+            --accent-red: #ef4444;
+
+            /* Status Colors */
+            --status-success: #10b981;
+            --status-warning: #f59e0b;
+            --status-error: #ef4444;
+            --status-info: #3b82f6;
+
+            /* Spacing */
+            --spacing-xs: 2px;
+            --spacing-sm: 4px;
+            --spacing-md: 8px;
+            --spacing-lg: 12px;
+            --spacing-xl: 16px;
+
+            /* Typography */
+            --font-xs: 10px;
+            --font-sm: 11px;
+            --font-base: 12px;
+            --font-md: 13px;
+            --font-lg: 14px;
+        }
+
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Consolas', monospace;
+            font-size: var(--font-base);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            line-height: 1.4;
+        }
+
+        /* Main Layout */
+        .app-container {
+            display: grid;
+            grid-template-columns: 48px 1fr 220px;
+            grid-template-rows: 24px 1fr 22px;
+            height: 100vh;
+            gap: 0;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            grid-column: 1 / -1;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            padding: 0 var(--spacing-md);
+            font-size: var(--font-sm);
+            justify-content: space-between;
+        }
+
+        .top-bar-left {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-lg);
+        }
+
+        .app-title {
+            font-weight: 600;
+            color: var(--accent-blue);
+            font-size: var(--font-md);
+        }
+
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            color: var(--text-secondary);
+            font-size: var(--font-xs);
+        }
+
+        .breadcrumb-separator {
+            color: var(--text-tertiary);
+        }
+
+        .top-bar-right {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-lg);
+            font-size: var(--font-xs);
+        }
+
+        .top-bar-action {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: 2px var(--spacing-md);
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background 0.15s ease-out;
+        }
+
+        .top-bar-action:hover {
+            background: var(--bg-hover);
+        }
+
+        .keybind {
+            color: var(--text-tertiary);
+            font-size: var(--font-xs);
+        }
+
+        /* Projects Sidebar */
+        .projects-sidebar {
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            padding: var(--spacing-md);
+            border-bottom: 1px solid var(--border-color);
+            font-size: var(--font-sm);
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+
+        .project-item {
+            padding: var(--spacing-md);
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background 0.15s ease-out;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .project-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .project-item.active {
+            background: var(--bg-tertiary);
+            border-left: 2px solid var(--accent-blue);
+        }
+
+        .project-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--font-md);
+            font-weight: 600;
+        }
+
+        .project-name {
+            font-size: var(--font-xs);
+            color: var(--text-secondary);
+            text-align: center;
+            word-break: break-word;
+        }
+
+        .project-stats {
+            display: flex;
+            gap: var(--spacing-sm);
+            font-size: var(--font-xs);
+            color: var(--text-tertiary);
+        }
+
+        /* Main Workspace */
+        .main-workspace {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--bg-primary);
+        }
+
+        /* Project Workspace */
+        .project-workspace {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .project-workspace:last-child {
+            border-bottom: none;
+        }
+
+        /* Project Header */
+        .project-header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: var(--spacing-sm) var(--spacing-md);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 26px;
+        }
+
+        .project-title-section {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .project-title {
+            font-size: var(--font-md);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .project-path {
+            font-size: var(--font-xs);
+            color: var(--text-tertiary);
+        }
+
+        .project-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        .icon-btn {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: var(--font-sm);
+            transition: all 0.15s ease-out;
+        }
+
+        .icon-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        /* Tab Bar */
+        .tab-bar {
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            overflow-x: auto;
+            overflow-y: hidden;
+            min-height: 28px;
+            scrollbar-width: none;
+        }
+
+        .tab-bar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tab {
+            padding: var(--spacing-sm) var(--spacing-lg);
+            font-size: var(--font-sm);
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-right: 1px solid var(--border-color);
+            border-bottom: 2px solid transparent;
+            transition: all 0.15s ease-out;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            min-width: max-content;
+        }
+
+        .tab:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border-bottom-color: var(--accent-blue);
+        }
+
+        .tab-group-blue { border-left: 3px solid var(--accent-blue); }
+        .tab-group-green { border-left: 3px solid var(--accent-green); }
+        .tab-group-orange { border-left: 3px solid var(--accent-orange); }
+        .tab-group-purple { border-left: 3px solid var(--accent-purple); }
+
+        .tab-status {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--status-success);
+        }
+
+        .tab-status.warning { background: var(--status-warning); }
+        .tab-status.error { background: var(--status-error); }
+
+        .tab-close {
+            width: 14px;
+            height: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-tertiary);
+            font-size: var(--font-xs);
+            transition: color 0.15s ease-out;
+        }
+
+        .tab-close:hover {
+            color: var(--accent-red);
+        }
+
+        /* Terminal Grid */
+        .terminal-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px;
+            background: var(--border-color);
+            flex: 1;
+            min-height: 0;
+        }
+
+        .terminal-pane {
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .terminal-header {
+            background: var(--bg-secondary);
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 22px;
+        }
+
+        .terminal-title {
+            font-size: var(--font-xs);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .terminal-indicator {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--status-success);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .terminal-actions {
+            display: flex;
+            gap: var(--spacing-xs);
+        }
+
+        .terminal-content {
+            flex: 1;
+            padding: var(--spacing-md);
+            overflow-y: auto;
+            font-size: var(--font-sm);
+            line-height: 1.5;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Consolas', monospace;
+        }
+
+        .terminal-line {
+            margin-bottom: var(--spacing-xs);
+            color: var(--text-secondary);
+        }
+
+        .terminal-prompt {
+            color: var(--accent-blue);
+        }
+
+        .terminal-command {
+            color: var(--text-primary);
+        }
+
+        .terminal-output {
+            color: var(--text-secondary);
+        }
+
+        .terminal-error {
+            color: var(--accent-red);
+        }
+
+        .terminal-success {
+            color: var(--status-success);
+        }
+
+        .terminal-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 14px;
+            background: var(--text-primary);
+            animation: blink 1s step-end infinite;
+            margin-left: 2px;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        /* Activity Feed Sidebar */
+        .activity-sidebar {
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .activity-header {
+            padding: var(--spacing-md);
+            border-bottom: 1px solid var(--border-color);
+            font-size: var(--font-sm);
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .activity-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--spacing-sm);
+        }
+
+        .activity-item {
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-sm);
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            border-left: 2px solid var(--accent-blue);
+            transition: background 0.15s ease-out;
+            cursor: pointer;
+        }
+
+        .activity-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .activity-item.success { border-left-color: var(--status-success); }
+        .activity-item.warning { border-left-color: var(--status-warning); }
+        .activity-item.error { border-left-color: var(--status-error); }
+
+        .activity-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .activity-icon {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--font-xs);
+        }
+
+        .activity-time {
+            font-size: var(--font-xs);
+            color: var(--text-tertiary);
+        }
+
+        .activity-title {
+            font-size: var(--font-sm);
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-xs);
+            font-weight: 500;
+        }
+
+        .activity-description {
+            font-size: var(--font-xs);
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .activity-project {
+            font-size: var(--font-xs);
+            color: var(--text-tertiary);
+            margin-top: var(--spacing-sm);
+            padding-top: var(--spacing-sm);
+            border-top: 1px solid var(--border-color);
+        }
+
+        /* Status Bar */
+        .status-bar {
+            grid-column: 1 / -1;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 var(--spacing-md);
+            font-size: var(--font-xs);
+            color: var(--text-secondary);
+        }
+
+        .status-left {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xl);
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .status-label {
+            color: var(--text-tertiary);
+        }
+
+        .status-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .status-bar-indicator {
+            width: 40px;
+            height: 6px;
+            background: var(--bg-tertiary);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .status-bar-fill {
+            height: 100%;
+            background: var(--status-success);
+            transition: width 0.3s ease-out;
+        }
+
+        .status-bar-fill.warning {
+            background: var(--status-warning);
+        }
+
+        .status-bar-fill.error {
+            background: var(--status-error);
+        }
+
+        .status-right {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xl);
+        }
+
+        .status-separator {
+            width: 1px;
+            height: 12px;
+            background: var(--border-color);
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-hover);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--border-active);
+        }
+
+        /* Utilities */
+        .text-success { color: var(--status-success); }
+        .text-warning { color: var(--status-warning); }
+        .text-error { color: var(--status-error); }
+        .text-info { color: var(--status-info); }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="top-bar-left">
+                <div class="app-title">CLAUDE MGR</div>
+                <div class="breadcrumb">
+                    <span>workspace</span>
+                    <span class="breadcrumb-separator">/</span>
+                    <span>api-server</span>
+                    <span class="breadcrumb-separator">/</span>
+                    <span>src/auth</span>
+                </div>
+            </div>
+            <div class="top-bar-right">
+                <div class="top-bar-action">
+                    <span>⌘ PALETTE</span>
+                    <span class="keybind">⌘K</span>
+                </div>
+                <div class="top-bar-action">
+                    <span>NEW PROJECT</span>
+                    <span class="keybind">⌘N</span>
+                </div>
+                <div class="top-bar-action">
+                    <span>SPLIT</span>
+                    <span class="keybind">⌘D</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Projects Sidebar -->
+        <div class="projects-sidebar">
+            <div class="sidebar-header">PROJ</div>
+            <div class="project-item active">
+                <div class="project-icon" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">A</div>
+                <div class="project-name">api-server</div>
+                <div class="project-stats">
+                    <span>4</span>
+                    <span>•</span>
+                    <span title="Claude Sessions">2</span>
+                </div>
+            </div>
+            <div class="project-item">
+                <div class="project-icon" style="background: linear-gradient(135deg, #10b981, #047857);">F</div>
+                <div class="project-name">frontend</div>
+                <div class="project-stats">
+                    <span>3</span>
+                    <span>•</span>
+                    <span>1</span>
+                </div>
+            </div>
+            <div class="project-item">
+                <div class="project-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">D</div>
+                <div class="project-name">docs</div>
+                <div class="project-stats">
+                    <span>1</span>
+                    <span>•</span>
+                    <span>0</span>
+                </div>
+            </div>
+            <div class="project-item">
+                <div class="project-icon" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9);">I</div>
+                <div class="project-name">infra</div>
+                <div class="project-stats">
+                    <span>2</span>
+                    <span>•</span>
+                    <span>1</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Workspace -->
+        <div class="main-workspace">
+            <!-- Project 1: API Server -->
+            <div class="project-workspace">
+                <!-- Project Header -->
+                <div class="project-header">
+                    <div class="project-title-section">
+                        <div class="project-title">
+                            <span style="color: #3b82f6;">█</span>
+                            <span>api-server</span>
+                        </div>
+                        <div class="project-path">~/workspace/api-server</div>
+                    </div>
+                    <div class="project-actions">
+                        <button class="icon-btn" title="Add Terminal">+</button>
+                        <button class="icon-btn" title="Split Vertical">⫽</button>
+                        <button class="icon-btn" title="Split Horizontal">⫾</button>
+                        <button class="icon-btn" title="Settings">⚙</button>
+                    </div>
+                </div>
+
+                <!-- Tab Bar -->
+                <div class="tab-bar">
+                    <div class="tab active tab-group-blue">
+                        <div class="tab-status"></div>
+                        <span>dev-server</span>
+                        <div class="tab-close">×</div>
+                    </div>
+                    <div class="tab tab-group-blue">
+                        <div class="tab-status"></div>
+                        <span>tests</span>
+                        <div class="tab-close">×</div>
+                    </div>
+                    <div class="tab tab-group-green">
+                        <div class="tab-status warning"></div>
+                        <span>build</span>
+                        <div class="tab-close">×</div>
+                    </div>
+                    <div class="tab tab-group-green">
+                        <div class="tab-status"></div>
+                        <span>logs</span>
+                        <div class="tab-close">×</div>
+                    </div>
+                </div>
+
+                <!-- Terminal Grid -->
+                <div class="terminal-grid">
+                    <!-- Terminal 1 -->
+                    <div class="terminal-pane">
+                        <div class="terminal-header">
+                            <div class="terminal-title">
+                                <div class="terminal-indicator"></div>
+                                <span>dev-server</span>
+                                <span style="color: var(--text-tertiary);">•</span>
+                                <span style="color: var(--text-tertiary); font-size: var(--font-xs);">bun run dev</span>
+                            </div>
+                            <div class="terminal-actions">
+                                <button class="icon-btn" title="Clear">⌫</button>
+                                <button class="icon-btn" title="Copy">⎘</button>
+                                <button class="icon-btn" title="Close">×</button>
+                            </div>
+                        </div>
+                        <div class="terminal-content">
+                            <div class="terminal-line">
+                                <span class="terminal-prompt">➜</span>
+                                <span class="terminal-command"> bun run dev</span>
+                            </div>
+                            <div class="terminal-line terminal-output">$ bun --watch src/index.ts</div>
+                            <div class="terminal-line terminal-success">✓ Server started on http://localhost:3000</div>
+                            <div class="terminal-line terminal-output">  ElysiaJS v1.2.0</div>
+                            <div class="terminal-line terminal-output">  Bun runtime v1.1.38</div>
+                            <div class="terminal-line terminal-output"></div>
+                            <div class="terminal-line terminal-info text-info">→ Routes:</div>
+                            <div class="terminal-line terminal-output">  GET  /api/health</div>
+                            <div class="terminal-line terminal-output">  POST /api/auth/login</div>
+                            <div class="terminal-line terminal-output">  GET  /api/projects</div>
+                            <div class="terminal-line terminal-output">  WS   /api/terminal/:id</div>
+                            <div class="terminal-line terminal-output"></div>
+                            <div class="terminal-line terminal-output">
+                                <span class="terminal-prompt">➜</span>
+                                <span class="terminal-cursor"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Terminal 2 -->
+                    <div class="terminal-pane">
+                        <div class="terminal-header">
+                            <div class="terminal-title">
+                                <div class="terminal-indicator"></div>
+                                <span>tests</span>
+                                <span style="color: var(--text-tertiary);">•</span>
+                                <span style="color: var(--text-tertiary); font-size: var(--font-xs);">bun test</span>
+                            </div>
+                            <div class="terminal-actions">
+                                <button class="icon-btn" title="Clear">⌫</button>
+                                <button class="icon-btn" title="Copy">⎘</button>
+                                <button class="icon-btn" title="Close">×</button>
+                            </div>
+                        </div>
+                        <div class="terminal-content">
+                            <div class="terminal-line">
+                                <span class="terminal-prompt">➜</span>
+                                <span class="terminal-command"> bun test</span>
+                            </div>
+                            <div class="terminal-line terminal-output">bun test v1.1.38</div>
+                            <div class="terminal-line terminal-output"></div>
+                            <div class="terminal-line terminal-success">✓ auth/login.test.ts (3)</div>
+                            <div class="terminal-line terminal-success">  ✓ should login with valid credentials</div>
+                            <div class="terminal-line terminal-success">  ✓ should reject invalid password</div>
+                            <div class="terminal-line terminal-success">  ✓ should return JWT token</div>
+                            <div class="terminal-line terminal-output"></div>
+                            <div class="terminal-line terminal-success">✓ project/create.test.ts (2)</div>
+                            <div class="terminal-line terminal-success">  ✓ should create project with valid data</div>
+                            <div class="terminal-line terminal-success">  ✓ should validate required fields</div>
+                            <div class="terminal-line terminal-output"></div>
+                            <div class="terminal-line terminal-success"> Tests:  5 passed (5 total)</div>
+                            <div class="terminal-line terminal-output"> Duration: 247ms</div>
+                            <div class="terminal-line terminal-output"></div>
+                            <div class="terminal-line terminal-output">
+                                <span class="terminal-prompt">➜</span>
+                                <span class="terminal-cursor"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Project 2: Frontend -->
+            <div class="project-workspace">
+                <!-- Project Header -->
+                <div class="project-header">
+                    <div class="project-title-section">
+                        <div class="project-title">
+                            <span style="color: #10b981;">█</span>
+                            <span>frontend</span>
+                        </div>
+                        <div class="project-path">~/workspace/frontend</div>
+                    </div>
+                    <div class="project-actions">
+                        <button class="icon-btn" title="Add Terminal">+</button>
+                        <button class="icon-btn" title="Split Vertical">⫽</button>
+                        <button class="icon-btn" title="Split Horizontal">⫾</button>
+                        <button class="icon-btn" title="Settings">⚙</button>
+                    </div>
+                </div>
+
+                <!-- Tab Bar -->
+                <div class="tab-bar">
+                    <div class="tab active tab-group-orange">
+                        <div class="tab-status"></div>
+                        <span>vite</span>
+                        <div class="tab-close">×</div>
+                    </div>
+                    <div class="tab tab-group-orange">
+                        <div class="tab-status"></div>
+                        <span>typecheck</span>
+                        <div class="tab-close">×</div>
+                    </div>
+                    <div class="tab tab-group-purple">
+                        <div class="tab-status error"></div>
+                        <span>lint</span>
+                        <div class="tab-close">×</div>
+                    </div>
+                </div>
+
+                <!-- Terminal Grid -->
+                <div class="terminal-grid">
+                    <!-- Terminal 3 -->
+                    <div class="terminal-pane">
+                        <div class="terminal-header">
+                            <div class="terminal-title">
+                                <div class="terminal-indicator"></div>
+                                <span>vite</span>
+                                <span style="color: var(--text-tertiary);">•</span>
+                                <span style="color: var(--text-tertiary); font-size: var(--font-xs);">bun run dev</span>
+                            </div>
+                            <div class="terminal-actions">
+                                <button class="icon-btn" title="Clear">⌫</button>
+                                <button class="icon-btn" title="Copy">⎘</button>
+                                <button class="icon-btn" title="Close">×</button>
+                            </div>
+                        </div>
+                        <div class="terminal-content">
+                            <div class="terminal-line">
+                                <span class="terminal-prompt">➜</span>
+                                <span class="terminal-command"> bun run dev</span>
+                            </div>
+                            <div class="terminal-line terminal-output"></div>
+                            <div class="terminal-line terminal-info text-info">  VITE v5.4.11  ready in 432 ms</div>
+                            <div class="terminal-line terminal-output"></div>
+                            <div class="terminal-line terminal-success">  ➜  Local:   http://localhost:5173/</div>
+                            <div class="terminal-line terminal-output">  ➜  Network: use --host to expose</div>
+                            <div class="terminal-line terminal-output">  ➜  press h + enter to show help</div>
+                            <div class="terminal-line terminal-output"></div>
+                            <div class="terminal-line terminal-info text-info">12:34:56 [vite] page reload src/App.svelte</div>
+                            <div class="terminal-line terminal-success">✓ optimized dependencies changed. reloading</div>
+                            <div class="terminal-line terminal-output"></div>
+                            <div class="terminal-line terminal-output">
+                                <span class="terminal-prompt">➜</span>
+                                <span class="terminal-cursor"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Terminal 4 -->
+                    <div class="terminal-pane">
+                        <div class="terminal-header">
+                            <div class="terminal-title">
+                                <div class="terminal-indicator"></div>
+                                <span>typecheck</span>
+                                <span style="color: var(--text-tertiary);">•</span>
+                                <span style="color: var(--text-tertiary); font-size: var(--font-xs);">svelte-check</span>
+                            </div>
+                            <div class="terminal-actions">
+                                <button class="icon-btn" title="Clear">⌫</button>
+                                <button class="icon-btn" title="Copy">⎘</button>
+                                <button class="icon-btn" title="Close">×</button>
+                            </div>
+                        </div>
+                        <div class="terminal-content">
+                            <div class="terminal-line">
+                                <span class="terminal-prompt">➜</span>
+                                <span class="terminal-command"> bun run check:watch</span>
+                            </div>
+                            <div class="terminal-line terminal-output">Loading svelte-check in workspace: /workspace/frontend</div>
+                            <div class="terminal-line terminal-output">Getting Svelte diagnostics...</div>
+                            <div class="terminal-line terminal-output"></div>
+                            <div class="terminal-line terminal-success">====================================</div>
+                            <div class="terminal-line terminal-success">svelte-check found 0 errors, 0 warnings</div>
+                            <div class="terminal-line terminal-success">====================================</div>
+                            <div class="terminal-line terminal-output"></div>
+                            <div class="terminal-line terminal-output">Watching for file changes...</div>
+                            <div class="terminal-line terminal-output"></div>
+                            <div class="terminal-line terminal-output">
+                                <span class="terminal-prompt">➜</span>
+                                <span class="terminal-cursor"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Sidebar -->
+        <div class="activity-sidebar">
+            <div class="activity-header">ACTIVITY</div>
+            <div class="activity-list">
+                <div class="activity-item success">
+                    <div class="activity-header-row">
+                        <div class="activity-icon">✓</div>
+                        <div class="activity-time">12:45</div>
+                    </div>
+                    <div class="activity-title">Tests passed</div>
+                    <div class="activity-description">All 5 tests passed in 247ms</div>
+                    <div class="activity-project">api-server</div>
+                </div>
+
+                <div class="activity-item">
+                    <div class="activity-header-row">
+                        <div class="activity-icon">↻</div>
+                        <div class="activity-time">12:43</div>
+                    </div>
+                    <div class="activity-title">Hot reload</div>
+                    <div class="activity-description">src/App.svelte updated</div>
+                    <div class="activity-project">frontend</div>
+                </div>
+
+                <div class="activity-item warning">
+                    <div class="activity-header-row">
+                        <div class="activity-icon">⚠</div>
+                        <div class="activity-time">12:41</div>
+                    </div>
+                    <div class="activity-title">Build warning</div>
+                    <div class="activity-description">Unused variable 'data'</div>
+                    <div class="activity-project">api-server</div>
+                </div>
+
+                <div class="activity-item success">
+                    <div class="activity-header-row">
+                        <div class="activity-icon">✓</div>
+                        <div class="activity-time">12:38</div>
+                    </div>
+                    <div class="activity-title">Server started</div>
+                    <div class="activity-description">Listening on :3000</div>
+                    <div class="activity-project">api-server</div>
+                </div>
+
+                <div class="activity-item">
+                    <div class="activity-header-row">
+                        <div class="activity-icon">⚡</div>
+                        <div class="activity-time">12:36</div>
+                    </div>
+                    <div class="activity-title">Dependencies installed</div>
+                    <div class="activity-description">bun install completed</div>
+                    <div class="activity-project">frontend</div>
+                </div>
+
+                <div class="activity-item error">
+                    <div class="activity-header-row">
+                        <div class="activity-icon">✕</div>
+                        <div class="activity-time">12:34</div>
+                    </div>
+                    <div class="activity-title">Lint error</div>
+                    <div class="activity-description">2 errors, 3 warnings</div>
+                    <div class="activity-project">frontend</div>
+                </div>
+
+                <div class="activity-item">
+                    <div class="activity-header-row">
+                        <div class="activity-icon">→</div>
+                        <div class="activity-time">12:32</div>
+                    </div>
+                    <div class="activity-title">Git commit</div>
+                    <div class="activity-description">feat: add auth module</div>
+                    <div class="activity-project">api-server</div>
+                </div>
+
+                <div class="activity-item success">
+                    <div class="activity-header-row">
+                        <div class="activity-icon">✓</div>
+                        <div class="activity-time">12:30</div>
+                    </div>
+                    <div class="activity-title">Type check passed</div>
+                    <div class="activity-description">0 errors found</div>
+                    <div class="activity-project">frontend</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-left">
+                <div class="status-item">
+                    <span class="status-label">CPU</span>
+                    <span class="status-value">23%</span>
+                    <div class="status-bar-indicator">
+                        <div class="status-bar-fill" style="width: 23%;"></div>
+                    </div>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">MEM</span>
+                    <span class="status-value">4.2G</span>
+                    <div class="status-bar-indicator">
+                        <div class="status-bar-fill" style="width: 67%;"></div>
+                    </div>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">DISK</span>
+                    <span class="status-value">128G</span>
+                    <div class="status-bar-indicator">
+                        <div class="status-bar-fill warning" style="width: 78%;"></div>
+                    </div>
+                </div>
+                <div class="status-separator"></div>
+                <div class="status-item">
+                    <span class="status-label">SESSIONS</span>
+                    <span class="status-value">3 active</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">TERMINALS</span>
+                    <span class="status-value">7 running</span>
+                </div>
+            </div>
+            <div class="status-right">
+                <div class="status-item">
+                    <span class="status-label">UPTIME</span>
+                    <span class="status-value">3h 24m</span>
+                </div>
+                <div class="status-separator"></div>
+                <div class="status-item">
+                    <span class="status-label">UTF-8</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">LF</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-value">12:45:32</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

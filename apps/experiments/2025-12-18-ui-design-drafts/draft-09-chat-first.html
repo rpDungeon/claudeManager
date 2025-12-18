@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Manager - Terminal Noir</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Sometype+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Terminal Noir Palette */
+            --noir-void: #0a0a0f;
+            --noir-dark: #12121a;
+            --noir-mid: #1a1a28;
+            --noir-surface: #22223a;
+            --noir-border: #2d2d4d;
+
+            /* Neon Accents */
+            --neon-cyan: #00ffff;
+            --neon-green: #00ff88;
+            --neon-magenta: #ff00ff;
+            --neon-amber: #ffaa00;
+            --neon-blue: #4477ff;
+
+            /* Glow variants */
+            --glow-cyan: rgba(0, 255, 255, 0.15);
+            --glow-green: rgba(0, 255, 136, 0.15);
+            --glow-magenta: rgba(255, 0, 255, 0.15);
+
+            /* Typography */
+            --font-mono: 'JetBrains Mono', monospace;
+            --font-display: 'Sometype Mono', monospace;
+
+            /* Spacing */
+            --gap-xs: 0.25rem;
+            --gap-sm: 0.5rem;
+            --gap-md: 1rem;
+            --gap-lg: 1.5rem;
+            --gap-xl: 2rem;
+
+            /* Effects */
+            --scanline: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.15),
+                rgba(0, 0, 0, 0.15) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-mono);
+            background: var(--noir-void);
+            color: var(--neon-cyan);
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Cinematic scanline effect */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--scanline);
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.4;
+            animation: scanlineFlicker 0.1s infinite alternate;
+        }
+
+        @keyframes scanlineFlicker {
+            0% { opacity: 0.35; }
+            100% { opacity: 0.45; }
+        }
+
+        /* CRT Glow */
+        .crt-glow {
+            text-shadow:
+                0 0 2px currentColor,
+                0 0 4px currentColor,
+                0 0 8px currentColor;
+        }
+
+        /* Main Layout */
+        .app {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            grid-template-rows: 60px 1fr 70px;
+            height: 100vh;
+            gap: 2px;
+            background: var(--noir-void);
+            padding: 2px;
+        }
+
+        /* Header */
+        .header {
+            grid-column: 1 / -1;
+            background: var(--noir-dark);
+            border: 1px solid var(--noir-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 var(--gap-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg,
+                transparent,
+                var(--neon-cyan) 50%,
+                transparent
+            );
+            animation: headerSweep 3s infinite;
+        }
+
+        @keyframes headerSweep {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: var(--gap-md);
+            font-family: var(--font-display);
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-magenta));
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 0 20px var(--glow-cyan);
+            animation: logoPulse 2s infinite;
+        }
+
+        @keyframes logoPulse {
+            0%, 100% { box-shadow: 0 0 20px var(--glow-cyan); }
+            50% { box-shadow: 0 0 30px var(--glow-cyan), 0 0 40px var(--glow-magenta); }
+        }
+
+        .project-context {
+            display: flex;
+            align-items: center;
+            gap: var(--gap-md);
+            color: var(--neon-green);
+            font-size: 0.875rem;
+        }
+
+        .project-badge {
+            padding: 0.375rem 0.75rem;
+            background: var(--noir-surface);
+            border: 1px solid var(--neon-green);
+            border-radius: 4px;
+            box-shadow: 0 0 10px var(--glow-green);
+            font-weight: 500;
+        }
+
+        .project-path {
+            color: rgba(0, 255, 136, 0.6);
+            font-size: 0.75rem;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: var(--noir-dark);
+            border: 1px solid var(--noir-border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: var(--gap-lg);
+            border-bottom: 1px solid var(--noir-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sidebar-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--neon-cyan);
+            font-weight: 600;
+        }
+
+        .new-chat-btn {
+            width: 28px;
+            height: 28px;
+            background: var(--noir-surface);
+            border: 1px solid var(--neon-cyan);
+            border-radius: 4px;
+            color: var(--neon-cyan);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            transition: all 0.2s;
+            font-family: var(--font-mono);
+        }
+
+        .new-chat-btn:hover {
+            background: var(--neon-cyan);
+            color: var(--noir-dark);
+            box-shadow: 0 0 20px var(--glow-cyan);
+            transform: scale(1.05);
+        }
+
+        .chat-threads {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--gap-sm);
+        }
+
+        .chat-thread {
+            padding: var(--gap-md);
+            margin-bottom: var(--gap-sm);
+            background: var(--noir-mid);
+            border: 1px solid var(--noir-border);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .chat-thread:hover {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 15px var(--glow-cyan);
+            transform: translateX(4px);
+        }
+
+        .chat-thread.active {
+            background: var(--noir-surface);
+            border-color: var(--neon-cyan);
+            box-shadow: inset 3px 0 0 var(--neon-cyan), 0 0 20px var(--glow-cyan);
+        }
+
+        .chat-thread-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--gap-xs);
+        }
+
+        .agent-name {
+            font-weight: 600;
+            color: var(--neon-cyan);
+            font-size: 0.875rem;
+        }
+
+        .notification-badge {
+            background: var(--neon-magenta);
+            color: var(--noir-dark);
+            font-size: 0.625rem;
+            font-weight: 700;
+            padding: 0.125rem 0.375rem;
+            border-radius: 10px;
+            box-shadow: 0 0 10px var(--glow-magenta);
+            animation: badgePulse 1.5s infinite;
+        }
+
+        @keyframes badgePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .chat-preview {
+            font-size: 0.75rem;
+            color: rgba(0, 255, 255, 0.5);
+            line-height: 1.4;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .chat-timestamp {
+            font-size: 0.625rem;
+            color: rgba(0, 255, 255, 0.3);
+            margin-top: var(--gap-xs);
+        }
+
+        /* Main Chat Area */
+        .main-content {
+            display: flex;
+            background: var(--noir-dark);
+            border: 1px solid var(--noir-border);
+            overflow: hidden;
+        }
+
+        .chat-view {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .chat-view:not(:last-child) {
+            border-right: 2px solid var(--neon-cyan);
+            box-shadow: 2px 0 20px var(--glow-cyan);
+        }
+
+        .chat-header {
+            padding: var(--gap-lg);
+            border-bottom: 1px solid var(--noir-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--noir-mid);
+        }
+
+        .chat-agent-info {
+            display: flex;
+            align-items: center;
+            gap: var(--gap-md);
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--neon-green);
+            box-shadow: 0 0 10px var(--neon-green);
+            animation: statusBlink 2s infinite;
+        }
+
+        @keyframes statusBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .agent-title {
+            font-weight: 600;
+            color: var(--neon-green);
+        }
+
+        .chat-controls {
+            display: flex;
+            gap: var(--gap-sm);
+        }
+
+        .control-btn {
+            padding: 0.375rem 0.75rem;
+            background: transparent;
+            border: 1px solid var(--noir-border);
+            color: var(--neon-cyan);
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            border-color: var(--neon-cyan);
+            background: var(--noir-surface);
+            box-shadow: 0 0 10px var(--glow-cyan);
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--gap-lg);
+            display: flex;
+            flex-direction: column;
+            gap: var(--gap-lg);
+        }
+
+        /* Message Bubbles */
+        .message {
+            display: flex;
+            gap: var(--gap-md);
+            animation: messageSlideIn 0.3s ease-out;
+        }
+
+        @keyframes messageSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.875rem;
+            flex-shrink: 0;
+        }
+
+        .message.user .message-avatar {
+            background: linear-gradient(135deg, var(--neon-blue), var(--neon-cyan));
+            color: var(--noir-dark);
+            box-shadow: 0 0 15px var(--glow-cyan);
+        }
+
+        .message.agent .message-avatar {
+            background: linear-gradient(135deg, var(--neon-green), var(--neon-amber));
+            color: var(--noir-dark);
+            box-shadow: 0 0 15px var(--glow-green);
+        }
+
+        .message-content {
+            flex: 1;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: var(--gap-sm);
+            margin-bottom: var(--gap-sm);
+        }
+
+        .message-author {
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .message.user .message-author {
+            color: var(--neon-cyan);
+        }
+
+        .message.agent .message-author {
+            color: var(--neon-green);
+        }
+
+        .message-time {
+            font-size: 0.625rem;
+            color: rgba(0, 255, 255, 0.3);
+        }
+
+        .message-bubble {
+            background: var(--noir-surface);
+            border: 1px solid var(--noir-border);
+            border-radius: 8px;
+            padding: var(--gap-md);
+            font-size: 0.875rem;
+            line-height: 1.6;
+            color: rgba(0, 255, 255, 0.9);
+        }
+
+        .message.user .message-bubble {
+            border-left: 3px solid var(--neon-cyan);
+            box-shadow: -3px 0 10px var(--glow-cyan);
+        }
+
+        .message.agent .message-bubble {
+            border-left: 3px solid var(--neon-green);
+            box-shadow: -3px 0 10px var(--glow-green);
+        }
+
+        /* Terminal Embed */
+        .terminal-embed {
+            margin-top: var(--gap-md);
+            background: var(--noir-void);
+            border: 1px solid var(--neon-green);
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 0 20px var(--glow-green);
+        }
+
+        .terminal-header {
+            background: var(--noir-mid);
+            padding: var(--gap-sm) var(--gap-md);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--neon-green);
+        }
+
+        .terminal-title {
+            font-size: 0.75rem;
+            color: var(--neon-green);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: var(--gap-sm);
+        }
+
+        .terminal-dots {
+            display: flex;
+            gap: var(--gap-xs);
+        }
+
+        .terminal-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--neon-green);
+            opacity: 0.5;
+        }
+
+        .terminal-dot:first-child { background: var(--neon-magenta); }
+        .terminal-dot:nth-child(2) { background: var(--neon-amber); }
+        .terminal-dot:last-child { background: var(--neon-green); }
+
+        .terminal-body {
+            padding: var(--gap-md);
+            font-size: 0.75rem;
+            color: var(--neon-green);
+            line-height: 1.5;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .terminal-line {
+            display: flex;
+            gap: var(--gap-sm);
+            margin-bottom: 0.25rem;
+        }
+
+        .terminal-prompt {
+            color: var(--neon-cyan);
+            font-weight: 600;
+        }
+
+        .terminal-output {
+            color: rgba(0, 255, 136, 0.8);
+        }
+
+        .terminal-error {
+            color: var(--neon-magenta);
+        }
+
+        .terminal-success {
+            color: var(--neon-green);
+        }
+
+        /* Input Area */
+        .input-area {
+            grid-column: 2 / -1;
+            background: var(--noir-dark);
+            border: 1px solid var(--noir-border);
+            padding: var(--gap-lg);
+            display: flex;
+            gap: var(--gap-md);
+            align-items: center;
+            position: relative;
+        }
+
+        .input-area::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg,
+                var(--neon-cyan),
+                var(--neon-magenta),
+                var(--neon-cyan)
+            );
+            opacity: 0.5;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .command-input {
+            width: 100%;
+            background: var(--noir-surface);
+            border: 1px solid var(--noir-border);
+            color: var(--neon-cyan);
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+            padding: 0.75rem 1rem;
+            border-radius: 4px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .command-input:focus {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 20px var(--glow-cyan);
+        }
+
+        .command-input::placeholder {
+            color: rgba(0, 255, 255, 0.3);
+        }
+
+        .send-btn {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-blue));
+            border: none;
+            color: var(--noir-dark);
+            font-family: var(--font-mono);
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 0 20px var(--glow-cyan);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 30px var(--glow-cyan);
+        }
+
+        .send-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--noir-void);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--noir-border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--neon-cyan);
+            box-shadow: 0 0 10px var(--glow-cyan);
+        }
+
+        /* Split View Indicator */
+        .split-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            background: var(--noir-surface);
+            border: 2px solid var(--neon-cyan);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--neon-cyan);
+            font-size: 1.25rem;
+            box-shadow: 0 0 30px var(--glow-cyan);
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        /* Typing Indicator */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: var(--gap-md);
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--neon-green);
+            border-radius: 50%;
+            animation: typingBounce 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingBounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-8px); }
+        }
+
+        /* Code blocks in messages */
+        .code-block {
+            background: var(--noir-void);
+            border: 1px solid var(--noir-border);
+            border-radius: 4px;
+            padding: var(--gap-md);
+            margin-top: var(--gap-sm);
+            font-size: 0.75rem;
+            overflow-x: auto;
+            color: var(--neon-green);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .app {
+                grid-template-columns: 240px 1fr;
+            }
+
+            .chat-view:nth-child(2) {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .input-area {
+                grid-column: 1 / -1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon crt-glow">◈</div>
+                <span class="crt-glow">CLAUDE MANAGER</span>
+            </div>
+            <div class="project-context">
+                <div class="project-badge crt-glow">helios/sales-trainer</div>
+                <div class="project-path">/mnt/claude/helios/sales-trainer-prod</div>
+            </div>
+        </header>
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title crt-glow">AGENT THREADS</div>
+                <button class="new-chat-btn crt-glow">+</button>
+            </div>
+            <div class="chat-threads">
+                <div class="chat-thread active">
+                    <div class="chat-thread-header">
+                        <div class="agent-name crt-glow">Agent-01 :: Auth Refactor</div>
+                    </div>
+                    <div class="chat-preview">Implementing JWT authentication with refresh tokens...</div>
+                    <div class="chat-timestamp">14:32:18</div>
+                </div>
+
+                <div class="chat-thread">
+                    <div class="chat-thread-header">
+                        <div class="agent-name crt-glow">Agent-02 :: Database Migration</div>
+                        <div class="notification-badge">3</div>
+                    </div>
+                    <div class="chat-preview">Running drizzle migrations and updating schema...</div>
+                    <div class="chat-timestamp">14:28:45</div>
+                </div>
+
+                <div class="chat-thread">
+                    <div class="chat-thread-header">
+                        <div class="agent-name crt-glow">Agent-03 :: UI Components</div>
+                        <div class="notification-badge">12</div>
+                    </div>
+                    <div class="chat-preview">Building shadcn components for dashboard...</div>
+                    <div class="chat-timestamp">14:15:03</div>
+                </div>
+
+                <div class="chat-thread">
+                    <div class="chat-thread-header">
+                        <div class="agent-name crt-glow">Agent-04 :: API Testing</div>
+                    </div>
+                    <div class="chat-preview">Writing integration tests with Bun test...</div>
+                    <div class="chat-timestamp">13:58:21</div>
+                </div>
+
+                <div class="chat-thread">
+                    <div class="chat-thread-header">
+                        <div class="agent-name crt-glow">Agent-05 :: Documentation</div>
+                    </div>
+                    <div class="chat-preview">Updating README and API documentation...</div>
+                    <div class="chat-timestamp">13:42:09</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area (Split View) -->
+        <main class="main-content">
+            <!-- Chat View 1 -->
+            <div class="chat-view">
+                <div class="chat-header">
+                    <div class="chat-agent-info">
+                        <div class="status-indicator"></div>
+                        <div class="agent-title crt-glow">Agent-01 :: Auth Refactor</div>
+                    </div>
+                    <div class="chat-controls">
+                        <button class="control-btn">Clear</button>
+                        <button class="control-btn">Export</button>
+                        <button class="control-btn">Split →</button>
+                    </div>
+                </div>
+
+                <div class="chat-messages">
+                    <!-- User Message -->
+                    <div class="message user">
+                        <div class="message-avatar crt-glow">U</div>
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span class="message-author">You</span>
+                                <span class="message-time">14:30:15</span>
+                            </div>
+                            <div class="message-bubble">
+                                Refactor the authentication system to use JWT with refresh tokens. Make sure to implement proper token rotation and secure storage.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Agent Message with Terminal -->
+                    <div class="message agent">
+                        <div class="message-avatar crt-glow">A1</div>
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span class="message-author">Agent-01</span>
+                                <span class="message-time">14:30:22</span>
+                            </div>
+                            <div class="message-bubble">
+                                I'll refactor the authentication system with JWT tokens. Let me start by analyzing the current auth implementation and then create the new token-based system.
+
+                                <div class="terminal-embed">
+                                    <div class="terminal-header">
+                                        <div class="terminal-title">
+                                            <span>⚡</span>
+                                            <span>Terminal Output</span>
+                                        </div>
+                                        <div class="terminal-dots">
+                                            <div class="terminal-dot"></div>
+                                            <div class="terminal-dot"></div>
+                                            <div class="terminal-dot"></div>
+                                        </div>
+                                    </div>
+                                    <div class="terminal-body">
+                                        <div class="terminal-line">
+                                            <span class="terminal-prompt">$</span>
+                                            <span class="terminal-output">grep -r "authentication" src/</span>
+                                        </div>
+                                        <div class="terminal-line">
+                                            <span class="terminal-success">✓ Found 15 files with authentication logic</span>
+                                        </div>
+                                        <div class="terminal-line">
+                                            <span class="terminal-prompt">$</span>
+                                            <span class="terminal-output">bun add jsonwebtoken @types/jsonwebtoken</span>
+                                        </div>
+                                        <div class="terminal-line">
+                                            <span class="terminal-success">✓ Installed jsonwebtoken v9.0.2</span>
+                                        </div>
+                                        <div class="terminal-line">
+                                            <span class="terminal-prompt">$</span>
+                                            <span class="terminal-output">mkdir -p src/auth/jwt</span>
+                                        </div>
+                                        <div class="terminal-line">
+                                            <span class="terminal-success">✓ Created JWT directory structure</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Agent Message with Code -->
+                    <div class="message agent">
+                        <div class="message-avatar crt-glow">A1</div>
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span class="message-author">Agent-01</span>
+                                <span class="message-time">14:31:45</span>
+                            </div>
+                            <div class="message-bubble">
+                                I've created the JWT token service with access and refresh token generation. Here's the implementation:
+
+                                <div class="code-block">
+// src/auth/jwt/jwt.service.ts
+export const jwtGenerate = (payload: JwtPayload) => {
+  const accessToken = sign(payload, JWT_SECRET, {
+    expiresIn: '15m'
+  });
+
+  const refreshToken = sign(payload, JWT_REFRESH_SECRET, {
+    expiresIn: '7d'
+  });
+
+  return { accessToken, refreshToken };
+};
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- User Message -->
+                    <div class="message user">
+                        <div class="message-avatar crt-glow">U</div>
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span class="message-author">You</span>
+                                <span class="message-time">14:32:10</span>
+                            </div>
+                            <div class="message-bubble">
+                                Perfect! Now run the tests to make sure everything works correctly.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Agent Typing -->
+                    <div class="message agent">
+                        <div class="message-avatar crt-glow">A1</div>
+                        <div class="message-content">
+                            <div class="typing-indicator">
+                                <div class="typing-dot"></div>
+                                <div class="typing-dot"></div>
+                                <div class="typing-dot"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Split View Indicator -->
+            <div class="split-indicator crt-glow">⚡</div>
+
+            <!-- Chat View 2 -->
+            <div class="chat-view">
+                <div class="chat-header">
+                    <div class="chat-agent-info">
+                        <div class="status-indicator"></div>
+                        <div class="agent-title crt-glow">Agent-02 :: Database Migration</div>
+                    </div>
+                    <div class="chat-controls">
+                        <button class="control-btn">Clear</button>
+                        <button class="control-btn">Export</button>
+                        <button class="control-btn">← Merge</button>
+                    </div>
+                </div>
+
+                <div class="chat-messages">
+                    <!-- User Message -->
+                    <div class="message user">
+                        <div class="message-avatar crt-glow">U</div>
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span class="message-author">You</span>
+                                <span class="message-time">14:28:30</span>
+                            </div>
+                            <div class="message-bubble">
+                                Run the database migrations and update the schema to add the new user fields for JWT tokens.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Agent Message with Terminal -->
+                    <div class="message agent">
+                        <div class="message-avatar crt-glow">A2</div>
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span class="message-author">Agent-02</span>
+                                <span class="message-time">14:28:45</span>
+                            </div>
+                            <div class="message-bubble">
+                                Running database migrations with Drizzle ORM.
+
+                                <div class="terminal-embed">
+                                    <div class="terminal-header">
+                                        <div class="terminal-title">
+                                            <span>⚡</span>
+                                            <span>Migration Output</span>
+                                        </div>
+                                        <div class="terminal-dots">
+                                            <div class="terminal-dot"></div>
+                                            <div class="terminal-dot"></div>
+                                            <div class="terminal-dot"></div>
+                                        </div>
+                                    </div>
+                                    <div class="terminal-body">
+                                        <div class="terminal-line">
+                                            <span class="terminal-prompt">$</span>
+                                            <span class="terminal-output">bun run db:generate</span>
+                                        </div>
+                                        <div class="terminal-line">
+                                            <span class="terminal-output">Generating migrations...</span>
+                                        </div>
+                                        <div class="terminal-line">
+                                            <span class="terminal-success">✓ Generated 0001_add_jwt_fields.sql</span>
+                                        </div>
+                                        <div class="terminal-line">
+                                            <span class="terminal-prompt">$</span>
+                                            <span class="terminal-output">bun run db:migrate</span>
+                                        </div>
+                                        <div class="terminal-line">
+                                            <span class="terminal-output">Applying migrations...</span>
+                                        </div>
+                                        <div class="terminal-line">
+                                            <span class="terminal-success">✓ Migration 0001_add_jwt_fields.sql applied</span>
+                                        </div>
+                                        <div class="terminal-line">
+                                            <span class="terminal-success">✓ Database schema updated successfully</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Agent Message -->
+                    <div class="message agent">
+                        <div class="message-avatar crt-glow">A2</div>
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span class="message-author">Agent-02</span>
+                                <span class="message-time">14:29:12</span>
+                            </div>
+                            <div class="message-bubble">
+                                Database migrations completed successfully! Added refresh_token and refresh_token_expires fields to the users table. The schema is now ready for JWT authentication.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Input Area -->
+        <div class="input-area">
+            <div class="input-wrapper">
+                <input
+                    type="text"
+                    class="command-input crt-glow"
+                    placeholder="Type a command or message..."
+                    autofocus
+                />
+            </div>
+            <button class="send-btn">EXECUTE</button>
+        </div>
+    </div>
+
+    <script>
+        // Simulate real-time updates
+        document.addEventListener('DOMContentLoaded', () => {
+            const input = document.querySelector('.command-input');
+            const sendBtn = document.querySelector('.send-btn');
+
+            // Enter key to send
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && input.value.trim()) {
+                    console.log('Command:', input.value);
+                    input.value = '';
+                }
+            });
+
+            // Send button click
+            sendBtn.addEventListener('click', () => {
+                if (input.value.trim()) {
+                    console.log('Command:', input.value);
+                    input.value = '';
+                }
+            });
+
+            // Chat thread selection
+            document.querySelectorAll('.chat-thread').forEach(thread => {
+                thread.addEventListener('click', () => {
+                    document.querySelectorAll('.chat-thread').forEach(t => t.classList.remove('active'));
+                    thread.classList.add('active');
+                });
+            });
+
+            // Auto-scroll messages to bottom
+            document.querySelectorAll('.chat-messages').forEach(container => {
+                container.scrollTop = container.scrollHeight;
+            });
+        });
+    </script>
+</body>
+</html>

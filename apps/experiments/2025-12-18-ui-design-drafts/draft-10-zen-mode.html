@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Manager - Zen Mode</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-secondary: #141414;
+      --bg-tertiary: #1a1a1a;
+      --border-subtle: #252525;
+      --border-hover: #333333;
+
+      --text-primary: #e8e8e8;
+      --text-secondary: #a0a0a0;
+      --text-tertiary: #707070;
+
+      --accent: #7c3aed;
+      --accent-dim: #5b21b6;
+      --accent-glow: rgba(124, 58, 237, 0.3);
+
+      --success: #10b981;
+      --warning: #f59e0b;
+
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+
+      --transition-fast: 0.15s ease;
+      --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Top Bar - Hidden by default, fades in on hover near top */
+    .top-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 56px;
+      background: linear-gradient(to bottom, var(--bg-secondary), transparent);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition-smooth);
+    }
+
+    .top-bar.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Hover trigger zone at top */
+    .hover-trigger-top {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 32px;
+      z-index: 99;
+    }
+
+    .top-bar-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .app-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 14px;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+    }
+
+    .app-icon {
+      width: 24px;
+      height: 24px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+
+    .project-selector {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .project-selector:hover {
+      border-color: var(--border-hover);
+      color: var(--text-primary);
+    }
+
+    .project-icon {
+      width: 6px;
+      height: 6px;
+      background: var(--success);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--success);
+    }
+
+    .top-bar-center {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tab-hint {
+      padding: 4px 8px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      font-size: 11px;
+      color: var(--text-tertiary);
+      font-family: 'SF Mono', Monaco, monospace;
+      letter-spacing: 0.02em;
+    }
+
+    .tab-hint .key {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .top-bar-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* Notification Dot - Always visible */
+    .notification-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 101;
+    }
+
+    .notification-dot {
+      width: 12px;
+      height: 12px;
+      background: var(--accent);
+      border-radius: 50%;
+      cursor: pointer;
+      position: relative;
+      transition: all var(--transition-smooth);
+      box-shadow: 0 0 0 0 var(--accent-glow);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        box-shadow: 0 0 0 0 var(--accent-glow);
+      }
+      50% {
+        box-shadow: 0 0 0 8px transparent;
+      }
+    }
+
+    .notification-dot:hover {
+      transform: scale(1.2);
+    }
+
+    .notification-panel {
+      position: absolute;
+      top: 24px;
+      right: 0;
+      width: 320px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      box-shadow: var(--shadow-lg);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-8px);
+      transition: all var(--transition-smooth);
+    }
+
+    .notification-container:hover .notification-panel,
+    .notification-panel:hover {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .notification-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .notification-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      cursor: pointer;
+      transition: background var(--transition-fast);
+    }
+
+    .notification-item:last-child {
+      border-bottom: none;
+    }
+
+    .notification-item:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .notification-title {
+      font-size: 13px;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .notification-time {
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+
+    .icon-button {
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-tertiary);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      color: var(--text-secondary);
+    }
+
+    .icon-button:hover {
+      border-color: var(--border-hover);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+    }
+
+    /* Main Terminal Area */
+    .terminal-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 80px 80px 40px 80px;
+    }
+
+    .terminal-wrapper {
+      flex: 1;
+      background: var(--bg-secondary);
+      border-radius: 16px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .terminal-header {
+      height: 48px;
+      background: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      opacity: 0;
+      transition: opacity var(--transition-smooth);
+    }
+
+    .terminal-wrapper:hover .terminal-header {
+      opacity: 1;
+    }
+
+    .terminal-tabs {
+      display: flex;
+      gap: 4px;
+    }
+
+    .terminal-tab {
+      padding: 6px 12px;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .terminal-tab.active {
+      background: var(--bg-secondary);
+      border-color: var(--border-subtle);
+      color: var(--text-primary);
+    }
+
+    .terminal-tab:hover:not(.active) {
+      color: var(--text-primary);
+    }
+
+    .terminal-indicator {
+      width: 6px;
+      height: 6px;
+      background: var(--success);
+      border-radius: 50%;
+    }
+
+    .terminal-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .control-button {
+      padding: 4px 10px;
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      font-size: 11px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .control-button:hover {
+      border-color: var(--border-hover);
+      color: var(--text-primary);
+      background: var(--bg-secondary);
+    }
+
+    .terminal-content {
+      height: calc(100% - 48px);
+      padding: 24px;
+      font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text-primary);
+      overflow-y: auto;
+    }
+
+    .terminal-line {
+      margin-bottom: 4px;
+      display: flex;
+      align-items: flex-start;
+    }
+
+    .terminal-prompt {
+      color: var(--accent);
+      margin-right: 8px;
+      user-select: none;
+    }
+
+    .terminal-command {
+      color: var(--text-primary);
+    }
+
+    .terminal-output {
+      color: var(--text-secondary);
+      padding-left: 16px;
+    }
+
+    .terminal-cursor {
+      display: inline-block;
+      width: 8px;
+      height: 16px;
+      background: var(--accent);
+      animation: blink 1s infinite;
+      margin-left: 2px;
+    }
+
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+
+    /* Bottom Keyboard Hints - Fade in on hover */
+    .keyboard-hints {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 12px;
+      padding: 12px 20px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      box-shadow: var(--shadow-md);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition-smooth);
+      z-index: 100;
+    }
+
+    body:hover .keyboard-hints {
+      opacity: 1;
+    }
+
+    .hint-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+
+    .hint-key {
+      padding: 2px 6px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 10px;
+      color: var(--text-secondary);
+    }
+
+    .hint-separator {
+      width: 1px;
+      height: 12px;
+      background: var(--border-subtle);
+    }
+
+    /* Split View Toggle - Hidden until hover */
+    .split-toggle {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 8px 14px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      font-size: 11px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: all var(--transition-smooth);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    body:hover .split-toggle {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .split-toggle:hover {
+      border-color: var(--border-hover);
+      color: var(--text-primary);
+      background: var(--bg-tertiary);
+    }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-subtle);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--border-hover);
+    }
+
+    /* Focus States */
+    *:focus {
+      outline: none;
+    }
+
+    *:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Hover Trigger Zone -->
+  <div class="hover-trigger-top"></div>
+
+  <!-- Top Bar (Hidden by default) -->
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <div class="app-title">
+        <div class="app-icon">⚡</div>
+        <span>Claude Manager</span>
+      </div>
+      <div class="project-selector">
+        <div class="project-icon"></div>
+        <span>sales-trainer-prod</span>
+        <span style="font-size: 10px; color: var(--text-tertiary);">▼</span>
+      </div>
+    </div>
+
+    <div class="top-bar-center">
+      <div class="tab-hint">
+        <span class="key">⌘K</span> command palette
+      </div>
+      <div class="tab-hint">
+        <span class="key">⌘1-9</span> switch tabs
+      </div>
+    </div>
+
+    <div class="top-bar-right">
+      <div class="icon-button" title="Settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m5.08 5.08l4.24 4.24M1 12h6m6 0h6M4.22 19.78l4.24-4.24m5.08-5.08l4.24-4.24"/>
+        </svg>
+      </div>
+      <div class="icon-button" title="Fullscreen">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Dot (Always visible) -->
+  <div class="notification-container">
+    <div class="notification-dot"></div>
+    <div class="notification-panel">
+      <div class="notification-header">Activity</div>
+      <div class="notification-item">
+        <div class="notification-title">Backend server started</div>
+        <div class="notification-time">2 minutes ago</div>
+      </div>
+      <div class="notification-item">
+        <div class="notification-title">Database migration completed</div>
+        <div class="notification-time">5 minutes ago</div>
+      </div>
+      <div class="notification-item">
+        <div class="notification-title">Claude session initialized</div>
+        <div class="notification-time">8 minutes ago</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Terminal Area -->
+  <div class="terminal-container">
+    <div class="terminal-wrapper">
+      <div class="terminal-header">
+        <div class="terminal-tabs">
+          <div class="terminal-tab active">
+            <div class="terminal-indicator"></div>
+            <span>main</span>
+          </div>
+          <div class="terminal-tab">
+            <span>backend:dev</span>
+          </div>
+          <div class="terminal-tab">
+            <span>frontend:dev</span>
+          </div>
+        </div>
+        <div class="terminal-controls">
+          <div class="control-button">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 2H3v16h5v4l4-4h5l4-4V2zm-10 9V7m4 4V7"/>
+            </svg>
+            Split
+          </div>
+          <div class="control-button">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="1 4 1 10 7 10"/>
+              <polyline points="23 20 23 14 17 14"/>
+              <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+            </svg>
+            Clear
+          </div>
+        </div>
+      </div>
+      <div class="terminal-content">
+        <div class="terminal-line">
+          <span class="terminal-prompt">➜</span>
+          <span class="terminal-command">bun run dev</span>
+        </div>
+        <div class="terminal-line">
+          <span class="terminal-output">Starting development servers...</span>
+        </div>
+        <div class="terminal-line">
+          <span class="terminal-output">✓ Backend ready on http://localhost:3000</span>
+        </div>
+        <div class="terminal-line">
+          <span class="terminal-output">✓ Frontend ready on http://localhost:5173</span>
+        </div>
+        <div class="terminal-line" style="margin-top: 16px;">
+          <span class="terminal-prompt">➜</span>
+          <span class="terminal-command">git status</span>
+        </div>
+        <div class="terminal-line">
+          <span class="terminal-output">On branch main</span>
+        </div>
+        <div class="terminal-line">
+          <span class="terminal-output">Your branch is up to date with 'origin/main'.</span>
+        </div>
+        <div class="terminal-line" style="margin-top: 16px;">
+          <span class="terminal-output">nothing to commit, working tree clean</span>
+        </div>
+        <div class="terminal-line" style="margin-top: 16px;">
+          <span class="terminal-prompt">➜</span>
+          <span class="terminal-cursor"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Keyboard Hints (Hidden by default) -->
+  <div class="keyboard-hints">
+    <div class="hint-item">
+      <span class="hint-key">⌘T</span>
+      <span>new tab</span>
+    </div>
+    <div class="hint-separator"></div>
+    <div class="hint-item">
+      <span class="hint-key">⌘W</span>
+      <span>close</span>
+    </div>
+    <div class="hint-separator"></div>
+    <div class="hint-item">
+      <span class="hint-key">⌘⇧P</span>
+      <span>split</span>
+    </div>
+    <div class="hint-separator"></div>
+    <div class="hint-item">
+      <span class="hint-key">⌘,</span>
+      <span>settings</span>
+    </div>
+  </div>
+
+  <!-- Split Toggle (Hidden by default) -->
+  <div class="split-toggle">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="3" y="3" width="18" height="18" rx="2"/>
+      <line x1="12" y1="3" x2="12" y2="21"/>
+    </svg>
+    <span>Split View</span>
+  </div>
+
+  <script>
+    // Top bar visibility on hover near top
+    const topBar = document.querySelector('.top-bar');
+    const hoverTrigger = document.querySelector('.hover-trigger-top');
+
+    hoverTrigger.addEventListener('mouseenter', () => {
+      topBar.classList.add('visible');
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (e.clientY > 100) {
+        topBar.classList.remove('visible');
+      }
+    });
+
+    // Keep top bar visible if hovering over it
+    topBar.addEventListener('mouseenter', () => {
+      topBar.classList.add('visible');
+    });
+
+    topBar.addEventListener('mouseleave', (e) => {
+      if (e.clientY > 100) {
+        topBar.classList.remove('visible');
+      }
+    });
+
+    // Terminal tab switching
+    const tabs = document.querySelectorAll('.terminal-tab');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+      });
+    });
+
+    // Keyboard shortcuts demo
+    document.addEventListener('keydown', (e) => {
+      if (e.metaKey || e.ctrlKey) {
+        if (e.key === 'k') {
+          e.preventDefault();
+          alert('Command palette would open here');
+        } else if (e.key >= '1' && e.key <= '9') {
+          e.preventDefault();
+          const index = parseInt(e.key) - 1;
+          if (tabs[index]) {
+            tabs.forEach(t => t.classList.remove('active'));
+            tabs[index].classList.add('active');
+          }
+        }
+      }
+    });
+
+    // Split toggle
+    const splitToggle = document.querySelector('.split-toggle');
+    splitToggle.addEventListener('click', () => {
+      alert('Split view would activate here');
+    });
+  </script>
+</body>
+</html>
