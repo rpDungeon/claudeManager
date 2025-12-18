@@ -28,8 +28,8 @@
 		"db:generate": "drizzle-kit generate",
 		"db:push": "drizzle-kit push",
 		"db:studio": "drizzle-kit studio",
-		"dev": "bun run --watch src/index.ts",
-		"start": "bun run dist/index.js",
+		"dev": "bun run --env-file=../../.env --watch src/index.ts",
+		"start": "bun run --env-file=../../.env dist/index.js",
 		"test": "bun test"
 	},
 	"type": "module",
