@@ -4,12 +4,40 @@ Browser-based terminal manager for spawning and managing Claude Code instances.
 
 ## Tech Stack
 
+- **Runtime**: Bun (NOT Node.js)
 - **Monorepo**: Bun workspaces
 - **Backend**: ElysiaJS (Bun)
 - **Frontend**: SvelteKit with Svelte 5
-- **Database**: SQLite with Drizzle ORM
-- **Terminal**: xterm.js with node-pty
+- **Database**: SQLite with Drizzle ORM (using `bun:sqlite`)
+- **Terminal**: xterm.js with PTY
 - **UI**: TailwindCSS, bits-ui, paneforge
+
+## Bun Usage (IMPORTANT)
+
+**Always use Bun, never Node.js or npm:**
+
+```bash
+# Package management
+bun install              # Install dependencies
+bun add <package>        # Add dependency
+bun add -d <package>     # Add dev dependency
+bun remove <package>     # Remove dependency
+
+# Running scripts
+bun run dev              # Run dev script
+bun run build            # Run build script
+bun run --filter '*' dev # Run script in all workspaces
+
+# Direct execution
+bun src/index.ts         # Run TypeScript directly
+bun --watch src/index.ts # Run with watch mode
+```
+
+**Bun-specific features used:**
+- `bun:sqlite` - Native SQLite (no native deps needed)
+- `Bun.env` - Type-safe environment variables
+- `bun run --filter` - Workspace script execution
+- `bun build` - Fast bundling
 
 ## Skills Reference
 
@@ -31,6 +59,69 @@ claudeManager/
 ├── CLAUDE.md            # This file
 └── .claude/docs/        # Planning and memory
 ```
+
+## HARD RULE: Export Naming Convention
+
+**All exports MUST follow the pattern: `path` + `action/thing`**
+
+The name should read as: "what it is" followed by "what it does".
+
+```typescript
+// CORRECT - path first, then action
+export const claudeSessionIdGenerate = () => ...
+export const projectIdGenerate = () => ...
+export const terminalCreate = z.object(...)
+export const claudeSessionStatusEnum = ...
+export type ProjectId = ...
+
+// WRONG - action first
+export const generateClaudeSessionId = () => ...
+export const createTerminal = z.object(...)
+export function generateProjectId() ...
+```
+
+This convention:
+- Groups related exports alphabetically in IDE autocomplete
+- Makes it clear what domain/feature an export belongs to
+- Enforced by ESLint rule
+
+## TypeScript Enums Over Union Types
+
+**Prefer TypeScript enums over union string types for type definitions:**
+
+```typescript
+// GOOD - Use enum
+export enum ClaudeSessionStatus {
+	Active = "active",
+	Paused = "paused",
+	Completed = "completed",
+}
+
+// BAD - Avoid union types for this pattern
+export type ClaudeSessionStatus = "active" | "paused" | "completed";
+```
+
+Benefits:
+- Better IDE autocomplete
+- Works with `z.nativeEnum()` and `t.Enum()` (Elysia/TypeBox)
+- Easier refactoring
+- Runtime value access
+
+## CRITICAL: No Comments in Code Files
+
+**NEVER add comments directly in code files.** Instead:
+- Create a `CLAUDE.md` in the feature directory to document the code
+- Use descriptive variable/function names instead of comments
+- If something needs explanation, document it in the directory's `CLAUDE.md`
+
+```
+src/auth/
+├── auth.service.ts      # NO comments in this file
+├── auth.router.ts       # NO comments in this file
+└── CLAUDE.md            # All documentation goes HERE
+```
+
+This keeps code clean and documentation centralized per feature.
 
 ## File Organization (Feature-Based Grouping)
 
@@ -105,14 +196,34 @@ src/lib/features/
 - `index.ts` - Barrel exports
 
 ### Common Package (`apps/common/`)
-Shared types and utilities used by both frontend and backend:
+Shared schemas and types used by both frontend and backend:
 ```
 apps/common/
+├── features/
+│   ├── project/
+│   │   ├── project.schema.ts   # Drizzle schema + Zod + enums + branded IDs
+│   │   └── project.types.ts    # Inferred types only
+│   ├── terminal/
+│   │   ├── terminal.schema.ts
+│   │   └── terminal.types.ts
+│   └── claude/
+│       └── session/
+│           ├── claudeSession.schema.ts
+│           └── claudeSession.types.ts
 ├── types/
-│   ├── common.types.ts      # Shared branded types (ProjectId, TerminalId, etc.)
-│   └── util.types.ts        # Utility types (Brand<K,T>)
+│   ├── common.types.ts         # Only NanoId, UnixTimestamp (true primitives)
+│   └── util.types.ts           # Utility types (Brand<K,T>)
 └── package.json
 ```
+
+**Feature schema files contain:**
+- Branded ID types (e.g., `ProjectId`, `TerminalId`)
+- Enums (e.g., `ClaudeSessionStatus`, `TerminalType`)
+- Zod validators (`projectCreate`, `projectUpdate`)
+- Drizzle schema (`projectSchema`)
+
+**Feature types files contain:**
+- Only inferred types from schema (`type Project = InferSelectModel<typeof projectSchema>`)
 
 ## Interactive Terminals
 
@@ -134,18 +245,44 @@ bun run dev
 bun run backend:dev
 bun run frontend:dev
 
-# Database
-bun run db:push    # Push schema to SQLite
-bun run db:studio  # Open Drizzle Studio
+# Database (from apps/backend)
+bun run db:push      # Push schema to SQLite
+bun run db:generate  # Generate migrations
+bun run db:studio    # Open Drizzle Studio
 ```
 
 ## Environment Variables
 
 ```env
+# Server
+PORT=3000
+HOST=0.0.0.0
+
+# Database
+DATABASE_PATH=./data/claude-manager.db
+
+# Authentication
 MASTER_PASSWORD=your-long-secure-password
 JWT_SECRET=your-jwt-secret
-DATABASE_URL=file:./data/claude-manager.db
 ```
+
+## Environment Validation Pattern
+
+Each feature has a `.env.ts` file that declares required env vars with Bun type augmentation:
+
+```typescript
+// src/auth/auth.env.ts
+export const authEnvs = ["MASTER_PASSWORD", "JWT_SECRET"];
+
+declare module "bun" {
+  interface Env {
+    MASTER_PASSWORD: string;
+    JWT_SECRET: string;
+  }
+}
+```
+
+The `EnvValidator` in `src/common/common.env.ts` collects all env arrays and validates on startup.
 
 ## Key Features
 
