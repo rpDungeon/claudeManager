@@ -1,0 +1,15 @@
+{
+	"dependencies": {
+		"@homebridge/node-pty-prebuilt-multiarch": "^0.13.1"
+	},
+	"devDependencies": {
+		"@types/bun": "latest"
+	},
+	"module": "index.ts",
+	"name": "2025-12-18-xterm-demo",
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"private": true,
+	"type": "module"
+}
