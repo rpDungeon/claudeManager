@@ -869,7 +869,7 @@
         }
 
         function drag(e) {
-            if (!isDragging || !currentWindow) return;
+            if (!(isDragging && currentWindow)) return;
 
             const x = e.clientX - offsetX;
             const y = e.clientY - offsetY;
@@ -902,7 +902,7 @@
         }
 
         function resize(e) {
-            if (!isResizing || !resizingWindow) return;
+            if (!(isResizing && resizingWindow)) return;
 
             const rect = resizingWindow.getBoundingClientRect();
             const width = Math.max(400, e.clientX - rect.left);

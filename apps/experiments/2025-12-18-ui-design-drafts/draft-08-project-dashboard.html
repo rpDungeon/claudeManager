@@ -1200,7 +1200,7 @@
         }
 
         // Close notification panel when clicking outside
-        document.addEventListener('click', function(event) {
+        document.addEventListener('click', (event) => {
             const panel = document.getElementById('notificationPanel');
             const bell = document.querySelector('.notification-bell');
 
@@ -1212,7 +1212,7 @@
         });
 
         // Add keyboard shortcuts
-        document.addEventListener('keydown', function(event) {
+        document.addEventListener('keydown', (event) => {
             // Escape key closes terminal view or notification panel
             if (event.key === 'Escape') {
                 const terminalView = document.getElementById('terminalView');

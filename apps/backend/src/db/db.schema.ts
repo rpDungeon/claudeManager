@@ -3,13 +3,6 @@ import { projectSchema } from "@claude-manager/common/src/project/project.schema
 import { terminalSchema } from "@claude-manager/common/src/terminal/terminal.schema";
 import { relations } from "drizzle-orm";
 
-export { claudeSessionSchema } from "@claude-manager/common/src/claude/session/claudeSession.schema";
-export type { ClaudeSession } from "@claude-manager/common/src/claude/session/claudeSession.types";
-export { projectSchema } from "@claude-manager/common/src/project/project.schema";
-export type { Project } from "@claude-manager/common/src/project/project.types";
-export { terminalSchema } from "@claude-manager/common/src/terminal/terminal.schema";
-export type { Terminal } from "@claude-manager/common/src/terminal/terminal.types";
-
 export const dbProjectsRelations = relations(projectSchema, ({ many }) => ({
 	claudeSessions: many(claudeSessionSchema),
 	terminals: many(terminalSchema),

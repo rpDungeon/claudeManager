@@ -890,8 +890,7 @@
 
         // Close flyout when clicking outside
         document.addEventListener('click', (e) => {
-            if (!e.target.closest('.project-icon') &&
-                !e.target.closest('.flyout-container')) {
+            if (!(e.target.closest('.project-icon') ||e.target.closest('.flyout-container'))) {
                 flyout.classList.remove('visible');
             }
         });

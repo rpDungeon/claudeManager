@@ -947,7 +947,7 @@
             });
         });
 
-        document.addEventListener('mousemove', function(e) {
+        document.addEventListener('mousemove', (e) => {
             if (!isResizing) return;
 
             if (currentResizer.classList.contains('resize-handle-vertical')) {
@@ -969,7 +969,7 @@
             }
         });
 
-        document.addEventListener('mouseup', function() {
+        document.addEventListener('mouseup', () => {
             if (isResizing) {
                 isResizing = false;
                 currentResizer = null;

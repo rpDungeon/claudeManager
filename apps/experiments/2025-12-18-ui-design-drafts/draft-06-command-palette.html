@@ -914,7 +914,7 @@
 
         // Palette search filtering
         const paletteInput = document.getElementById('paletteInput');
-        paletteInput.addEventListener('input', function(e) {
+        paletteInput.addEventListener('input', (e) => {
             const searchTerm = e.target.value.toLowerCase();
             const items = document.querySelectorAll('.palette-item');
             const sections = document.querySelectorAll('.palette-section');

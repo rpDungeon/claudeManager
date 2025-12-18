@@ -104,10 +104,10 @@
 			},
 			"performance": {
 				"noAccumulatingSpread": "error",
-				"noBarrelFile": "off",
+				"noBarrelFile": "error",
 				"noDelete": "warn",
 				"noDynamicNamespaceImportAccess": "error",
-				"noReExportAll": "off",
+				"noReExportAll": "error",
 				"useTopLevelRegex": "error"
 			},
 			"recommended": true,

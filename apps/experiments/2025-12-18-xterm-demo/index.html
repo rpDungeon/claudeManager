@@ -111,7 +111,7 @@
       fontWeight: '400',
       letterSpacing: 0,
       lineHeight: 1.2,
-      scrollback: 10000,
+      scrollback: 10_000,
       allowProposedApi: true,
     });
 
@@ -187,7 +187,7 @@
 
         if (reconnectAttempts < maxReconnectAttempts) {
           reconnectAttempts++;
-          const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 10000);
+          const delay = Math.min(1000 * 2 ** (reconnectAttempts - 1), 10_000);
           setStatus(false, `Reconnecting (${reconnectAttempts}/${maxReconnectAttempts})...`);
           setTimeout(connect, delay);
         } else {
