@@ -19,13 +19,7 @@ interface Props {
 	onclick?: (event: MouseEvent) => void;
 }
 
-let {
-	title = "shell",
-	info,
-	isActive = false,
-	statusColor = IndicatorDotColor.Green,
-	onclick,
-}: Props = $props();
+let { title = "shell", info, isActive = false, statusColor = IndicatorDotColor.Green, onclick }: Props = $props();
 
 const titleIsSnippet = $derived(typeof title === "function");
 const infoIsSnippet = $derived(typeof info === "function");

@@ -1,11 +1,11 @@
 <script module lang="ts">
 import { defineMeta } from "@storybook/addon-svelte-csf";
-import FileTreeNode from "./FileTreeNode.component.svelte";
-import { FileTreeItemType, FileStatus, type FileTreeItemData } from "../fileTree.lib";
+import FileTree from "./FileTree.component.svelte";
+import { FileTreeItemType, FileStatus, type FileTreeItemData } from "./fileTree.lib";
 import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
 const { Story } = defineMeta({
-	component: FileTreeNode,
+	component: FileTree,
 	parameters: {
 		backgrounds: {
 			default: "sidebar",
@@ -20,7 +20,7 @@ const { Story } = defineMeta({
 	tags: [
 		"autodocs",
 	],
-	title: "FileTree/FileTreeNode",
+	title: "FileTree/FileTree",
 });
 
 type ItemId = FileTreeItemData["id"];
@@ -139,79 +139,54 @@ const testData = createTestData();
 let expandedIds = new SvelteSet<ItemId>(["/project", "/project/src"]);
 let selectedId = $state<ItemId | undefined>(undefined);
 
-function handleToggle(itemId: ItemId) {
-	if (expandedIds.has(itemId)) {
-		expandedIds.delete(itemId);
-	} else {
-		expandedIds.add(itemId);
-	}
+function handleSelect(itemId: ItemId) {
+	console.log("Selected:", itemId);
 }
 
-function handleSelect(itemId: ItemId) {
-	selectedId = itemId;
+function handleNodeMove(sourceId: ItemId, targetId: ItemId) {
+	console.log("Move:", sourceId, "to", targetId);
+}
+
+function handleDoubleClick(itemId: ItemId) {
+	console.log("Double click:", itemId);
+}
+
+function handleContextMenu(itemId: ItemId, event: MouseEvent) {
+	console.log("Context menu:", itemId, event);
 }
 </script>
 
 {#snippet template(_args: any)}
-	<div class="w-[220px] bg-[#0d0d14] p-1">
-		<FileTreeNode
-			itemId="/project"
+	<div class="w-[220px] bg-[#0d0d14] p-2">
+		<FileTree
+			rootId="/project"
 			items={testData.items}
 			parentMap={testData.parentMap}
+			bind:selectedId
 			{expandedIds}
-			{selectedId}
-			onToggle={handleToggle}
+			draggable
 			onSelect={handleSelect}
+			onNodeMove={handleNodeMove}
+			onDoubleClick={handleDoubleClick}
+			onContextMenu={handleContextMenu}
 		/>
 	</div>
 {/snippet}
 
 <Story name="Default" args={{}} {template} />
 
-{#snippet singleFileTemplate(_args: any)}
-	{@const items = new SvelteMap<ItemId, FileTreeItemData>([
-		["/file.ts", { id: "/file.ts", name: "standalone-file.ts", status: FileStatus.Modified, type: FileTreeItemType.File }],
-	])}
-	{@const parentMap = new SvelteMap<ItemId, ItemId>()}
-	<div class="w-[220px] bg-[#0d0d14] p-1">
-		<FileTreeNode
-			itemId="/file.ts"
-			{items}
-			{parentMap}
-		/>
-	</div>
-{/snippet}
-
-<Story name="SingleFile" args={{}} template={singleFileTemplate} />
-
-{#snippet loadingTemplate(_args: any)}
-	{@const items = new SvelteMap<ItemId, FileTreeItemData>([
-		["/loading-folder", { id: "/loading-folder", isLoading: true, name: "loading-folder", status: FileStatus.Clean, type: FileTreeItemType.Folder }],
-	])}
-	{@const parentMap = new SvelteMap<ItemId, ItemId>()}
-	{@const expandedIds = new SvelteSet<ItemId>(["/loading-folder"])}
-	<div class="w-[220px] bg-[#0d0d14] p-1">
-		<FileTreeNode
-			itemId="/loading-folder"
-			{items}
-			{parentMap}
+{#snippet draggableTemplate(_args: any)}
+	<div class="w-[220px] bg-[#0d0d14] p-2">
+		<FileTree
+			rootId="/project"
+			items={testData.items}
+			parentMap={testData.parentMap}
+			bind:selectedId
 			{expandedIds}
+			draggable
+			onNodeMove={handleNodeMove}
 		/>
 	</div>
 {/snippet}
 
-<Story name="Loading" args={{}} template={loadingTemplate} />
-
-{#snippet notFoundTemplate(_args: any)}
-	{@const items = new SvelteMap<ItemId, FileTreeItemData>()}
-	{@const parentMap = new SvelteMap<ItemId, ItemId>()}
-	<div class="w-[220px] bg-[#0d0d14] p-1">
-		<FileTreeNode
-			itemId="/does-not-exist"
-			{items}
-			{parentMap}
-		/>
-	</div>
-{/snippet}
-
-<Story name="NotFound" args={{}} template={notFoundTemplate} />
+<Story name="Draggable" args={{}} template={draggableTemplate} />

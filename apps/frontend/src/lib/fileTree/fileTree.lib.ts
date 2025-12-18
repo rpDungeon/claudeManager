@@ -41,7 +41,7 @@ export const FILETREE_NOTFOUND_ITEM: FileTreeItemData = {
 };
 
 export interface FileTreeDragData {
-	id: string;
-	name: string;
-	type: FileTreeItemType;
+	id: FileTreeItemData["id"];
+	name: FileTreeItemData["name"];
+	type: FileTreeItemData["type"];
 }

@@ -17,18 +17,20 @@ import {
 	type FileTreeDragData,
 } from "../fileTree.lib";
 
+type ItemId = FileTreeItemData["id"];
+
 interface Props {
-	itemId: string;
-	items: SvelteMap<string, FileTreeItemData>;
-	parentMap: Map<string, string>;
-	expandedIds?: SvelteSet<string>;
-	selectedId?: string;
+	itemId: ItemId;
+	items: SvelteMap<ItemId, FileTreeItemData>;
+	parentMap: SvelteMap<ItemId, ItemId>;
+	expandedIds?: SvelteSet<ItemId>;
+	selectedId?: ItemId;
 	depth?: number;
 	draggable?: boolean;
-	onSelect?: (itemId: string) => void;
-	onToggle?: (itemId: string) => void;
-	onDragStart?: (itemId: string, event: DragEvent) => void;
-	onDrop?: (targetId: string, dragData: FileTreeDragData) => void;
+	onSelect?: (itemId: ItemId) => void;
+	onToggle?: (itemId: ItemId) => void;
+	onDragStart?: (itemId: ItemId, event: DragEvent) => void;
+	onDrop?: (targetId: ItemId, dragData: FileTreeDragData) => void;
 }
 
 let {
