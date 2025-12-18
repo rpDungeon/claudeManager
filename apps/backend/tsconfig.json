@@ -1,0 +1,24 @@
+{
+	"compilerOptions": {
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"isolatedModules": true,
+		"module": "ES2022",
+		"moduleResolution": "node",
+		"noEmit": true,
+		"resolveJsonModule": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"target": "ES2022",
+		"types": [
+			"bun-types"
+		]
+	},
+	"exclude": [
+		"node_modules",
+		"dist"
+	],
+	"include": [
+		"src/**/*.ts"
+	]
+}
