@@ -1,3 +1,31 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/forms";
 @plugin "@tailwindcss/typography";
+
+@theme {
+	--font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+	--color-bg-void: #0a0a0a;
+	--color-bg-surface: #111111;
+	--color-bg-elevated: #1a1a1a;
+
+	--color-terminal-green: #00ff41;
+	--color-terminal-amber: #ffb000;
+	--color-terminal-cyan: #00e5ff;
+	--color-terminal-red: #ff3333;
+
+	--color-text-primary: #e0e0e0;
+	--color-text-secondary: #888888;
+	--color-text-tertiary: #555555;
+
+	--color-border-default: #222222;
+	--color-border-active: #333333;
+}
+
+@layer base {
+	html {
+		font-family: var(--font-mono);
+		background: var(--color-bg-void);
+		color: var(--color-text-primary);
+	}
+}
