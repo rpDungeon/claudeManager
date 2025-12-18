@@ -4,6 +4,7 @@
 		"@elysiajs/bearer": "^1.4.2",
 		"@elysiajs/cors": "^1.1.1",
 		"@elysiajs/jwt": "^1.1.1",
+		"bun-pty": "^0.4.2",
 		"drizzle-orm": "^0.38.3",
 		"elysia": "^1.2.9",
 		"nanoid": "^5.0.9",

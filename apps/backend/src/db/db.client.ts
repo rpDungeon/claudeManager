@@ -1,18 +1,20 @@
 import { Database } from "bun:sqlite";
 import { existsSync, mkdirSync } from "node:fs";
-import { dirname } from "node:path";
+import { dirname, resolve } from "node:path";
 import { drizzle } from "drizzle-orm/bun-sqlite";
 
 import { dbSchemas } from "./db.schema";
 
-const dataDir = dirname(Bun.env.DATABASE_PATH);
+const resolvedPath = resolve(Bun.env.DATABASE_PATH);
+const dataDir = dirname(resolvedPath);
+
 if (!existsSync(dataDir)) {
 	mkdirSync(dataDir, {
 		recursive: true,
 	});
 }
 
-const sqlite = new Database(Bun.env.DATABASE_PATH, {
+const sqlite = new Database(resolvedPath, {
 	strict: true,
 });
 
