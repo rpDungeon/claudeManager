@@ -20,7 +20,7 @@
 			"bunx @biomejs/biome check --write",
 			"bunx eslint --fix"
 		],
-		"*.{json,css,md}": [
+		"*.{json,css}": [
 			"bunx @biomejs/biome check --write"
 		],
 		"*.svelte": [
@@ -44,7 +44,10 @@
 		"pre:commit": "bun run typecheck && bun run lint",
 		"prepare": "husky",
 		"test": "bun run --filter '*' test",
-		"typecheck": "bun run tsc --noEmit"
+		"typecheck": "bun run typecheck:common && bun run typecheck:backend && bun run typecheck:frontend",
+		"typecheck:backend": "tsc --noEmit -p apps/backend/tsconfig.json",
+		"typecheck:common": "tsc --noEmit -p apps/common/tsconfig.json",
+		"typecheck:frontend": "svelte-check --workspace apps/frontend"
 	},
 	"type": "module",
 	"workspaces": [

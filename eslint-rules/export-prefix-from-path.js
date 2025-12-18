@@ -19,7 +19,6 @@ import { dirname, join } from "node:path";
 export default {
 	create(context) {
 		const options = context.options[0] || {};
-		const segmentCount = options.segmentCount || 2;
 		const ignoreDirs = new Set(
 			options.ignoreDirs || [
 				"src",
@@ -78,7 +77,7 @@ export default {
 			return true;
 		});
 
-		const prefixSegments = relevantDirs.slice(-segmentCount);
+		const prefixSegments = relevantDirs;
 
 		if (prefixSegments.length === 0) {
 			return {};
@@ -269,12 +268,6 @@ export default {
 							type: "string",
 						},
 						type: "array",
-					},
-					segmentCount: {
-						default: 2,
-						description: "Number of directory segments to use for prefix (default: 2)",
-						minimum: 1,
-						type: "number",
 					},
 				},
 				type: "object",
