@@ -1214,9 +1214,9 @@
             newItem.style.animationDelay = '0s';
 
             const types = [
-                { icon: 'command', class: 'command', symbol: '⚡', desc: 'Executed command', code: 'bun run build' },
-                { icon: 'file', class: 'file', symbol: '📝', desc: 'File modified', files: ['index.ts'] },
-                { icon: 'success', class: 'success', symbol: '✓', desc: 'Build successful' }
+                { class: 'command', code: 'bun run build', desc: 'Executed command', icon: 'command', symbol: '⚡' },
+                { class: 'file', desc: 'File modified', files: ['index.ts'], icon: 'file', symbol: '📝' },
+                { class: 'success', desc: 'Build successful', icon: 'success', symbol: '✓' }
             ];
 
             const type = types[Math.floor(Math.random() * types.length)];

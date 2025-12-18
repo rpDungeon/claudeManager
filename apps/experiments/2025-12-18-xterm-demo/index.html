@@ -80,39 +80,39 @@
   <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-web-links@0.11.0/lib/addon-web-links.min.js"></script>
   <script>
     const term = new Terminal({
+      allowProposedApi: true,
       cursorBlink: true,
       cursorStyle: 'bar',
-      theme: {
-        background: '#0d1117',
-        foreground: '#c9d1d9',
-        cursor: '#58a6ff',
-        cursorAccent: '#0d1117',
-        selectionBackground: '#264f78',
-        selectionForeground: '#ffffff',
-        black: '#484f58',
-        red: '#ff7b72',
-        green: '#3fb950',
-        yellow: '#d29922',
-        blue: '#58a6ff',
-        magenta: '#bc8cff',
-        cyan: '#39c5cf',
-        white: '#b1bac4',
-        brightBlack: '#6e7681',
-        brightRed: '#ffa198',
-        brightGreen: '#56d364',
-        brightYellow: '#e3b341',
-        brightBlue: '#79c0ff',
-        brightMagenta: '#d2a8ff',
-        brightCyan: '#56d4dd',
-        brightWhite: '#f0f6fc',
-      },
-      fontSize: 14,
       fontFamily: '"JetBrains Mono", "Fira Code", Menlo, Monaco, monospace',
+      fontSize: 14,
       fontWeight: '400',
       letterSpacing: 0,
       lineHeight: 1.2,
       scrollback: 10_000,
-      allowProposedApi: true,
+      theme: {
+        background: '#0d1117',
+        black: '#484f58',
+        blue: '#58a6ff',
+        brightBlack: '#6e7681',
+        brightBlue: '#79c0ff',
+        brightCyan: '#56d4dd',
+        brightGreen: '#56d364',
+        brightMagenta: '#d2a8ff',
+        brightRed: '#ffa198',
+        brightWhite: '#f0f6fc',
+        brightYellow: '#e3b341',
+        cursor: '#58a6ff',
+        cursorAccent: '#0d1117',
+        cyan: '#39c5cf',
+        foreground: '#c9d1d9',
+        green: '#3fb950',
+        magenta: '#bc8cff',
+        red: '#ff7b72',
+        selectionBackground: '#264f78',
+        selectionForeground: '#ffffff',
+        white: '#b1bac4',
+        yellow: '#d29922',
+      },
     });
 
     const fitAddon = new FitAddon.FitAddon();
@@ -139,9 +139,9 @@
 
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({
-          type: 'resize',
           cols: term.cols,
           rows: term.rows,
+          type: 'resize',
         }));
       }
     }
@@ -202,14 +202,14 @@
 
     term.onData((data) => {
       if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'input', data }));
+        ws.send(JSON.stringify({ data, type: 'input' }));
       }
     });
 
     term.onResize(({ cols, rows }) => {
       sizeIndicator.textContent = `${cols}x${rows}`;
       if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'resize', cols, rows }));
+        ws.send(JSON.stringify({ cols, rows, type: 'resize' }));
       }
     });
 

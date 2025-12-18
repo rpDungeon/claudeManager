@@ -857,12 +857,12 @@
                         const nextIndex = (currentIndex + 1) % items.length;
                         selected.classList.remove('selected');
                         items[nextIndex].classList.add('selected');
-                        items[nextIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                        items[nextIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                     } else if (e.key === 'ArrowUp') {
                         const prevIndex = (currentIndex - 1 + items.length) % items.length;
                         selected.classList.remove('selected');
                         items[prevIndex].classList.add('selected');
-                        items[prevIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                        items[prevIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                     }
                 }
 
