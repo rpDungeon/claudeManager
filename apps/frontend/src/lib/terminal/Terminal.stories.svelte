@@ -1,7 +1,7 @@
 <script module lang="ts">
 import { defineMeta } from "@storybook/addon-svelte-csf";
 import Terminal from "./Terminal.component.svelte";
-import { TerminalHeaderStatusColor } from "./header/terminalHeader.lib";
+import { IndicatorDotColor } from "$lib/common/indicatorDot.lib";
 
 const { Story } = defineMeta({
 	argTypes: {
@@ -16,7 +16,7 @@ const { Story } = defineMeta({
 		statusColor: {
 			control: "select",
 			description: "Status indicator color",
-			options: Object.values(TerminalHeaderStatusColor),
+			options: Object.values(IndicatorDotColor),
 		},
 		title: {
 			control: "text",
@@ -55,6 +55,6 @@ const { Story } = defineMeta({
 
 <Story name="Inactive" args={{ title: "tail -f logs/app.log", info: "watching", isActive: false }} {template} />
 
-<Story name="Error" args={{ title: "npm start", info: "exit code 1", statusColor: TerminalHeaderStatusColor.Red }} {template} />
+<Story name="Error" args={{ title: "npm start", info: "exit code 1", statusColor: IndicatorDotColor.Red }} {template} />
 
-<Story name="Claude Session" args={{ title: "claude", info: "session active", statusColor: TerminalHeaderStatusColor.Blue, isActive: true }} {template} />
+<Story name="Claude Session" args={{ title: "claude", info: "session active", statusColor: IndicatorDotColor.Cyan, isActive: true }} {template} />

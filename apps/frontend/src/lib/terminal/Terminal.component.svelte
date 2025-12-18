@@ -10,14 +10,14 @@ usage: Display a full terminal with header info and xterm.js content area
 import type { Snippet } from "svelte";
 import type { Terminal as XTerm } from "@xterm/xterm";
 import TerminalHeader from "./header/TerminalHeader.component.svelte";
-import { TerminalHeaderStatusColor } from "./header/terminalHeader.lib";
+import { IndicatorDotColor } from "$lib/common/indicatorDot.lib";
 import TerminalBody from "./body/TerminalBody.component.svelte";
 
 interface Props {
 	title?: string | Snippet;
 	info?: string | Snippet;
 	isActive?: boolean;
-	statusColor?: TerminalHeaderStatusColor;
+	statusColor?: IndicatorDotColor;
 	onclick?: (event: MouseEvent) => void;
 	onHeaderClick?: (event: MouseEvent) => void;
 	onBodyClick?: (event: MouseEvent) => void;
@@ -29,7 +29,7 @@ let {
 	title = "shell",
 	info,
 	isActive = false,
-	statusColor = TerminalHeaderStatusColor.Green,
+	statusColor = IndicatorDotColor.Green,
 	onclick,
 	onHeaderClick,
 	onBodyClick,

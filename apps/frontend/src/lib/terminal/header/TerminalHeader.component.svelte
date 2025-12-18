@@ -8,13 +8,14 @@ usage: Display command name and status at the top of a terminal pane
 -->
 <script lang="ts">
 import type { Snippet } from "svelte";
-import { TerminalHeaderStatusColor, terminalHeaderStatusColorMap } from "./terminalHeader.lib";
+import IndicatorDot from "$lib/common/IndicatorDot.component.svelte";
+import { IndicatorDotColor } from "$lib/common/indicatorDot.lib";
 
 interface Props {
 	title?: string | Snippet;
 	info?: string | Snippet;
 	isActive?: boolean;
-	statusColor?: TerminalHeaderStatusColor;
+	statusColor?: IndicatorDotColor;
 	onclick?: (event: MouseEvent) => void;
 }
 
@@ -22,11 +23,10 @@ let {
 	title = "shell",
 	info,
 	isActive = false,
-	statusColor = TerminalHeaderStatusColor.Green,
+	statusColor = IndicatorDotColor.Green,
 	onclick,
 }: Props = $props();
 
-const statusClasses = $derived(terminalHeaderStatusColorMap[statusColor]);
 const titleIsSnippet = $derived(typeof title === "function");
 const infoIsSnippet = $derived(typeof info === "function");
 </script>
@@ -36,10 +36,7 @@ const infoIsSnippet = $derived(typeof info === "function");
 	class="flex h-5 w-full items-center gap-1.5 border-b border-border-default bg-bg-surface px-2 text-[10px] hover:bg-bg-elevated"
 	{onclick}
 >
-	<span
-		class="size-1 rounded-full {statusClasses}"
-		class:animate-pulse={isActive}
-	></span>
+	<IndicatorDot color={statusColor} glow pulse={isActive} />
 	<span class="font-normal text-text-tertiary">
 		{#if titleIsSnippet}
 			{@render (title as Snippet)()}

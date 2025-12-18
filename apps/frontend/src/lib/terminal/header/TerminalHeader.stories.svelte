@@ -1,7 +1,7 @@
 <script module lang="ts">
 import { defineMeta } from "@storybook/addon-svelte-csf";
 import TerminalHeader from "./TerminalHeader.component.svelte";
-import { TerminalHeaderStatusColor } from "./terminalHeader.lib";
+import { IndicatorDotColor } from "$lib/common/indicatorDot.lib";
 
 const { Story } = defineMeta({
 	argTypes: {
@@ -16,7 +16,7 @@ const { Story } = defineMeta({
 		statusColor: {
 			control: "select",
 			description: "Status indicator color",
-			options: Object.values(TerminalHeaderStatusColor),
+			options: Object.values(IndicatorDotColor),
 		},
 		title: {
 			control: "text",
@@ -50,8 +50,8 @@ const { Story } = defineMeta({
 
 <Story name="Idle" args={{ title: "tail -f logs/app.log", info: "watching", isActive: false }} />
 
-<Story name="Error" args={{ title: "npm start", info: "exit code 1", statusColor: TerminalHeaderStatusColor.Red }} />
+<Story name="Error" args={{ title: "npm start", info: "exit code 1", statusColor: IndicatorDotColor.Red }} />
 
-<Story name="Warning" args={{ title: "build", info: "warnings", statusColor: TerminalHeaderStatusColor.Orange, isActive: true }} />
+<Story name="Warning" args={{ title: "build", info: "warnings", statusColor: IndicatorDotColor.Amber, isActive: true }} />
 
-<Story name="Info" args={{ title: "claude", info: "session active", statusColor: TerminalHeaderStatusColor.Blue, isActive: true }} />
+<Story name="Info" args={{ title: "claude", info: "session active", statusColor: IndicatorDotColor.Cyan, isActive: true }} />
