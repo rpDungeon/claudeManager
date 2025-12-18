@@ -47,6 +47,7 @@ export default [
 					ignorePatterns: [
 						".config.",
 						"src/types",
+						"db.schema.ts",
 					],
 				},
 			],

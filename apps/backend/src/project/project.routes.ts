@@ -1,5 +1,5 @@
 import { projectSchema } from "@claude-manager/common/src/project/project.schema";
-import { projectCreate, projectIdSchema } from "@claude-manager/common/src/project/project.types";
+import { projectCreate, projectIdSchema, projectUpdate } from "@claude-manager/common/src/project/project.types";
 import { eq } from "drizzle-orm";
 import { Elysia } from "elysia";
 import { z } from "zod";
@@ -14,17 +14,20 @@ export const projectRoutes = new Elysia({
 			orderBy: (table, { desc }) => [
 				desc(table.updatedAt),
 			],
+			with: {
+				layout: true,
+			},
 		});
 		return projects;
 	})
 	.get(
 		"/:id",
 		async ({ params, set }) => {
-			params.id;
 			const project = await db.query.project.findFirst({
 				where: eq(projectSchema.id, params.id),
 				with: {
 					claudeSessions: true,
+					layout: true,
 					terminals: true,
 				},
 			});
@@ -76,10 +79,7 @@ export const projectRoutes = new Elysia({
 			return project;
 		},
 		{
-			body: z.object({
-				name: z.string().optional(),
-				path: z.string().optional(),
-			}),
+			body: projectUpdate,
 			params: z.object({
 				id: projectIdSchema,
 			}),
