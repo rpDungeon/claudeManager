@@ -67,6 +67,7 @@
 		"includes": [
 			"**",
 			"!**/examples/**",
+			"!**/experiments/**",
 			"!**/*.example.ts",
 			"!**/*.config.ts",
 			"!**/*.config.js",

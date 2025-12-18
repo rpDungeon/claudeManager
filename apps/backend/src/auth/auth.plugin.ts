@@ -1,17 +1,17 @@
-import { bearer } from "@elysiajs/bearer";
-import { jwt } from "@elysiajs/jwt";
+import { bearer as bearerPlugin } from "@elysiajs/bearer";
+import { jwt as jwtPlugin } from "@elysiajs/jwt";
 import { Elysia } from "elysia";
 
 export const authPlugin = new Elysia({
 	name: "auth",
 })
 	.use(
-		jwt({
+		jwtPlugin({
 			name: "jwt",
 			secret: Bun.env.JWT_SECRET,
 		}),
 	)
-	.use(bearer())
+	.use(bearerPlugin())
 	.derive(
 		{
 			as: "scoped",
