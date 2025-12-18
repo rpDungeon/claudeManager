@@ -1,3 +1,6 @@
+// For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
+import storybook from "eslint-plugin-storybook";
+
 import svelte from "eslint-plugin-svelte";
 import svelteParser from "svelte-eslint-parser";
 import ts from "typescript-eslint";
@@ -19,9 +22,7 @@ export default [
 			"**/build/**",
 			"**/experiments/**",
 		],
-	},
-
-	// TypeScript files - export prefix enforcement
+	}, // TypeScript files - export prefix enforcement
 	// Uses package.json as anchor to determine project-relative paths
 	{
 		files: [
@@ -50,9 +51,7 @@ export default [
 				},
 			],
 		},
-	},
-
-	// Svelte-only config
+	}, // Svelte-only config
 	{
 		files: [
 			"**/*.svelte",
@@ -97,9 +96,7 @@ export default [
 			"svelte/no-unused-svelte-ignore": "error",
 			"svelte/valid-compile": "error",
 		},
-	},
-
-	// Exclude stories from component JSDoc requirement
+	}, // Exclude stories from component JSDoc requirement
 	{
 		files: [
 			"**/*.stories.svelte",
@@ -108,4 +105,5 @@ export default [
 			"custom/svelte-component-jsdoc": "off",
 		},
 	},
+	...storybook.configs["flat/recommended"],
 ];
