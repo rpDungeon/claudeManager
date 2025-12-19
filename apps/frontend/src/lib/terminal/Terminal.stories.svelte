@@ -1,10 +1,13 @@
 <script module lang="ts">
 import { defineMeta } from "@storybook/addon-svelte-csf";
 import Terminal from "./Terminal.component.svelte";
-import { IndicatorDotColor } from "$lib/common/indicatorDot.lib";
 
 const { Story } = defineMeta({
 	argTypes: {
+		autoConnect: {
+			control: "boolean",
+			description: "Auto-connect to PTY on mount",
+		},
 		info: {
 			control: "text",
 			description: "Additional info (PID, runtime)",
@@ -13,10 +16,9 @@ const { Story } = defineMeta({
 			control: "boolean",
 			description: "Active state with green outline",
 		},
-		statusColor: {
-			control: "select",
-			description: "Status indicator color",
-			options: Object.values(IndicatorDotColor),
+		terminalId: {
+			control: "text",
+			description: "Terminal ID for PTY connection",
 		},
 		title: {
 			control: "text",
@@ -49,12 +51,8 @@ const { Story } = defineMeta({
 	</div>
 {/snippet}
 
-<Story name="Default" args={{ title: "shell" }} {template} />
+<Story name="DisplayOnly" args={{ title: "shell" }} {template} />
 
 <Story name="Active" args={{ title: "bun run dev", info: "PID 4821 | 2m 34s", isActive: true }} {template} />
 
 <Story name="Inactive" args={{ title: "tail -f logs/app.log", info: "watching", isActive: false }} {template} />
-
-<Story name="Error" args={{ title: "npm start", info: "exit code 1", statusColor: IndicatorDotColor.Red }} {template} />
-
-<Story name="Claude Session" args={{ title: "claude", info: "session active", statusColor: IndicatorDotColor.Cyan, isActive: true }} {template} />

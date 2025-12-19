@@ -1,0 +1,188 @@
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+:root {
+	--bg-void: #0a0a0a;
+	--bg-surface: #111111;
+	--bg-elevated: #1a1a1a;
+	--terminal-green: #00ff41;
+	--terminal-amber: #ffb000;
+	--terminal-cyan: #00e5ff;
+	--terminal-red: #ff3333;
+	--border-default: #333333;
+	--text-primary: #e0e0e0;
+	--text-secondary: #888888;
+}
+
+body {
+	font-family: "IBM Plex Mono", monospace;
+	background-color: var(--bg-void);
+	color: var(--text-primary);
+	height: 100vh;
+	overflow: hidden;
+}
+
+.app {
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+}
+
+.header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 12px 16px;
+	background-color: var(--bg-surface);
+	border-bottom: 1px solid var(--border-default);
+}
+
+.header h1 {
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--terminal-green);
+	text-shadow: 0 0 8px var(--terminal-green);
+}
+
+.status-bar {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.status-indicator {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background-color: var(--text-secondary);
+}
+
+.status-indicator.connected {
+	background-color: var(--terminal-green);
+	box-shadow: 0 0 6px var(--terminal-green);
+}
+
+.status-indicator.connecting {
+	background-color: var(--terminal-amber);
+	box-shadow: 0 0 6px var(--terminal-amber);
+	animation: pulse 1s infinite;
+}
+
+.status-indicator.error {
+	background-color: var(--terminal-red);
+	box-shadow: 0 0 6px var(--terminal-red);
+}
+
+.status-indicator.disconnected {
+	background-color: var(--text-secondary);
+}
+
+@keyframes pulse {
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.5;
+	}
+}
+
+.status-text {
+	font-size: 12px;
+	color: var(--text-secondary);
+}
+
+.reconnect-btn {
+	padding: 4px 12px;
+	font-size: 12px;
+	font-family: inherit;
+	background-color: transparent;
+	color: var(--terminal-cyan);
+	border: 1px solid var(--terminal-cyan);
+	border-radius: 4px;
+	cursor: pointer;
+	transition: all 0.2s;
+}
+
+.reconnect-btn:hover {
+	background-color: var(--terminal-cyan);
+	color: var(--bg-void);
+}
+
+.editor-container {
+	flex: 1;
+	overflow: hidden;
+}
+
+.editor {
+	height: 100%;
+	overflow: auto;
+}
+
+.editor .cm-editor {
+	height: 100%;
+}
+
+.footer {
+	display: flex;
+	justify-content: center;
+	gap: 24px;
+	padding: 8px 16px;
+	background-color: var(--bg-surface);
+	border-top: 1px solid var(--border-default);
+	font-size: 11px;
+	color: var(--text-secondary);
+}
+
+/* CodeMirror tooltip styling */
+.cm-tooltip {
+	background-color: var(--bg-elevated) !important;
+	border: 1px solid var(--border-default) !important;
+	border-radius: 4px !important;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+}
+
+.cm-tooltip-autocomplete {
+	background-color: var(--bg-elevated) !important;
+}
+
+.cm-tooltip-autocomplete > ul > li {
+	padding: 4px 8px !important;
+}
+
+.cm-tooltip-autocomplete > ul > li[aria-selected] {
+	background-color: var(--bg-surface) !important;
+	color: var(--terminal-green) !important;
+}
+
+/* Diagnostic underlines */
+.cm-lintRange-error {
+	background-image: none !important;
+	border-bottom: 2px wavy var(--terminal-red) !important;
+}
+
+.cm-lintRange-warning {
+	background-image: none !important;
+	border-bottom: 2px wavy var(--terminal-amber) !important;
+}
+
+.cm-lintRange-info {
+	background-image: none !important;
+	border-bottom: 2px wavy var(--terminal-cyan) !important;
+}
+
+/* LSP Hover tooltip */
+.cm-lsp-hover {
+	background-color: var(--bg-elevated);
+	border: 1px solid var(--border-default);
+	border-radius: 4px;
+	color: var(--text-primary);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.cm-lsp-hover pre {
+	color: var(--terminal-cyan);
+}
