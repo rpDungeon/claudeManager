@@ -6,7 +6,11 @@ import { z } from "zod";
 
 import { db } from "../../db/db.client";
 import { terminalPtyInstanceKill, terminalPtyInstanceSpawn } from "./pty.service";
-import { TerminalPtyMessageServerType, terminalPtyMessageClientSchema } from "./pty.types";
+import {
+	TerminalPtyMessageServerType,
+	terminalPtyMessageClientSchema,
+	terminalPtyMessageServerSchema,
+} from "./pty.types";
 
 export const terminalPtyWebsocket = new Elysia({
 	prefix: "/ws",
@@ -21,23 +25,19 @@ export const terminalPtyWebsocket = new Elysia({
 	async message(ws, message) {
 		const terminalId = terminalIdSchema.safeParse(ws.data.params.terminalId);
 		if (!terminalId.success) {
-			ws.send(
-				JSON.stringify({
-					message: "Invalid terminal ID",
-					type: TerminalPtyMessageServerType.Error,
-				}),
-			);
+			ws.send({
+				message: "Invalid terminal ID",
+				type: TerminalPtyMessageServerType.Error,
+			});
 			return;
 		}
 
 		const parsed = terminalPtyMessageClientSchema.safeParse(message);
 		if (!parsed.success) {
-			ws.send(
-				JSON.stringify({
-					message: "Invalid message format",
-					type: TerminalPtyMessageServerType.Error,
-				}),
-			);
+			ws.send({
+				message: "Invalid message format",
+				type: TerminalPtyMessageServerType.Error,
+			});
 			return;
 		}
 
@@ -49,12 +49,10 @@ export const terminalPtyWebsocket = new Elysia({
 		});
 
 		if (!terminal) {
-			ws.send(
-				JSON.stringify({
-					message: "Terminal not found",
-					type: TerminalPtyMessageServerType.Error,
-				}),
-			);
+			ws.send({
+				message: "Terminal not found",
+				type: TerminalPtyMessageServerType.Error,
+			});
 			return;
 		}
 
@@ -70,12 +68,10 @@ export const terminalPtyWebsocket = new Elysia({
 	async open(ws) {
 		const terminalId = terminalIdSchema.safeParse(ws.data.params.terminalId);
 		if (!terminalId.success) {
-			ws.send(
-				JSON.stringify({
-					message: "Invalid terminal ID",
-					type: TerminalPtyMessageServerType.Error,
-				}),
-			);
+			ws.send({
+				message: "Invalid terminal ID",
+				type: TerminalPtyMessageServerType.Error,
+			});
 			ws.close();
 			return;
 		}
@@ -88,12 +84,10 @@ export const terminalPtyWebsocket = new Elysia({
 		});
 
 		if (!terminal) {
-			ws.send(
-				JSON.stringify({
-					message: "Terminal not found",
-					type: TerminalPtyMessageServerType.Error,
-				}),
-			);
+			ws.send({
+				message: "Terminal not found",
+				type: TerminalPtyMessageServerType.Error,
+			});
 			ws.close();
 			return;
 		}
@@ -101,11 +95,13 @@ export const terminalPtyWebsocket = new Elysia({
 		const instance = terminalPtyInstanceSpawn(terminalId.data, terminal.project.path);
 
 		instance.onData((message) => {
-			ws.send(JSON.stringify(message));
+			ws.send(message);
 		});
 	},
 
 	params: z.object({
 		terminalId: z.string(),
 	}),
+
+	response: terminalPtyMessageServerSchema,
 });

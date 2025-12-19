@@ -24,22 +24,25 @@ export enum TerminalPtyMessageServerType {
 	Output = "output",
 }
 
-export type TerminalPtyMessageServerOutput = {
-	data: string;
-	type: TerminalPtyMessageServerType.Output;
-};
+const terminalPtyMessageServerOutputSchema = z.object({
+	data: z.string(),
+	type: z.literal(TerminalPtyMessageServerType.Output),
+});
 
-export type TerminalPtyMessageServerExit = {
-	code: number;
-	type: TerminalPtyMessageServerType.Exit;
-};
+const terminalPtyMessageServerExitSchema = z.object({
+	code: z.number(),
+	type: z.literal(TerminalPtyMessageServerType.Exit),
+});
 
-export type TerminalPtyMessageServerError = {
-	message: string;
-	type: TerminalPtyMessageServerType.Error;
-};
+const terminalPtyMessageServerErrorSchema = z.object({
+	message: z.string(),
+	type: z.literal(TerminalPtyMessageServerType.Error),
+});
 
-export type TerminalPtyMessageServer =
-	| TerminalPtyMessageServerError
-	| TerminalPtyMessageServerExit
-	| TerminalPtyMessageServerOutput;
+export const terminalPtyMessageServerSchema = z.discriminatedUnion("type", [
+	terminalPtyMessageServerOutputSchema,
+	terminalPtyMessageServerExitSchema,
+	terminalPtyMessageServerErrorSchema,
+]);
+
+export type TerminalPtyMessageServer = z.infer<typeof terminalPtyMessageServerSchema>;
