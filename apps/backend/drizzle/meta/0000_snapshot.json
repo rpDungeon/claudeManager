@@ -6,7 +6,7 @@
 	},
 	"dialect": "sqlite",
 	"enums": {},
-	"id": "a7406a65-3273-4190-856e-b0c93ce25ddf",
+	"id": "cc878f19-dd44-4ee4-a2e9-ed57dbe25790",
 	"internal": {
 		"indexes": {}
 	},
@@ -111,9 +111,9 @@
 					"primaryKey": false,
 					"type": "integer"
 				},
-				"desktop": {
+				"data": {
 					"autoincrement": false,
-					"name": "desktop",
+					"name": "data",
 					"notNull": false,
 					"primaryKey": false,
 					"type": "text"
@@ -123,13 +123,6 @@
 					"name": "id",
 					"notNull": true,
 					"primaryKey": true,
-					"type": "text"
-				},
-				"mobile": {
-					"autoincrement": false,
-					"name": "mobile",
-					"notNull": false,
-					"primaryKey": false,
 					"type": "text"
 				},
 				"name": {

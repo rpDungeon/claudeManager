@@ -1,6 +1,6 @@
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
-import { type LayoutArrangement, type LayoutId, layoutIdGenerate } from "./layout.types";
+import { type LayoutData, type LayoutId, layoutIdGenerate } from "./layout.types";
 
 export const layoutSchema = sqliteTable("layouts", {
 	createdAt: integer("created_at", {
@@ -8,13 +8,10 @@ export const layoutSchema = sqliteTable("layouts", {
 	})
 		.notNull()
 		.$defaultFn(() => new Date()),
-	desktop: text("desktop", {
+	data: text("data", {
 		mode: "json",
-	}).$type<LayoutArrangement>(),
+	}).$type<LayoutData>(),
 	id: text("id").primaryKey().$defaultFn(layoutIdGenerate).$type<LayoutId>(),
-	mobile: text("mobile", {
-		mode: "json",
-	}).$type<LayoutArrangement>(),
 	name: text("name").notNull(),
 	updatedAt: integer("updated_at", {
 		mode: "timestamp",

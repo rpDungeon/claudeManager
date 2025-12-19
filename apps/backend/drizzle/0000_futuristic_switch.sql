@@ -13,9 +13,8 @@ CREATE TABLE `claude_sessions` (
 CREATE UNIQUE INDEX `claude_sessions_external_session_id_unique` ON `claude_sessions` (`external_session_id`);--> statement-breakpoint
 CREATE TABLE `layouts` (
 	`created_at` integer NOT NULL,
-	`desktop` text,
+	`data` text,
 	`id` text PRIMARY KEY NOT NULL,
-	`mobile` text,
 	`name` text NOT NULL,
 	`updated_at` integer NOT NULL
 );

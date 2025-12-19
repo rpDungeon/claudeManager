@@ -6,6 +6,18 @@ import { z } from "zod";
 
 import { db } from "../db/db.client";
 
+const defaultLayoutData = {
+	desktop: {
+		containers: {},
+		rootId: null,
+	},
+	items: {},
+	mobile: {
+		containers: {},
+		rootId: null,
+	},
+};
+
 export const layoutRoutes = new Elysia({
 	prefix: "/layouts",
 })
@@ -45,14 +57,7 @@ export const layoutRoutes = new Elysia({
 			const [layout] = await db
 				.insert(layoutSchema)
 				.values({
-					desktop: body.desktop ?? {
-						nodes: {},
-						rootId: null,
-					},
-					mobile: body.mobile ?? {
-						nodes: {},
-						rootId: null,
-					},
+					data: body.data ?? defaultLayoutData,
 					name: body.name,
 				})
 				.returning();

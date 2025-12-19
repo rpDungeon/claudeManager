@@ -2,18 +2,24 @@ import type { InferSelectModel } from "drizzle-orm";
 import { z } from "zod";
 
 import { createPrefixedId } from "../types/id.utils";
-import { layoutPaneNodeSchema } from "./pane/pane.types";
+import { layoutContainerSchema } from "./container/container.types";
+import { layoutItemSchema } from "./item/item.types";
 
 const LAYOUT_PREFIX = "layout";
 
 export const layoutArrangementSchema = z.object({
-	nodes: z.record(z.string(), layoutPaneNodeSchema),
+	containers: z.record(z.string(), layoutContainerSchema),
 	rootId: z.string().nullable(),
 });
 
+export const layoutDataSchema = z.object({
+	desktop: layoutArrangementSchema,
+	items: z.record(z.string(), layoutItemSchema),
+	mobile: layoutArrangementSchema,
+});
+
 export const layoutCreate = z.object({
-	desktop: layoutArrangementSchema.optional(),
-	mobile: layoutArrangementSchema.optional(),
+	data: layoutDataSchema.optional(),
 	name: z.string().min(1),
 });
 
@@ -25,11 +31,11 @@ export const layoutIdSchema = z
 	.brand("LayoutId");
 
 export const layoutUpdate = z.object({
-	desktop: layoutArrangementSchema.optional(),
-	mobile: layoutArrangementSchema.optional(),
+	data: layoutDataSchema.optional(),
 	name: z.string().min(1).optional(),
 });
 
 export type Layout = InferSelectModel<typeof import("./layout.schema").layoutSchema>;
 export type LayoutArrangement = z.infer<typeof layoutArrangementSchema>;
+export type LayoutData = z.infer<typeof layoutDataSchema>;
 export type LayoutId = z.infer<typeof layoutIdSchema>;
