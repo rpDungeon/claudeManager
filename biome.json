@@ -23,7 +23,6 @@
 			"!bun.lock",
 			"!**/dist",
 			"!**/.svelte-kit",
-			"!**/.storybook",
 			"!**/storybook-static"
 		]
 	},
@@ -219,6 +218,18 @@
 					"style": {
 						"noDefaultExport": "off",
 						"useExportsLast": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": [
+				"**/.storybook/**"
+			],
+			"linter": {
+				"rules": {
+					"style": {
+						"noDefaultExport": "off"
 					}
 				}
 			}
