@@ -1,4 +1,5 @@
-import { Elysia, t } from "elysia";
+import { Elysia } from "elysia";
+import { z } from "zod";
 
 import { authPlugin } from "./auth.plugin";
 
@@ -12,7 +13,7 @@ export const authRoutes = new Elysia({
 			if (body.password !== Bun.env.MASTER_PASSWORD) {
 				set.status = 401;
 				return {
-					error: "Invalid password",
+					message: "Invalid password",
 				};
 			}
 
@@ -26,8 +27,8 @@ export const authRoutes = new Elysia({
 			};
 		},
 		{
-			body: t.Object({
-				password: t.String(),
+			body: z.object({
+				password: z.string(),
 			}),
 		},
 	)
