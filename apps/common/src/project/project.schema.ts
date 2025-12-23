@@ -1,7 +1,7 @@
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import { layoutSchema } from "../layout/layout.schema";
-import { type ProjectId, projectIdGenerate } from "./project.types";
+import { type ProjectId, projectIdGenerate } from "./project.id";
 
 export const projectSchema = sqliteTable("projects", {
 	createdAt: integer("created_at", {

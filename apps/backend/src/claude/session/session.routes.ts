@@ -1,9 +1,6 @@
+import { claudeSessionIdSchema } from "@claude-manager/common/src/claude/session/claudeSession.id";
 import { claudeSessionSchema } from "@claude-manager/common/src/claude/session/claudeSession.schema";
-import {
-	claudeSessionCreate,
-	claudeSessionIdSchema,
-	claudeSessionPatch,
-} from "@claude-manager/common/src/claude/session/claudeSession.types";
+import { claudeSessionCreate, claudeSessionPatch } from "@claude-manager/common/src/claude/session/claudeSession.types";
 import { eq } from "drizzle-orm";
 import { Elysia } from "elysia";
 import { z } from "zod";

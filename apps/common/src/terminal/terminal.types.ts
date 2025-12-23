@@ -1,8 +1,8 @@
 import type { InferSelectModel } from "drizzle-orm";
 import { z } from "zod";
 
-import { claudeSessionIdSchema } from "../claude/session/claudeSession.types";
-import { projectIdSchema } from "../project/project.types";
+import { claudeSessionIdSchema } from "../claude/session/claudeSession.id";
+import { projectIdSchema } from "../project/project.id";
 import { createPrefixedId } from "../types/id.utils";
 
 const TERMINAL_PREFIX = "terminal";

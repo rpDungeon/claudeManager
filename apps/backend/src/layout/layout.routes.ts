@@ -1,5 +1,6 @@
+import { layoutIdSchema } from "@claude-manager/common/src/layout/layout.id";
 import { layoutSchema } from "@claude-manager/common/src/layout/layout.schema";
-import { layoutCreate, layoutIdSchema, layoutPatch } from "@claude-manager/common/src/layout/layout.types";
+import { layoutCreate, layoutPatch } from "@claude-manager/common/src/layout/layout.types";
 import { eq } from "drizzle-orm";
 import { Elysia } from "elysia";
 import { z } from "zod";

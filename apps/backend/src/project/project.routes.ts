@@ -1,5 +1,6 @@
+import { projectIdSchema } from "@claude-manager/common/src/project/project.id";
 import { projectSchema } from "@claude-manager/common/src/project/project.schema";
-import { projectCreate, projectIdSchema, projectPatch } from "@claude-manager/common/src/project/project.types";
+import { projectCreate, projectPatch } from "@claude-manager/common/src/project/project.types";
 import { eq } from "drizzle-orm";
 import { Elysia } from "elysia";
 import { z } from "zod";

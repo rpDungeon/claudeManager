@@ -1,12 +1,8 @@
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import { projectSchema } from "../../project/project.schema";
-import {
-	type ClaudeSessionExternalId,
-	type ClaudeSessionId,
-	ClaudeSessionStatus,
-	claudeSessionIdGenerate,
-} from "./claudeSession.types";
+import { type ClaudeSessionExternalId, type ClaudeSessionId, claudeSessionIdGenerate } from "./claudeSession.id";
+import { ClaudeSessionStatus } from "./claudeSession.types";
 
 export const claudeSessionSchema = sqliteTable("claude_sessions", {
 	createdAt: integer("created_at", {

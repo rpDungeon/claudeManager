@@ -1,4 +1,4 @@
-import { projectIdSchema } from "@claude-manager/common/src/project/project.types";
+import { projectIdSchema } from "@claude-manager/common/src/project/project.id";
 import { terminalSchema } from "@claude-manager/common/src/terminal/terminal.schema";
 import { terminalCreate, terminalIdSchema, terminalPatch } from "@claude-manager/common/src/terminal/terminal.types";
 import { eq } from "drizzle-orm";

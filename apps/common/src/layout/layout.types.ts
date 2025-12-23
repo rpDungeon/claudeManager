@@ -1,11 +1,8 @@
 import type { InferSelectModel } from "drizzle-orm";
 import { z } from "zod";
 
-import { createPrefixedId } from "../types/id.utils";
 import { layoutContainerSchema } from "./container/container.types";
 import { layoutItemSchema } from "./item/item.types";
-
-const LAYOUT_PREFIX = "layout";
 
 export const layoutArrangementSchema = z.object({
 	containers: z.record(z.string(), layoutContainerSchema),
@@ -35,13 +32,6 @@ export const layoutCreate = z.object({
 	name: z.string().min(1),
 });
 
-export const layoutIdGenerate = createPrefixedId(LAYOUT_PREFIX) as () => LayoutId;
-
-export const layoutIdSchema = z
-	.string()
-	.refine((s) => s.startsWith(`${LAYOUT_PREFIX}:`), "Invalid LayoutId")
-	.brand("LayoutId");
-
 export const layoutPatch = z.object({
 	data: layoutDataSchema.optional(),
 	name: z.string().min(1).optional(),
@@ -50,4 +40,3 @@ export const layoutPatch = z.object({
 export type Layout = InferSelectModel<typeof import("./layout.schema").layoutSchema>;
 export type LayoutArrangement = z.infer<typeof layoutArrangementSchema>;
 export type LayoutData = z.infer<typeof layoutDataSchema>;
-export type LayoutId = z.infer<typeof layoutIdSchema>;

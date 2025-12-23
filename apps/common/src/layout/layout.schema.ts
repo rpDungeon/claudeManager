@@ -1,6 +1,7 @@
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
-import { type LayoutData, type LayoutId, layoutIdGenerate } from "./layout.types";
+import { type LayoutId, layoutIdGenerate } from "./layout.id";
+import type { LayoutData } from "./layout.types";
 
 export const layoutSchema = sqliteTable("layouts", {
 	createdAt: integer("created_at", {
