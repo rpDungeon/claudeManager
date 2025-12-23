@@ -1,3 +1,8 @@
+import {
+	TerminalPtyMessageServerType,
+	terminalPtyMessageClientSchema,
+	terminalPtyMessageServerSchema,
+} from "@claude-manager/common/src/terminal/pty.types";
 import { terminalSchema } from "@claude-manager/common/src/terminal/terminal.schema";
 import { terminalIdSchema } from "@claude-manager/common/src/terminal/terminal.types";
 import { eq } from "drizzle-orm";
@@ -6,43 +11,23 @@ import { z } from "zod";
 
 import { db } from "../../db/db.client";
 import { terminalPtyInstanceKill, terminalPtyInstanceSpawn } from "./pty.service";
-import {
-	TerminalPtyMessageServerType,
-	terminalPtyMessageClientSchema,
-	terminalPtyMessageServerSchema,
-} from "./pty.types";
 
 export const terminalPtyWebsocket = new Elysia({
 	prefix: "/ws",
 }).ws("/terminal/:terminalId", {
+	// Schema definitions for Eden type inference
+	body: terminalPtyMessageClientSchema,
+
 	close(ws) {
-		const terminalId = terminalIdSchema.safeParse(ws.data.params.terminalId);
-		if (terminalId.success) {
-			terminalPtyInstanceKill(terminalId.data);
-		}
+		const { terminalId } = ws.data.params;
+		terminalPtyInstanceKill(terminalId);
 	},
 
 	async message(ws, message) {
-		const terminalId = terminalIdSchema.safeParse(ws.data.params.terminalId);
-		if (!terminalId.success) {
-			ws.send({
-				message: "Invalid terminal ID",
-				type: TerminalPtyMessageServerType.Error,
-			});
-			return;
-		}
-
-		const parsed = terminalPtyMessageClientSchema.safeParse(message);
-		if (!parsed.success) {
-			ws.send({
-				message: "Invalid message format",
-				type: TerminalPtyMessageServerType.Error,
-			});
-			return;
-		}
+		const { terminalId } = ws.data.params;
 
 		const terminal = await db.query.terminal.findFirst({
-			where: eq(terminalSchema.id, terminalId.data),
+			where: eq(terminalSchema.id, terminalId),
 			with: {
 				project: true,
 			},
@@ -56,28 +41,20 @@ export const terminalPtyWebsocket = new Elysia({
 			return;
 		}
 
-		const instance = terminalPtyInstanceSpawn(terminalId.data, terminal.project.path);
+		const instance = terminalPtyInstanceSpawn(terminalId, terminal.project.path);
 
-		if (parsed.data.type === "input") {
-			instance.write(parsed.data.data);
-		} else if (parsed.data.type === "resize") {
-			instance.resize(parsed.data.cols, parsed.data.rows);
+		if (message.type === "input") {
+			instance.write(message.data);
+		} else if (message.type === "resize") {
+			instance.resize(message.cols, message.rows);
 		}
 	},
 
 	async open(ws) {
-		const terminalId = terminalIdSchema.safeParse(ws.data.params.terminalId);
-		if (!terminalId.success) {
-			ws.send({
-				message: "Invalid terminal ID",
-				type: TerminalPtyMessageServerType.Error,
-			});
-			ws.close();
-			return;
-		}
+		const { terminalId } = ws.data.params;
 
 		const terminal = await db.query.terminal.findFirst({
-			where: eq(terminalSchema.id, terminalId.data),
+			where: eq(terminalSchema.id, terminalId),
 			with: {
 				project: true,
 			},
@@ -92,16 +69,14 @@ export const terminalPtyWebsocket = new Elysia({
 			return;
 		}
 
-		const instance = terminalPtyInstanceSpawn(terminalId.data, terminal.project.path);
+		const instance = terminalPtyInstanceSpawn(terminalId, terminal.project.path);
 
 		instance.onData((message) => {
 			ws.send(message);
 		});
 	},
-
 	params: z.object({
-		terminalId: z.string(),
+		terminalId: terminalIdSchema,
 	}),
-
 	response: terminalPtyMessageServerSchema,
 });

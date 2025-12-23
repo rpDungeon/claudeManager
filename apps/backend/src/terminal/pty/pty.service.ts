@@ -1,7 +1,9 @@
+import {
+	type TerminalPtyMessageServer,
+	TerminalPtyMessageServerType,
+} from "@claude-manager/common/src/terminal/pty.types";
 import type { TerminalId } from "@claude-manager/common/src/terminal/terminal.types";
 import { type IPty, spawn } from "bun-pty";
-
-import { type TerminalPtyMessageServer, TerminalPtyMessageServerType } from "./pty.types";
 
 type TerminalPtyInstance = {
 	onData: (callback: (message: TerminalPtyMessageServer) => void) => void;
