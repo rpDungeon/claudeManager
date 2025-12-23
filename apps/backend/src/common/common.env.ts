@@ -1,19 +1,21 @@
 import { authEnvs } from "../auth/auth.env";
 import { dbEnvs } from "../db/db.env";
 
+type CommonEnv = {
+	HOST: string;
+	PORT: string;
+};
+
 declare module "bun" {
-	interface Env {
-		PORT: string;
-		HOST: string;
-	}
+	interface Env extends CommonEnv {}
 }
 
 const commonEnvs = [
-	"PORT",
 	"HOST",
-];
+	"PORT",
+] as const satisfies (keyof CommonEnv)[];
 
-const allEnvs: string[][] = [
+const allEnvs: readonly (readonly string[])[] = [
 	commonEnvs,
 	dbEnvs,
 	authEnvs,
