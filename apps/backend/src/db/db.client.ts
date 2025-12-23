@@ -25,4 +25,4 @@ export const db = drizzle(sqlite, {
 });
 
 export type DbClient = typeof db;
-export type DbTransaction = Parameters<typeof db.transaction>[0];
+export type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];

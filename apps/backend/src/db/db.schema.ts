@@ -6,7 +6,7 @@ import { relations } from "drizzle-orm";
 
 export { claudeSessionSchema, layoutSchema, projectSchema, terminalSchema };
 
-export const dbProjectsRelations = relations(projectSchema, ({ many, one }) => ({
+export const projectRelations = relations(projectSchema, ({ many, one }) => ({
 	claudeSessions: many(claudeSessionSchema),
 	layout: one(layoutSchema, {
 		fields: [
@@ -19,11 +19,11 @@ export const dbProjectsRelations = relations(projectSchema, ({ many, one }) => (
 	terminals: many(terminalSchema),
 }));
 
-export const dbLayoutsRelations = relations(layoutSchema, ({ many }) => ({
+export const layoutRelations = relations(layoutSchema, ({ many }) => ({
 	projects: many(projectSchema),
 }));
 
-export const dbClaudeSessionsRelations = relations(claudeSessionSchema, ({ many, one }) => ({
+export const claudeSessionRelations = relations(claudeSessionSchema, ({ many, one }) => ({
 	project: one(projectSchema, {
 		fields: [
 			claudeSessionSchema.projectId,
@@ -35,7 +35,7 @@ export const dbClaudeSessionsRelations = relations(claudeSessionSchema, ({ many,
 	terminals: many(terminalSchema),
 }));
 
-export const dbTerminalsRelations = relations(terminalSchema, ({ one }) => ({
+export const terminalRelations = relations(terminalSchema, ({ one }) => ({
 	claudeSession: one(claudeSessionSchema, {
 		fields: [
 			terminalSchema.claudeSessionId,
@@ -56,11 +56,11 @@ export const dbTerminalsRelations = relations(terminalSchema, ({ one }) => ({
 
 export const dbSchemas = {
 	claudeSession: claudeSessionSchema,
-	dbClaudeSessionsRelations,
-	dbLayoutsRelations,
-	dbProjectsRelations,
-	dbTerminalsRelations,
+	claudeSessionRelations,
 	layout: layoutSchema,
+	layoutRelations,
 	project: projectSchema,
+	projectRelations,
 	terminal: terminalSchema,
+	terminalRelations,
 } as const;
