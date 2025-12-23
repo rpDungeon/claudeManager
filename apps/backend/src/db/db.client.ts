@@ -3,6 +3,7 @@ import { existsSync, mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { drizzle } from "drizzle-orm/bun-sqlite";
 
+import "../common/common.env";
 import { dbSchemas } from "./db.schema";
 
 const resolvedPath = resolve(Bun.env.DATABASE_PATH);

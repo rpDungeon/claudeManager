@@ -2,6 +2,8 @@ import { bearer as bearerPlugin } from "@elysiajs/bearer";
 import { jwt as jwtPlugin } from "@elysiajs/jwt";
 import { Elysia } from "elysia";
 
+import "../common/common.env";
+
 export const authPlugin = new Elysia({
 	name: "auth",
 })
