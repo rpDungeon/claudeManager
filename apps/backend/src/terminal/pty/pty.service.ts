@@ -5,17 +5,27 @@ import {
 import type { TerminalId } from "@claude-manager/common/src/terminal/terminal.types";
 import { type IPty, spawn } from "bun-pty";
 
+type Unsubscribe = () => void;
+
 type TerminalPtyInstance = {
-	onData: (callback: (message: TerminalPtyMessageServer) => void) => void;
-	process: IPty;
+	kill: () => void;
+	onData: (callback: (message: TerminalPtyMessageServer) => void) => Unsubscribe;
 	resize: (cols: number, rows: number) => void;
 	write: (data: string) => void;
 };
 
-const terminalPtyInstances = new Map<TerminalId, TerminalPtyInstance>();
+type InternalPtyState = {
+	callbacks: Set<(message: TerminalPtyMessageServer) => void>;
+	process: IPty;
+	terminalId: TerminalId;
+};
+
+const ptyInstances = new Map<TerminalId, InternalPtyState>();
 
 export function terminalPtyInstanceGet(terminalId: TerminalId): TerminalPtyInstance | undefined {
-	return terminalPtyInstances.get(terminalId);
+	const state = ptyInstances.get(terminalId);
+	if (!state) return undefined;
+	return terminalPtyInstanceWrap(state);
 }
 
 export function terminalPtyInstanceSpawn(
@@ -24,10 +34,12 @@ export function terminalPtyInstanceSpawn(
 	cols = 80,
 	rows = 24,
 ): TerminalPtyInstance {
-	const existing = terminalPtyInstances.get(terminalId);
+	const existing = ptyInstances.get(terminalId);
 	if (existing) {
-		return existing;
+		return terminalPtyInstanceWrap(existing);
 	}
+
+	const shell = Bun.env.SHELL ?? "/bin/bash";
 
 	const envStrings: Record<string, string> = {};
 	for (const [key, value] of Object.entries(Bun.env)) {
@@ -36,7 +48,7 @@ export function terminalPtyInstanceSpawn(
 		}
 	}
 
-	const ptyProcess = spawn("/bin/bash", [], {
+	const process = spawn(shell, [], {
 		cols,
 		cwd,
 		env: {
@@ -48,59 +60,78 @@ export function terminalPtyInstanceSpawn(
 		rows,
 	});
 
-	const dataCallbacks: ((message: TerminalPtyMessageServer) => void)[] = [];
+	const callbacks = new Set<(message: TerminalPtyMessageServer) => void>();
 
-	ptyProcess.onData((data) => {
+	const state: InternalPtyState = {
+		callbacks,
+		process,
+		terminalId,
+	};
+
+	process.onData((data) => {
 		const message: TerminalPtyMessageServer = {
 			data,
 			type: TerminalPtyMessageServerType.Output,
 		};
-		for (const cb of dataCallbacks) {
+		for (const cb of callbacks) {
 			cb(message);
 		}
 	});
 
-	ptyProcess.onExit(({ exitCode }) => {
+	process.onExit(({ exitCode }) => {
 		const message: TerminalPtyMessageServer = {
 			code: exitCode,
 			type: TerminalPtyMessageServerType.Exit,
 		};
-		for (const cb of dataCallbacks) {
+		for (const cb of callbacks) {
 			cb(message);
 		}
-		terminalPtyInstances.delete(terminalId);
+		callbacks.clear();
+		ptyInstances.delete(terminalId);
 	});
 
-	const instance: TerminalPtyInstance = {
-		onData: (callback) => {
-			dataCallbacks.push(callback);
-		},
-		process: ptyProcess,
-		resize: (newCols, newRows) => {
-			ptyProcess.resize(newCols, newRows);
-		},
-		write: (data) => {
-			ptyProcess.write(data);
-		},
-	};
-
-	terminalPtyInstances.set(terminalId, instance);
-	return instance;
+	ptyInstances.set(terminalId, state);
+	return terminalPtyInstanceWrap(state);
 }
 
 export function terminalPtyInstanceKill(terminalId: TerminalId): boolean {
-	const instance = terminalPtyInstances.get(terminalId);
-	if (!instance) {
+	const state = ptyInstances.get(terminalId);
+	if (!state) {
 		return false;
 	}
 
-	instance.process.kill();
-	terminalPtyInstances.delete(terminalId);
+	state.callbacks.clear();
+	state.process.kill();
+	ptyInstances.delete(terminalId);
 	return true;
 }
 
-export function terminalPtyInstancesGetAll(): Map<TerminalId, TerminalPtyInstance> {
-	return terminalPtyInstances;
+export function terminalPtyInstancesCount(): number {
+	return ptyInstances.size;
+}
+
+export function terminalPtyInstanceIds(): TerminalId[] {
+	return [
+		...ptyInstances.keys(),
+	];
+}
+
+function terminalPtyInstanceWrap(state: InternalPtyState): TerminalPtyInstance {
+	return {
+		kill: () => terminalPtyInstanceKill(state.terminalId),
+		onData: (callback) => {
+			state.callbacks.add(callback);
+			return () => {
+				state.callbacks.delete(callback);
+			};
+		},
+		resize: (cols, rows) => {
+			state.process.resize(cols, rows);
+		},
+		write: (data) => {
+			state.process.write(data);
+		},
+	};
 }
 
 export type { TerminalPtyInstance };

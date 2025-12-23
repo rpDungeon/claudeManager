@@ -10,38 +10,36 @@ import { Elysia } from "elysia";
 import { z } from "zod";
 
 import { db } from "../../db/db.client";
-import { terminalPtyInstanceKill, terminalPtyInstanceSpawn } from "./pty.service";
+import { terminalPtyInstanceGet, terminalPtyInstanceKill, terminalPtyInstanceSpawn } from "./pty.service";
+
+const unsubscribeMap = new Map<string, () => void>();
 
 export const terminalPtyWebsocket = new Elysia({
 	prefix: "/ws",
 }).ws("/terminal/:terminalId", {
-	// Schema definitions for Eden type inference
 	body: terminalPtyMessageClientSchema,
 
 	close(ws) {
 		const { terminalId } = ws.data.params;
+		const unsubscribe = unsubscribeMap.get(ws.id);
+		if (unsubscribe) {
+			unsubscribe();
+			unsubscribeMap.delete(ws.id);
+		}
 		terminalPtyInstanceKill(terminalId);
 	},
 
-	async message(ws, message) {
+	message(ws, message) {
 		const { terminalId } = ws.data.params;
+		const instance = terminalPtyInstanceGet(terminalId);
 
-		const terminal = await db.query.terminal.findFirst({
-			where: eq(terminalSchema.id, terminalId),
-			with: {
-				project: true,
-			},
-		});
-
-		if (!terminal) {
+		if (!instance) {
 			ws.send({
-				message: "Terminal not found",
+				message: "Terminal not running",
 				type: TerminalPtyMessageServerType.Error,
 			});
 			return;
 		}
-
-		const instance = terminalPtyInstanceSpawn(terminalId, terminal.project.path);
 
 		if (message.type === "input") {
 			instance.write(message.data);
@@ -71,9 +69,11 @@ export const terminalPtyWebsocket = new Elysia({
 
 		const instance = terminalPtyInstanceSpawn(terminalId, terminal.project.path);
 
-		instance.onData((message) => {
+		const unsubscribe = instance.onData((message) => {
 			ws.send(message);
 		});
+
+		unsubscribeMap.set(ws.id, unsubscribe);
 	},
 	params: z.object({
 		terminalId: terminalIdSchema,
