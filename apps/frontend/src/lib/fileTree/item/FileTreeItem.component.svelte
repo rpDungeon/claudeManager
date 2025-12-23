@@ -62,7 +62,7 @@ function handleClick() {
 	onclick?.();
 }
 
-function handleToggleClick(event: MouseEvent) {
+function handleToggleClick(event: Event) {
 	event.stopPropagation();
 	onToggle?.();
 }
@@ -123,7 +123,7 @@ function handleDrop(event: DragEvent) {
 		class:-rotate-90={!isExpanded}
 		class:invisible={!showChevron}
 		onclick={handleToggleClick}
-		onkeydown={(e) => e.key === "Enter" && handleToggleClick(e as unknown as MouseEvent)}
+		onkeydown={(e) => e.key === "Enter" && handleToggleClick(e)}
 		role="button"
 		tabindex="-1"
 	>

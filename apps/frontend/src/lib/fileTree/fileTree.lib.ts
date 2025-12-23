@@ -1,5 +1,4 @@
-import type { IndicatorDotColor } from "$lib/common/indicatorDot.lib";
-import { IndicatorDotColor as Colors } from "$lib/common/indicatorDot.lib";
+import { IndicatorDotColor } from "$lib/common/indicatorDot.lib";
 
 export enum FileTreeItemType {
 	File = "file",
@@ -16,12 +15,12 @@ export enum FileStatus {
 }
 
 export const fileStatusColorMap: Record<FileStatus, IndicatorDotColor> = {
-	[FileStatus.Clean]: Colors.Gray,
-	[FileStatus.Conflicted]: Colors.Red,
-	[FileStatus.Ignored]: Colors.Gray,
-	[FileStatus.Modified]: Colors.Amber,
-	[FileStatus.Staged]: Colors.Green,
-	[FileStatus.Untracked]: Colors.Cyan,
+	[FileStatus.Clean]: IndicatorDotColor.Gray,
+	[FileStatus.Conflicted]: IndicatorDotColor.Red,
+	[FileStatus.Ignored]: IndicatorDotColor.Gray,
+	[FileStatus.Modified]: IndicatorDotColor.Amber,
+	[FileStatus.Staged]: IndicatorDotColor.Green,
+	[FileStatus.Untracked]: IndicatorDotColor.Cyan,
 };
 
 export interface FileTreeItemData {

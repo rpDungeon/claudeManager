@@ -32,6 +32,7 @@ const { Story } = defineMeta({
 let activeId = $state("workspace");
 
 function handleSelect(id: string) {
+	activeId = id;
 	console.log("Selected tab:", id);
 }
 </script>
@@ -43,7 +44,7 @@ function handleSelect(id: string) {
 				{ id: "workspace", label: "Workspace" },
 				{ id: "dashboard", label: "Dashboard" },
 			]}
-			bind:activeId
+			{activeId}
 			onSelect={handleSelect}
 		/>
 	</div>
