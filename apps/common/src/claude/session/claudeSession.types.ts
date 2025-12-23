@@ -31,8 +31,9 @@ export const claudeSessionCreate = z.object({
 	projectId: z.string(),
 });
 
-export const claudeSessionUpdate = claudeSessionCreate.extend({
-	id: claudeSessionIdSchema,
+export const claudeSessionPatch = z.object({
+	description: z.string().optional(),
+	name: z.string().optional(),
 	status: z.nativeEnum(ClaudeSessionStatus).optional(),
 });
 

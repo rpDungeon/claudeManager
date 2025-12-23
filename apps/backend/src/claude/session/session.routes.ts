@@ -1,8 +1,8 @@
 import { claudeSessionSchema } from "@claude-manager/common/src/claude/session/claudeSession.schema";
 import {
-	ClaudeSessionStatus,
 	claudeSessionCreate,
 	claudeSessionIdSchema,
+	claudeSessionPatch,
 } from "@claude-manager/common/src/claude/session/claudeSession.types";
 import { eq } from "drizzle-orm";
 import { Elysia } from "elysia";
@@ -38,7 +38,7 @@ export const claudeSessionRoutes = new Elysia({
 			if (!session) {
 				set.status = 404;
 				return {
-					error: "Claude session not found",
+					message: "Claude session not found",
 				};
 			}
 
@@ -52,15 +52,16 @@ export const claudeSessionRoutes = new Elysia({
 	)
 	.post(
 		"/",
-		async ({ body }) => {
+		async ({ body, set }) => {
 			const [session] = await db.insert(claudeSessionSchema).values(body).returning();
+			set.status = 201;
 			return session;
 		},
 		{
 			body: claudeSessionCreate,
 		},
 	)
-	.put(
+	.patch(
 		"/:id",
 		async ({ body, params, set }) => {
 			const [session] = await db
@@ -75,18 +76,14 @@ export const claudeSessionRoutes = new Elysia({
 			if (!session) {
 				set.status = 404;
 				return {
-					error: "Claude session not found",
+					message: "Claude session not found",
 				};
 			}
 
 			return session;
 		},
 		{
-			body: z.object({
-				description: z.string().optional(),
-				name: z.string().optional(),
-				status: z.nativeEnum(ClaudeSessionStatus).optional(),
-			}),
+			body: claudeSessionPatch,
 			params: z.object({
 				id: claudeSessionIdSchema,
 			}),
@@ -100,12 +97,12 @@ export const claudeSessionRoutes = new Elysia({
 			if (!deleted) {
 				set.status = 404;
 				return {
-					error: "Claude session not found",
+					message: "Claude session not found",
 				};
 			}
 
 			return {
-				success: true,
+				deleted: true,
 			};
 		},
 		{
