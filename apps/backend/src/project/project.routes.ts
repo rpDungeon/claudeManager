@@ -1,5 +1,5 @@
 import { projectSchema } from "@claude-manager/common/src/project/project.schema";
-import { projectCreate, projectIdSchema, projectUpdate } from "@claude-manager/common/src/project/project.types";
+import { projectCreate, projectIdSchema, projectPatch } from "@claude-manager/common/src/project/project.types";
 import { eq } from "drizzle-orm";
 import { Elysia } from "elysia";
 import { z } from "zod";
@@ -35,7 +35,7 @@ export const projectRoutes = new Elysia({
 			if (!project) {
 				set.status = 404;
 				return {
-					error: "Project not found",
+					message: "Project not found",
 				};
 			}
 
@@ -49,15 +49,16 @@ export const projectRoutes = new Elysia({
 	)
 	.post(
 		"/",
-		async ({ body }) => {
+		async ({ body, set }) => {
 			const [project] = await db.insert(projectSchema).values(body).returning();
+			set.status = 201;
 			return project;
 		},
 		{
 			body: projectCreate,
 		},
 	)
-	.put(
+	.patch(
 		"/:id",
 		async ({ body, params, set }) => {
 			const [project] = await db
@@ -72,14 +73,14 @@ export const projectRoutes = new Elysia({
 			if (!project) {
 				set.status = 404;
 				return {
-					error: "Project not found",
+					message: "Project not found",
 				};
 			}
 
 			return project;
 		},
 		{
-			body: projectUpdate,
+			body: projectPatch,
 			params: z.object({
 				id: projectIdSchema,
 			}),
@@ -93,12 +94,12 @@ export const projectRoutes = new Elysia({
 			if (!deleted) {
 				set.status = 404;
 				return {
-					error: "Project not found",
+					message: "Project not found",
 				};
 			}
 
 			return {
-				success: true,
+				deleted: true,
 			};
 		},
 		{

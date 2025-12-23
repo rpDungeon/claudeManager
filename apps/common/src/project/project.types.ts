@@ -21,7 +21,7 @@ export const projectCreate = z.object({
 	path: z.string().min(1),
 });
 
-export const projectUpdate = z.object({
+export const projectPatch = z.object({
 	layoutId: layoutIdSchema.nullable().optional(),
 	name: z.string().min(1).optional(),
 	path: z.string().min(1).optional(),
