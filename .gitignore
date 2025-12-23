@@ -46,3 +46,4 @@ data/
 
 # Generated files
 .claude/composed-docs.md
+.playwright-mcp/

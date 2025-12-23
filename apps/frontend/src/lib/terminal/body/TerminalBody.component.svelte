@@ -7,13 +7,10 @@ description: Terminal body container with CRT scanline effect and xterm.js mount
 usage: Display terminal content with visual feedback for active/inactive state
 -->
 <script lang="ts">
-import type { Terminal } from "@xterm/xterm";
-
 interface Props {
 	isActive?: boolean;
 	onclick?: (event: MouseEvent) => void;
 	onMount?: (container: HTMLDivElement) => void;
-	onTerminalReady?: (terminal: Terminal) => void;
 }
 
 let { isActive = false, onclick, onMount: onMountCallback }: Props = $props();
@@ -37,8 +34,8 @@ $effect(() => {
 	class:hover:ring-border-active={!isActive}
 	role="button"
 	tabindex="0"
-	{onclick}
-	onkeydown={(e) => e.key === "Enter" && onclick?.(e as unknown as MouseEvent)}
+	onclick={(e) => onclick?.(e)}
+	onkeydown={(e) => e.key === "Enter" && onclick?.(new MouseEvent("click"))}
 >
 	<div class="scanlines pointer-events-none absolute inset-0 z-10 opacity-50"></div>
 
