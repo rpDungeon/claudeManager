@@ -1,22 +1,10 @@
 import { layoutSchema } from "@claude-manager/common/src/layout/layout.schema";
-import { layoutCreate, layoutIdSchema, layoutUpdate } from "@claude-manager/common/src/layout/layout.types";
+import { layoutCreate, layoutIdSchema, layoutPatch } from "@claude-manager/common/src/layout/layout.types";
 import { eq } from "drizzle-orm";
 import { Elysia } from "elysia";
 import { z } from "zod";
 
 import { db } from "../db/db.client";
-
-const defaultLayoutData = {
-	desktop: {
-		containers: {},
-		rootId: null,
-	},
-	items: {},
-	mobile: {
-		containers: {},
-		rootId: null,
-	},
-};
 
 export const layoutRoutes = new Elysia({
 	prefix: "/layouts",
@@ -39,7 +27,7 @@ export const layoutRoutes = new Elysia({
 			if (!layout) {
 				set.status = 404;
 				return {
-					error: "Layout not found",
+					message: "Layout not found",
 				};
 			}
 
@@ -53,21 +41,16 @@ export const layoutRoutes = new Elysia({
 	)
 	.post(
 		"/",
-		async ({ body }) => {
-			const [layout] = await db
-				.insert(layoutSchema)
-				.values({
-					data: body.data ?? defaultLayoutData,
-					name: body.name,
-				})
-				.returning();
+		async ({ body, set }) => {
+			const [layout] = await db.insert(layoutSchema).values(body).returning();
+			set.status = 201;
 			return layout;
 		},
 		{
 			body: layoutCreate,
 		},
 	)
-	.put(
+	.patch(
 		"/:id",
 		async ({ body, params, set }) => {
 			const [layout] = await db
@@ -82,14 +65,14 @@ export const layoutRoutes = new Elysia({
 			if (!layout) {
 				set.status = 404;
 				return {
-					error: "Layout not found",
+					message: "Layout not found",
 				};
 			}
 
 			return layout;
 		},
 		{
-			body: layoutUpdate,
+			body: layoutPatch,
 			params: z.object({
 				id: layoutIdSchema,
 			}),
@@ -103,12 +86,12 @@ export const layoutRoutes = new Elysia({
 			if (!deleted) {
 				set.status = 404;
 				return {
-					error: "Layout not found",
+					message: "Layout not found",
 				};
 			}
 
 			return {
-				success: true,
+				deleted: true,
 			};
 		},
 		{

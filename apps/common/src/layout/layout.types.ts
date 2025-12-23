@@ -18,8 +18,20 @@ export const layoutDataSchema = z.object({
 	mobile: layoutArrangementSchema,
 });
 
+const layoutDataDefault: LayoutData = {
+	desktop: {
+		containers: {},
+		rootId: null,
+	},
+	items: {},
+	mobile: {
+		containers: {},
+		rootId: null,
+	},
+};
+
 export const layoutCreate = z.object({
-	data: layoutDataSchema.optional(),
+	data: layoutDataSchema.default(layoutDataDefault),
 	name: z.string().min(1),
 });
 
@@ -30,7 +42,7 @@ export const layoutIdSchema = z
 	.refine((s) => s.startsWith(`${LAYOUT_PREFIX}:`), "Invalid LayoutId")
 	.brand("LayoutId");
 
-export const layoutUpdate = z.object({
+export const layoutPatch = z.object({
 	data: layoutDataSchema.optional(),
 	name: z.string().min(1).optional(),
 });
