@@ -1,32 +1,27 @@
 import { authEnvs } from "../auth/auth.env";
 import { dbEnvs } from "../db/db.env";
 
-type CommonEnv = {
-	HOST: string;
-	PORT: string;
-};
-
-declare module "bun" {
-	interface Env extends CommonEnv {}
-}
-
 const commonEnvs = [
 	"HOST",
 	"PORT",
-] as const satisfies (keyof CommonEnv)[];
+] as const;
 
-const allEnvs: readonly (readonly string[])[] = [
-	commonEnvs,
-	dbEnvs,
-	authEnvs,
-];
+const allEnvs = [
+	...commonEnvs,
+	...dbEnvs,
+	...authEnvs,
+] as const;
+
+type AllEnvKeys = (typeof allEnvs)[number];
+
+declare module "bun" {
+	interface Env extends Record<AllEnvKeys, string> {}
+}
 
 export function commonEnvVerify() {
-	for (const envPack of allEnvs) {
-		for (const env of envPack) {
-			if (Bun.env[env] === undefined) {
-				throw new Error(`Environment variable ${env} is not set. Exiting.`);
-			}
+	for (const env of allEnvs) {
+		if (Bun.env[env] === undefined) {
+			throw new Error(`Environment variable ${env} is not set. Exiting.`);
 		}
 	}
 	console.log("[env] All environment variables validated");
