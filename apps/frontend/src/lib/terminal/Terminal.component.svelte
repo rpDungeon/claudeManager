@@ -10,11 +10,19 @@ usage: Pass terminalId to connect to PTY backend, or use without for display-onl
 import type { TerminalId } from "@claude-manager/common/src/terminal/terminal.types";
 import type { Snippet } from "svelte";
 import { onMount, onDestroy } from "svelte";
-import TerminalHeader from "./header/TerminalHeader.component.svelte";
-import { IndicatorDotColor } from "$lib/common/indicatorDot.lib";
 import TerminalBody from "./body/TerminalBody.component.svelte";
-import { terminalService, type TerminalInstance } from "./terminal.service";
+import TerminalHeader from "./header/TerminalHeader.component.svelte";
+import {
+	terminalInstanceCreate,
+	terminalInstanceDestroy,
+	terminalInstanceFit,
+	terminalInstanceFocus,
+	terminalInstanceGet,
+	terminalInstanceMount,
+	terminalWebsocketConnect,
+} from "./terminal.service.svelte";
 import { TerminalConnectionStatus } from "./terminal.lib";
+import { IndicatorDotColor } from "$lib/common/indicatorDot.lib";
 
 interface Props {
 	terminalId?: TerminalId;
@@ -25,9 +33,6 @@ interface Props {
 	onclick?: (event: MouseEvent) => void;
 	onHeaderClick?: (event: MouseEvent) => void;
 	onBodyClick?: (event: MouseEvent) => void;
-	onConnectionStatusChange?: (status: TerminalConnectionStatus) => void;
-	onExit?: (code: number) => void;
-	onError?: (message: string) => void;
 }
 
 let {
@@ -39,14 +44,12 @@ let {
 	onclick,
 	onHeaderClick,
 	onBodyClick,
-	onConnectionStatusChange,
-	onExit,
-	onError,
 }: Props = $props();
 
-let instance: TerminalInstance | undefined = $state();
-let connectionStatus = $state<TerminalConnectionStatus>(TerminalConnectionStatus.Disconnected);
 let resizeObserver: ResizeObserver | undefined;
+
+const instance = $derived(terminalId ? terminalInstanceGet(terminalId) : undefined);
+const connectionStatus = $derived(instance?.connectionStatus ?? TerminalConnectionStatus.Disconnected);
 
 const statusColor = $derived.by(() => {
 	switch (connectionStatus) {
@@ -62,19 +65,19 @@ const statusColor = $derived.by(() => {
 });
 
 function handleBodyMount(container: HTMLDivElement) {
-	if (terminalId && instance) {
-		terminalService.instanceMount(terminalId, container);
+	if (!terminalId) return;
 
-		resizeObserver = new ResizeObserver(() => {
-			if (terminalId) {
-				terminalService.instanceFit(terminalId);
-			}
-		});
-		resizeObserver.observe(container);
+	terminalInstanceMount(terminalId, container);
 
-		if (autoConnect) {
-			terminalService.websocketConnect(terminalId);
+	resizeObserver = new ResizeObserver(() => {
+		if (terminalId) {
+			terminalInstanceFit(terminalId);
 		}
+	});
+	resizeObserver.observe(container);
+
+	if (autoConnect) {
+		terminalWebsocketConnect(terminalId);
 	}
 }
 
@@ -90,30 +93,20 @@ function handleHeaderClick(event: MouseEvent) {
 function handleBodyClick(event: MouseEvent) {
 	handleClick(event);
 	onBodyClick?.(event);
-	instance?.terminal.focus();
+	if (terminalId) {
+		terminalInstanceFocus(terminalId);
+	}
 }
 
 onMount(() => {
 	if (!terminalId) return;
-
-	instance = terminalService.instanceCreate(terminalId, {
-		onConnectionStatusChange: (status) => {
-			connectionStatus = status;
-			onConnectionStatusChange?.(status);
-		},
-		onError: (message) => {
-			onError?.(message);
-		},
-		onExit: (code) => {
-			onExit?.(code);
-		},
-	});
+	terminalInstanceCreate(terminalId);
 });
 
 onDestroy(() => {
 	resizeObserver?.disconnect();
 	if (terminalId) {
-		terminalService.instanceDestroy(terminalId);
+		terminalInstanceDestroy(terminalId);
 	}
 });
 </script>
