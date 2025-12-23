@@ -31,8 +31,10 @@ export const claudeSessionSchema = sqliteTable("claude_sessions", {
 	status: text("status", {
 		enum: [
 			ClaudeSessionStatus.Active,
+			ClaudeSessionStatus.Idle,
 			ClaudeSessionStatus.Paused,
 			ClaudeSessionStatus.Completed,
+			ClaudeSessionStatus.Error,
 		],
 	})
 		.notNull()

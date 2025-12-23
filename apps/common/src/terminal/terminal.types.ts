@@ -1,6 +1,8 @@
 import type { InferSelectModel } from "drizzle-orm";
 import { z } from "zod";
 
+import { claudeSessionIdSchema } from "../claude/session/claudeSession.types";
+import { projectIdSchema } from "../project/project.types";
 import { createPrefixedId } from "../types/id.utils";
 
 const TERMINAL_PREFIX = "terminal";
@@ -20,19 +22,15 @@ export enum TerminalType {
 }
 
 export const terminalCreate = z.object({
-	claudeSessionId: z.string().optional(),
+	claudeSessionId: claudeSessionIdSchema.optional(),
 	layoutConfig: z.string().optional(),
 	name: z.string().min(1),
-	projectId: z.string(),
+	projectId: projectIdSchema,
 	type: z.nativeEnum(TerminalType),
 });
 
-export const terminalUpdate = terminalCreate.extend({
-	id: terminalIdSchema,
-});
-
 export const terminalPatch = z.object({
-	claudeSessionId: z.string().optional(),
+	claudeSessionId: claudeSessionIdSchema.optional(),
 	layoutConfig: z.string().optional(),
 	name: z.string().min(1).optional(),
 });
