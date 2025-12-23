@@ -1,6 +1,6 @@
 import { projectIdSchema } from "@claude-manager/common/src/project/project.types";
 import { terminalSchema } from "@claude-manager/common/src/terminal/terminal.schema";
-import { terminalCreate, terminalIdSchema } from "@claude-manager/common/src/terminal/terminal.types";
+import { terminalCreate, terminalIdSchema, terminalPatch } from "@claude-manager/common/src/terminal/terminal.types";
 import { eq } from "drizzle-orm";
 import { Elysia } from "elysia";
 import { z } from "zod";
@@ -10,32 +10,24 @@ import { db } from "../db/db.client";
 export const terminalRoutes = new Elysia({
 	prefix: "/terminals",
 })
-	.get("/", async () => {
-		const terminals = await db.query.terminal.findMany({
-			orderBy: (table, { desc }) => [
-				desc(table.createdAt),
-			],
-			with: {
-				claudeSession: true,
-				project: true,
-			},
-		});
-		return terminals;
-	})
 	.get(
-		"/by-project/:projectId",
-		async ({ params }) => {
+		"/",
+		async ({ query }) => {
 			const terminals = await db.query.terminal.findMany({
-				where: eq(terminalSchema.projectId, params.projectId),
+				orderBy: (table, { desc }) => [
+					desc(table.createdAt),
+				],
+				where: query.projectId ? eq(terminalSchema.projectId, query.projectId) : undefined,
 				with: {
 					claudeSession: true,
+					project: true,
 				},
 			});
 			return terminals;
 		},
 		{
-			params: z.object({
-				projectId: projectIdSchema,
+			query: z.object({
+				projectId: projectIdSchema.optional(),
 			}),
 		},
 	)
@@ -53,7 +45,7 @@ export const terminalRoutes = new Elysia({
 			if (!terminal) {
 				set.status = 404;
 				return {
-					error: "Terminal not found",
+					message: "Terminal not found",
 				};
 			}
 
@@ -67,15 +59,16 @@ export const terminalRoutes = new Elysia({
 	)
 	.post(
 		"/",
-		async ({ body }) => {
+		async ({ body, set }) => {
 			const [terminal] = await db.insert(terminalSchema).values(body).returning();
+			set.status = 201;
 			return terminal;
 		},
 		{
 			body: terminalCreate,
 		},
 	)
-	.put(
+	.patch(
 		"/:id",
 		async ({ body, params, set }) => {
 			const [terminal] = await db.update(terminalSchema).set(body).where(eq(terminalSchema.id, params.id)).returning();
@@ -83,18 +76,14 @@ export const terminalRoutes = new Elysia({
 			if (!terminal) {
 				set.status = 404;
 				return {
-					error: "Terminal not found",
+					message: "Terminal not found",
 				};
 			}
 
 			return terminal;
 		},
 		{
-			body: z.object({
-				claudeSessionId: z.string().optional(),
-				layoutConfig: z.string().optional(),
-				name: z.string().optional(),
-			}),
+			body: terminalPatch,
 			params: z.object({
 				id: terminalIdSchema,
 			}),
@@ -108,12 +97,12 @@ export const terminalRoutes = new Elysia({
 			if (!deleted) {
 				set.status = 404;
 				return {
-					error: "Terminal not found",
+					message: "Terminal not found",
 				};
 			}
 
 			return {
-				success: true,
+				deleted: true,
 			};
 		},
 		{

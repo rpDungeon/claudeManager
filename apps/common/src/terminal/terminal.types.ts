@@ -31,4 +31,12 @@ export const terminalUpdate = terminalCreate.extend({
 	id: terminalIdSchema,
 });
 
+export const terminalPatch = z.object({
+	claudeSessionId: z.string().optional(),
+	layoutConfig: z.string().optional(),
+	name: z.string().min(1).optional(),
+});
+
+export type TerminalCreate = z.infer<typeof terminalCreate>;
+export type TerminalPatch = z.infer<typeof terminalPatch>;
 export type Terminal = InferSelectModel<typeof import("./terminal.schema").terminalSchema>;
