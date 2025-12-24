@@ -23,7 +23,7 @@ export const projectRoutes = new Elysia({
 	})
 	.get(
 		"/:id",
-		async ({ params, set }) => {
+		async ({ params, status }) => {
 			const project = await db.query.project.findFirst({
 				where: eq(projectSchema.id, params.id),
 				with: {
@@ -34,10 +34,9 @@ export const projectRoutes = new Elysia({
 			});
 
 			if (!project) {
-				set.status = 404;
-				return {
+				return status(404, {
 					message: "Project not found",
-				};
+				});
 			}
 
 			return project;
@@ -50,10 +49,9 @@ export const projectRoutes = new Elysia({
 	)
 	.post(
 		"/",
-		async ({ body, set }) => {
+		async ({ body, status }) => {
 			const [project] = await db.insert(projectSchema).values(body).returning();
-			set.status = 201;
-			return project;
+			return status(201, project);
 		},
 		{
 			body: projectCreate,
@@ -61,7 +59,7 @@ export const projectRoutes = new Elysia({
 	)
 	.patch(
 		"/:id",
-		async ({ body, params, set }) => {
+		async ({ body, params, status }) => {
 			const [project] = await db
 				.update(projectSchema)
 				.set({
@@ -72,10 +70,9 @@ export const projectRoutes = new Elysia({
 				.returning();
 
 			if (!project) {
-				set.status = 404;
-				return {
+				return status(404, {
 					message: "Project not found",
-				};
+				});
 			}
 
 			return project;
@@ -89,14 +86,13 @@ export const projectRoutes = new Elysia({
 	)
 	.delete(
 		"/:id",
-		async ({ params, set }) => {
+		async ({ params, status }) => {
 			const [deleted] = await db.delete(projectSchema).where(eq(projectSchema.id, params.id)).returning();
 
 			if (!deleted) {
-				set.status = 404;
-				return {
+				return status(404, {
 					message: "Project not found",
-				};
+				});
 			}
 
 			return {

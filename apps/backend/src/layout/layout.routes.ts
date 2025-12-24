@@ -20,16 +20,15 @@ export const layoutRoutes = new Elysia({
 	})
 	.get(
 		"/:id",
-		async ({ params, set }) => {
+		async ({ params, status }) => {
 			const layout = await db.query.layout.findFirst({
 				where: eq(layoutSchema.id, params.id),
 			});
 
 			if (!layout) {
-				set.status = 404;
-				return {
+				return status(404, {
 					message: "Layout not found",
-				};
+				});
 			}
 
 			return layout;
@@ -42,10 +41,9 @@ export const layoutRoutes = new Elysia({
 	)
 	.post(
 		"/",
-		async ({ body, set }) => {
+		async ({ body, status }) => {
 			const [layout] = await db.insert(layoutSchema).values(body).returning();
-			set.status = 201;
-			return layout;
+			return status(201, layout);
 		},
 		{
 			body: layoutCreate,
@@ -53,7 +51,7 @@ export const layoutRoutes = new Elysia({
 	)
 	.patch(
 		"/:id",
-		async ({ body, params, set }) => {
+		async ({ body, params, status }) => {
 			const [layout] = await db
 				.update(layoutSchema)
 				.set({
@@ -64,10 +62,9 @@ export const layoutRoutes = new Elysia({
 				.returning();
 
 			if (!layout) {
-				set.status = 404;
-				return {
+				return status(404, {
 					message: "Layout not found",
-				};
+				});
 			}
 
 			return layout;
@@ -81,14 +78,13 @@ export const layoutRoutes = new Elysia({
 	)
 	.delete(
 		"/:id",
-		async ({ params, set }) => {
+		async ({ params, status }) => {
 			const [deleted] = await db.delete(layoutSchema).where(eq(layoutSchema.id, params.id)).returning();
 
 			if (!deleted) {
-				set.status = 404;
-				return {
+				return status(404, {
 					message: "Layout not found",
-				};
+				});
 			}
 
 			return {

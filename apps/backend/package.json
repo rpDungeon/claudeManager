@@ -11,6 +11,7 @@
 		"zod": "^4.2.1"
 	},
 	"devDependencies": {
+		"@elysiajs/eden": "^1.4.6",
 		"@types/better-sqlite3": "^7.6.13",
 		"better-sqlite3": "^12.5.0",
 		"bun-types": "latest",
@@ -31,7 +32,7 @@
 		"db:studio": "drizzle-kit studio",
 		"dev": "bun run --env-file=../../.env --watch src/index.ts",
 		"start": "bun run --env-file=../../.env dist/index.js",
-		"test": "bun test"
+		"test": "bun test --env-file=../../.env --preload ./src/test/setup.ts"
 	},
 	"type": "module",
 	"version": "0.1.0"

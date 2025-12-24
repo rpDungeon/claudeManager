@@ -1,5 +1,6 @@
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
+import type { LayoutId } from "../layout/layout.id";
 import { layoutSchema } from "../layout/layout.schema";
 import { type ProjectId, projectIdGenerate } from "./project.id";
 
@@ -10,9 +11,11 @@ export const projectSchema = sqliteTable("projects", {
 		.notNull()
 		.$defaultFn(() => new Date()),
 	id: text("id").primaryKey().$defaultFn(projectIdGenerate).$type<ProjectId>(),
-	layoutId: text("layout_id").references(() => layoutSchema.id, {
-		onDelete: "set null",
-	}),
+	layoutId: text("layout_id")
+		.references(() => layoutSchema.id, {
+			onDelete: "set null",
+		})
+		.$type<LayoutId | null>(),
 	name: text("name").notNull(),
 	path: text("path").notNull(),
 	updatedAt: integer("updated_at", {

@@ -33,7 +33,7 @@ export const terminalRoutes = new Elysia({
 	)
 	.get(
 		"/:id",
-		async ({ params, set }) => {
+		async ({ params, status }) => {
 			const terminal = await db.query.terminal.findFirst({
 				where: eq(terminalSchema.id, params.id),
 				with: {
@@ -43,10 +43,9 @@ export const terminalRoutes = new Elysia({
 			});
 
 			if (!terminal) {
-				set.status = 404;
-				return {
+				return status(404, {
 					message: "Terminal not found",
-				};
+				});
 			}
 
 			return terminal;
@@ -59,10 +58,9 @@ export const terminalRoutes = new Elysia({
 	)
 	.post(
 		"/",
-		async ({ body, set }) => {
+		async ({ body, status }) => {
 			const [terminal] = await db.insert(terminalSchema).values(body).returning();
-			set.status = 201;
-			return terminal;
+			return status(201, terminal);
 		},
 		{
 			body: terminalCreate,
@@ -70,14 +68,13 @@ export const terminalRoutes = new Elysia({
 	)
 	.patch(
 		"/:id",
-		async ({ body, params, set }) => {
+		async ({ body, params, status }) => {
 			const [terminal] = await db.update(terminalSchema).set(body).where(eq(terminalSchema.id, params.id)).returning();
 
 			if (!terminal) {
-				set.status = 404;
-				return {
+				return status(404, {
 					message: "Terminal not found",
-				};
+				});
 			}
 
 			return terminal;
@@ -91,14 +88,13 @@ export const terminalRoutes = new Elysia({
 	)
 	.delete(
 		"/:id",
-		async ({ params, set }) => {
+		async ({ params, status }) => {
 			const [deleted] = await db.delete(terminalSchema).where(eq(terminalSchema.id, params.id)).returning();
 
 			if (!deleted) {
-				set.status = 404;
-				return {
+				return status(404, {
 					message: "Terminal not found",
-				};
+				});
 			}
 
 			return {

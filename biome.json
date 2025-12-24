@@ -82,6 +82,7 @@
 				"noBannedTypes": "off",
 				"noForEach": "error",
 				"noImplicitCoercions": "error",
+				"noStaticOnlyClass": "off",
 				"useSimplifiedLogicExpression": "error",
 				"useWhile": "error"
 			},

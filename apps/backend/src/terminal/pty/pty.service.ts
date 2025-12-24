@@ -20,118 +20,115 @@ type InternalPtyState = {
 	terminalId: TerminalId;
 };
 
-const ptyInstances = new Map<TerminalId, InternalPtyState>();
+class PtyService {
+	private instances = new Map<TerminalId, InternalPtyState>();
 
-export function terminalPtyInstanceGet(terminalId: TerminalId): TerminalPtyInstance | undefined {
-	const state = ptyInstances.get(terminalId);
-	if (!state) return undefined;
-	return terminalPtyInstanceWrap(state);
-}
-
-export function terminalPtyInstanceSpawn(
-	terminalId: TerminalId,
-	cwd: string,
-	cols = 80,
-	rows = 24,
-): TerminalPtyInstance {
-	const existing = ptyInstances.get(terminalId);
-	if (existing) {
-		return terminalPtyInstanceWrap(existing);
-	}
-
-	const shell = Bun.env.SHELL ?? "/bin/bash";
-
-	const envStrings: Record<string, string> = {};
-	for (const [key, value] of Object.entries(Bun.env)) {
-		if (typeof value === "string") {
-			envStrings[key] = value;
-		}
-	}
-
-	const process = spawn(shell, [], {
-		cols,
-		cwd,
-		env: {
-			...envStrings,
-			COLORTERM: "truecolor",
-			TERM: "xterm-256color",
-		},
-		name: "xterm-256color",
-		rows,
-	});
-
-	const callbacks = new Set<(message: TerminalPtyMessageServer) => void>();
-
-	const state: InternalPtyState = {
-		callbacks,
-		process,
-		terminalId,
-	};
-
-	process.onData((data) => {
-		const message: TerminalPtyMessageServer = {
-			data,
-			type: TerminalPtyMessageServerType.Output,
+	private instanceWrap(state: InternalPtyState): TerminalPtyInstance {
+		return {
+			kill: () => this.instanceKill(state.terminalId),
+			onData: (callback) => {
+				state.callbacks.add(callback);
+				return () => {
+					state.callbacks.delete(callback);
+				};
+			},
+			resize: (cols, rows) => {
+				state.process.resize(cols, rows);
+			},
+			write: (data) => {
+				state.process.write(data);
+			},
 		};
-		for (const cb of callbacks) {
-			cb(message);
-		}
-	});
-
-	process.onExit(({ exitCode }) => {
-		const message: TerminalPtyMessageServer = {
-			code: exitCode,
-			type: TerminalPtyMessageServerType.Exit,
-		};
-		for (const cb of callbacks) {
-			cb(message);
-		}
-		callbacks.clear();
-		ptyInstances.delete(terminalId);
-	});
-
-	ptyInstances.set(terminalId, state);
-	return terminalPtyInstanceWrap(state);
-}
-
-export function terminalPtyInstanceKill(terminalId: TerminalId): boolean {
-	const state = ptyInstances.get(terminalId);
-	if (!state) {
-		return false;
 	}
 
-	state.callbacks.clear();
-	state.process.kill();
-	ptyInstances.delete(terminalId);
-	return true;
-}
+	instanceGet(terminalId: TerminalId): TerminalPtyInstance | undefined {
+		const state = this.instances.get(terminalId);
+		if (!state) return undefined;
+		return this.instanceWrap(state);
+	}
 
-export function terminalPtyInstancesCount(): number {
-	return ptyInstances.size;
-}
+	instanceSpawn(terminalId: TerminalId, cwd: string, cols = 80, rows = 24): TerminalPtyInstance {
+		const existing = this.instances.get(terminalId);
+		if (existing) {
+			return this.instanceWrap(existing);
+		}
 
-export function terminalPtyInstanceIds(): TerminalId[] {
-	return [
-		...ptyInstances.keys(),
-	];
-}
+		const shell = Bun.env.SHELL ?? "/bin/bash";
 
-function terminalPtyInstanceWrap(state: InternalPtyState): TerminalPtyInstance {
-	return {
-		kill: () => terminalPtyInstanceKill(state.terminalId),
-		onData: (callback) => {
-			state.callbacks.add(callback);
-			return () => {
-				state.callbacks.delete(callback);
+		const envStrings: Record<string, string> = {};
+		for (const [key, value] of Object.entries(Bun.env)) {
+			if (typeof value === "string") {
+				envStrings[key] = value;
+			}
+		}
+
+		const process = spawn(shell, [], {
+			cols,
+			cwd,
+			env: {
+				...envStrings,
+				COLORTERM: "truecolor",
+				TERM: "xterm-256color",
+			},
+			name: "xterm-256color",
+			rows,
+		});
+
+		const callbacks = new Set<(message: TerminalPtyMessageServer) => void>();
+
+		const state: InternalPtyState = {
+			callbacks,
+			process,
+			terminalId,
+		};
+
+		process.onData((data) => {
+			const message: TerminalPtyMessageServer = {
+				data,
+				type: TerminalPtyMessageServerType.Output,
 			};
-		},
-		resize: (cols, rows) => {
-			state.process.resize(cols, rows);
-		},
-		write: (data) => {
-			state.process.write(data);
-		},
-	};
+			for (const cb of callbacks) {
+				cb(message);
+			}
+		});
+
+		process.onExit(({ exitCode }) => {
+			const message: TerminalPtyMessageServer = {
+				code: exitCode,
+				type: TerminalPtyMessageServerType.Exit,
+			};
+			for (const cb of callbacks) {
+				cb(message);
+			}
+			callbacks.clear();
+			this.instances.delete(terminalId);
+		});
+
+		this.instances.set(terminalId, state);
+		return this.instanceWrap(state);
+	}
+
+	instanceKill(terminalId: TerminalId): boolean {
+		const state = this.instances.get(terminalId);
+		if (!state) {
+			return false;
+		}
+
+		state.callbacks.clear();
+		state.process.kill();
+		this.instances.delete(terminalId);
+		return true;
+	}
+
+	instancesCount(): number {
+		return this.instances.size;
+	}
+
+	instanceIds(): TerminalId[] {
+		return [
+			...this.instances.keys(),
+		];
+	}
 }
 
-export type { TerminalPtyInstance };
+export const terminalPtyService = new PtyService();

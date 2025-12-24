@@ -10,7 +10,7 @@ import { Elysia } from "elysia";
 import { z } from "zod";
 
 import { db } from "../../db/db.client";
-import { terminalPtyInstanceGet, terminalPtyInstanceKill, terminalPtyInstanceSpawn } from "./pty.service";
+import { terminalPtyService } from "./pty.service";
 
 const unsubscribeMap = new Map<string, () => void>();
 
@@ -26,12 +26,12 @@ export const terminalPtyWebsocket = new Elysia({
 			unsubscribe();
 			unsubscribeMap.delete(ws.id);
 		}
-		terminalPtyInstanceKill(terminalId);
+		terminalPtyService.instanceKill(terminalId);
 	},
 
 	message(ws, message) {
 		const { terminalId } = ws.data.params;
-		const instance = terminalPtyInstanceGet(terminalId);
+		const instance = terminalPtyService.instanceGet(terminalId);
 
 		if (!instance) {
 			ws.send({
@@ -67,7 +67,7 @@ export const terminalPtyWebsocket = new Elysia({
 			return;
 		}
 
-		const instance = terminalPtyInstanceSpawn(terminalId, terminal.project.path);
+		const instance = terminalPtyService.instanceSpawn(terminalId, terminal.project.path);
 
 		const unsubscribe = instance.onData((message) => {
 			ws.send(message);

@@ -6,13 +6,18 @@ import { drizzle } from "drizzle-orm/bun-sqlite";
 import "../common/common.env";
 import { dbSchemas } from "./db.schema";
 
-const resolvedPath = resolve(Bun.env.DATABASE_PATH);
-const dataDir = dirname(resolvedPath);
+const dbPath = Bun.env.DATABASE_PATH;
 
-if (!existsSync(dataDir)) {
-	mkdirSync(dataDir, {
-		recursive: true,
-	});
+const isInMemory = dbPath === ":memory:";
+const resolvedPath = isInMemory ? ":memory:" : resolve(dbPath);
+
+if (!isInMemory) {
+	const dataDir = dirname(resolvedPath);
+	if (!existsSync(dataDir)) {
+		mkdirSync(dataDir, {
+			recursive: true,
+		});
+	}
 }
 
 const sqlite = new Database(resolvedPath, {

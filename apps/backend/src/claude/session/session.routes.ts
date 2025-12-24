@@ -23,7 +23,7 @@ export const claudeSessionRoutes = new Elysia({
 	})
 	.get(
 		"/:id",
-		async ({ params, set }) => {
+		async ({ params, status }) => {
 			const session = await db.query.claudeSession.findFirst({
 				where: eq(claudeSessionSchema.id, params.id),
 				with: {
@@ -33,10 +33,9 @@ export const claudeSessionRoutes = new Elysia({
 			});
 
 			if (!session) {
-				set.status = 404;
-				return {
+				return status(404, {
 					message: "Claude session not found",
-				};
+				});
 			}
 
 			return session;
@@ -49,10 +48,9 @@ export const claudeSessionRoutes = new Elysia({
 	)
 	.post(
 		"/",
-		async ({ body, set }) => {
+		async ({ body, status }) => {
 			const [session] = await db.insert(claudeSessionSchema).values(body).returning();
-			set.status = 201;
-			return session;
+			return status(201, session);
 		},
 		{
 			body: claudeSessionCreate,
@@ -60,7 +58,7 @@ export const claudeSessionRoutes = new Elysia({
 	)
 	.patch(
 		"/:id",
-		async ({ body, params, set }) => {
+		async ({ body, params, status }) => {
 			const [session] = await db
 				.update(claudeSessionSchema)
 				.set({
@@ -71,10 +69,9 @@ export const claudeSessionRoutes = new Elysia({
 				.returning();
 
 			if (!session) {
-				set.status = 404;
-				return {
+				return status(404, {
 					message: "Claude session not found",
-				};
+				});
 			}
 
 			return session;
@@ -88,14 +85,13 @@ export const claudeSessionRoutes = new Elysia({
 	)
 	.delete(
 		"/:id",
-		async ({ params, set }) => {
+		async ({ params, status }) => {
 			const [deleted] = await db.delete(claudeSessionSchema).where(eq(claudeSessionSchema.id, params.id)).returning();
 
 			if (!deleted) {
-				set.status = 404;
-				return {
+				return status(404, {
 					message: "Claude session not found",
-				};
+				});
 			}
 
 			return {

@@ -1,5 +1,6 @@
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
+import type { ProjectId } from "../../project/project.id";
 import { projectSchema } from "../../project/project.schema";
 import { type ClaudeSessionExternalId, type ClaudeSessionId, claudeSessionIdGenerate } from "./claudeSession.id";
 import { ClaudeSessionStatus } from "./claudeSession.types";
@@ -23,7 +24,8 @@ export const claudeSessionSchema = sqliteTable("claude_sessions", {
 		.notNull()
 		.references(() => projectSchema.id, {
 			onDelete: "cascade",
-		}),
+		})
+		.$type<ProjectId>(),
 	status: text("status", {
 		enum: [
 			ClaudeSessionStatus.Active,

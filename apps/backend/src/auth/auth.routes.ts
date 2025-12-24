@@ -9,12 +9,11 @@ export const authRoutes = new Elysia({
 	.use(authPlugin)
 	.post(
 		"/login",
-		async ({ body, jwt, set }) => {
+		async ({ body, jwt, status }) => {
 			if (body.password !== Bun.env.MASTER_PASSWORD) {
-				set.status = 401;
-				return {
+				return status(401, {
 					message: "Invalid password",
-				};
+				});
 			}
 
 			const token = await jwt.sign({
@@ -32,23 +31,21 @@ export const authRoutes = new Elysia({
 			}),
 		},
 	)
-	.get("/verify", async ({ headers, jwt, set }) => {
+	.get("/verify", async ({ headers, jwt, status }) => {
 		const authHeader = headers.authorization;
 		if (!authHeader?.startsWith("Bearer ")) {
-			set.status = 401;
-			return {
+			return status(401, {
 				authenticated: false,
-			};
+			});
 		}
 
 		const token = authHeader.slice(7);
 		const payload = await jwt.verify(token);
 
 		if (!payload) {
-			set.status = 401;
-			return {
+			return status(401, {
 				authenticated: false,
-			};
+			});
 		}
 
 		return {
