@@ -1,7 +1,7 @@
 import type { Api } from "@claude-manager/backend/api";
 import { treaty } from "@elysiajs/eden";
 
-const baseUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
+const baseUrl = "http://localhost:3000";
 
 export const api = treaty<Api>(baseUrl, {
 	headers: (): Record<string, string> => {
