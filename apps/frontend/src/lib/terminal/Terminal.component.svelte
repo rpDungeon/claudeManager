@@ -1,3 +1,4 @@
+<!-- Review pending by Autumnlight -->
 <!--
 @component
 name: Terminal
@@ -28,22 +29,34 @@ interface Props {
 	terminalId?: TerminalId;
 	title?: string | Snippet;
 	info?: string | Snippet;
+	itemId?: string;
 	isActive?: boolean;
 	autoConnect?: boolean;
+	draggable?: boolean;
+	isDropTarget?: boolean;
 	onclick?: (event: MouseEvent) => void;
 	onHeaderClick?: (event: MouseEvent) => void;
 	onBodyClick?: (event: MouseEvent) => void;
+	onDragStart?: (itemId: string, event: DragEvent) => void;
+	onDragEnd?: (itemId: string, event: DragEvent) => void;
+	onDrop?: (droppedItemId: string, targetItemId: string, event: DragEvent) => void;
 }
 
 let {
 	terminalId,
 	title = "shell",
 	info,
+	itemId,
 	isActive = false,
 	autoConnect = true,
+	draggable = false,
+	isDropTarget = false,
 	onclick,
 	onHeaderClick,
 	onBodyClick,
+	onDragStart,
+	onDragEnd,
+	onDrop,
 }: Props = $props();
 
 let resizeObserver: ResizeObserver | undefined;
@@ -115,9 +128,15 @@ onDestroy(() => {
 	<TerminalHeader
 		{title}
 		{info}
+		{itemId}
 		{isActive}
 		{statusColor}
+		{draggable}
+		{isDropTarget}
 		onclick={handleHeaderClick}
+		{onDragStart}
+		{onDragEnd}
+		{onDrop}
 	/>
 	<TerminalBody
 		{isActive}

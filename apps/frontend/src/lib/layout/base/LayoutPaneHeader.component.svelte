@@ -1,53 +1,52 @@
 <!-- Review pending by Autumnlight -->
 <!--
 @component
-name: TerminalHeader
+name: LayoutPaneHeader
 type: stupid
 styleguide: 1.0.0
-description: Draggable terminal pane header with status indicator, title, and info
-usage: Display command name and status at the top of a terminal pane
+description: Draggable header bar for layout panes with native HTML5 drag and drop
+usage: Use as the header for any layout pane that needs drag/drop reordering
 -->
 <script lang="ts">
 import type { Snippet } from "svelte";
-import IndicatorDot from "$lib/common/IndicatorDot.component.svelte";
-import { IndicatorDotColor } from "$lib/common/indicatorDot.lib";
 
 interface Props {
-	title?: string | Snippet;
-	info?: string | Snippet;
-	itemId?: string;
-	isActive?: boolean;
-	statusColor?: IndicatorDotColor;
+	label?: string | Snippet;
+	itemId: string;
 	draggable?: boolean;
+	isActive?: boolean;
 	isDropTarget?: boolean;
 	onclick?: (event: MouseEvent) => void;
 	onDragStart?: (itemId: string, event: DragEvent) => void;
 	onDragEnd?: (itemId: string, event: DragEvent) => void;
 	onDrop?: (droppedItemId: string, targetItemId: string, event: DragEvent) => void;
+	onDragOver?: (itemId: string, event: DragEvent) => void;
+	onDragLeave?: (itemId: string, event: DragEvent) => void;
+	trailing?: Snippet;
 }
 
 let {
-	title = "shell",
-	info,
+	label = "Untitled",
 	itemId,
+	draggable = true,
 	isActive = false,
-	statusColor = IndicatorDotColor.Green,
-	draggable = false,
 	isDropTarget = false,
 	onclick,
 	onDragStart,
 	onDragEnd,
 	onDrop,
+	onDragOver,
+	onDragLeave,
+	trailing,
 }: Props = $props();
 
 let isDragging = $state(false);
 let isDraggedOver = $state(false);
 
-const titleIsSnippet = $derived(typeof title === "function");
-const infoIsSnippet = $derived(typeof info === "function");
+const labelIsSnippet = $derived(typeof label === "function");
 
 function handleDragStart(event: DragEvent) {
-	if (!(draggable && itemId)) return;
+	if (!draggable) return;
 
 	isDragging = true;
 	event.dataTransfer?.setData("text/plain", itemId);
@@ -62,9 +61,7 @@ function handleDragStart(event: DragEvent) {
 
 function handleDragEnd(event: DragEvent) {
 	isDragging = false;
-	if (itemId) {
-		onDragEnd?.(itemId, event);
-	}
+	onDragEnd?.(itemId, event);
 }
 
 function handleDragOver(event: DragEvent) {
@@ -77,14 +74,16 @@ function handleDragOver(event: DragEvent) {
 	}
 
 	isDraggedOver = true;
+	onDragOver?.(itemId, event);
 }
 
-function handleDragLeave(_event: DragEvent) {
+function handleDragLeave(event: DragEvent) {
 	isDraggedOver = false;
+	onDragLeave?.(itemId, event);
 }
 
 function handleDrop(event: DragEvent) {
-	if (!(isDropTarget && itemId)) return;
+	if (!isDropTarget) return;
 
 	event.preventDefault();
 	isDraggedOver = false;
@@ -98,7 +97,8 @@ function handleDrop(event: DragEvent) {
 
 <button
 	type="button"
-	class="flex h-5 w-full items-center gap-1.5 border-b border-border-default bg-bg-surface px-2 text-[10px] hover:bg-bg-elevated transition-colors duration-100"
+	class="flex h-5 w-full items-center gap-1.5 border-b border-border-default bg-bg-surface px-2 text-[10px] transition-colors duration-100 hover:bg-bg-elevated"
+	class:bg-bg-elevated={isActive}
 	class:opacity-50={isDragging}
 	class:ring-1={isDraggedOver}
 	class:ring-terminal-green={isDraggedOver}
@@ -113,21 +113,17 @@ function handleDrop(event: DragEvent) {
 	ondragleave={handleDragLeave}
 	ondrop={handleDrop}
 >
-	<IndicatorDot color={statusColor} glow pulse={isActive} />
-	<span class="font-normal text-text-tertiary">
-		{#if titleIsSnippet}
-			{@render (title as Snippet)()}
+	<span class="truncate text-text-tertiary" class:text-text-primary={isActive}>
+		{#if labelIsSnippet}
+			{@render (label as Snippet)()}
 		{:else}
-			{title}
+			{label}
 		{/if}
 	</span>
-	{#if info}
-		<span class="ml-auto text-[9px] text-text-tertiary">
-			{#if infoIsSnippet}
-				{@render (info as Snippet)()}
-			{:else}
-				{info}
-			{/if}
+
+	{#if trailing}
+		<span class="ml-auto">
+			{@render trailing()}
 		</span>
 	{/if}
 </button>
