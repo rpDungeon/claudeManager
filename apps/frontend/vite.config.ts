@@ -10,6 +10,9 @@ export default defineConfig({
 		sveltekit(),
 		devtoolsJson(),
 	],
+	server: {
+		port: 5176,
+	},
 	test: {
 		expect: {
 			requireAssertions: true,
