@@ -36,7 +36,7 @@
 				const form = new FormData();
 				form.append('audio', blob);
 
-				const res = await fetch('/transcribe', { method: 'POST', body: form });
+				const res = await fetch('/transcribe', { body: form, method: 'POST' });
 				const reader = res.body.getReader();
 				const decoder = new TextDecoder();
 
