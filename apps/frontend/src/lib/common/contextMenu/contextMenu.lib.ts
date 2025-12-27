@@ -4,9 +4,9 @@ export enum ContextMenuItemType {
 	Toggle = "toggle",
 }
 
-export interface ContextMenuActionItem {
+export interface ContextMenuActionItem<TId extends string = string> {
 	type: ContextMenuItemType.Action;
-	id: string;
+	id: TId;
 	label: string;
 	shortcut?: string;
 	disabled?: boolean;
@@ -17,15 +17,18 @@ export interface ContextMenuDividerItem {
 	type: ContextMenuItemType.Divider;
 }
 
-export interface ContextMenuToggleItem {
+export interface ContextMenuToggleItem<TId extends string = string> {
 	type: ContextMenuItemType.Toggle;
-	id: string;
+	id: TId;
 	label: string;
 	checked: boolean;
 	disabled?: boolean;
 }
 
-export type ContextMenuItem = ContextMenuActionItem | ContextMenuDividerItem | ContextMenuToggleItem;
+export type ContextMenuItem<TId extends string = string> =
+	| ContextMenuActionItem<TId>
+	| ContextMenuDividerItem
+	| ContextMenuToggleItem<TId>;
 
 export interface ContextMenuPosition {
 	x: number;

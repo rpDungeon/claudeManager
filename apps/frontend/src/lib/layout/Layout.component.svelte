@@ -36,6 +36,7 @@ interface Props {
 	onItemReorder?: (containerId: string, fromItemId: string, toItemId: string) => void;
 	onItemDrop?: (droppedItemId: string, targetContainerId: string) => void;
 	onSplitDrop?: (droppedItemId: string, targetContainerId: string, position: LayoutDropZonePosition) => void;
+	onAddItem?: (containerId: string) => void;
 }
 
 let {
@@ -48,6 +49,7 @@ let {
 	onItemReorder,
 	onItemDrop,
 	onSplitDrop,
+	onAddItem,
 }: Props = $props();
 
 const arrangement = $derived(mode === "desktop" ? data.desktop : data.mobile);
@@ -97,6 +99,7 @@ function handleItemClick(itemId: string) {
 			{onItemReorder}
 			{onItemDrop}
 			{onSplitDrop}
+			{onAddItem}
 		/>
 	{:else if root?.type === "item"}
 		<LayoutItem_

@@ -30,6 +30,7 @@ interface Props {
 	ondragover?: (event: DragEvent) => void;
 	ondragleave?: (event: DragEvent) => void;
 	ondrop?: (event: DragEvent) => void;
+	oncontextmenu?: (event: MouseEvent) => void;
 }
 
 let {
@@ -37,12 +38,12 @@ let {
 	type,
 	status,
 	meta,
-	depth = 0,
+	depth: _depth = 0,
 	isExpanded = false,
 	isSelected = false,
 	isLoading = false,
 	isActive = false,
-	hasChildren = false,
+	hasChildren: _hasChildren = false,
 	draggable = false,
 	onclick,
 	onToggle,
@@ -50,12 +51,13 @@ let {
 	ondragover,
 	ondragleave,
 	ondrop,
+	oncontextmenu,
 }: Props = $props();
 
 let isDragOver = $state(false);
 
 const isFolder = $derived(type === FileTreeItemType.Folder);
-const showChevron = $derived(isFolder && (hasChildren || isLoading));
+const showChevron = $derived(isFolder);
 const statusColor = $derived(status ? fileStatusColorMap[status] : IndicatorDotColor.Gray);
 
 function handleClick() {
@@ -103,6 +105,11 @@ function handleDrop(event: DragEvent) {
 	isDragOver = false;
 	ondrop?.(event);
 }
+
+function handleContextMenu(event: MouseEvent) {
+	event.preventDefault();
+	oncontextmenu?.(event);
+}
 </script>
 
 <button
@@ -116,7 +123,8 @@ function handleDrop(event: DragEvent) {
 	ondragover={handleDragOver}
 	ondragleave={handleDragLeave}
 	ondrop={handleDrop}
-	style:padding-left="{depth * 12 + 4}px"
+	oncontextmenu={handleContextMenu}
+	style:padding-left="{0}px"
 >
 	<span
 		class="flex size-3 shrink-0 items-center justify-center text-text-tertiary transition-transform duration-150"

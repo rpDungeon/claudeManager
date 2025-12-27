@@ -56,13 +56,73 @@ $effect(() => {
 
 	.xterm-container :global(.xterm) {
 		height: 100%;
+		position: relative;
 	}
 
 	.xterm-container :global(.xterm-viewport) {
+		position: absolute !important;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
 		overflow-y: auto;
 	}
 
 	.xterm-container :global(.xterm-screen) {
-		height: 100%;
+		position: absolute !important;
+		top: 0;
+		left: 0;
+	}
+
+	.xterm-container :global(.xterm-helpers) {
+		position: absolute !important;
+		top: 0;
+		left: 0;
+		z-index: -5;
+	}
+
+	/* CRT-themed scrollbar */
+	.xterm-container :global(.xterm-viewport) {
+		scrollbar-width: thin;
+		scrollbar-color: rgba(0, 255, 65, 0.5) rgba(0, 0, 0, 0.3);
+	}
+
+	.xterm-container :global(.xterm-viewport::-webkit-scrollbar) {
+		width: 8px;
+	}
+
+	.xterm-container :global(.xterm-viewport::-webkit-scrollbar-track) {
+		background: rgba(0, 0, 0, 0.3);
+		border-left: 1px solid rgba(0, 255, 65, 0.1);
+	}
+
+	.xterm-container :global(.xterm-viewport::-webkit-scrollbar-thumb) {
+		background: linear-gradient(
+			180deg,
+			rgba(0, 255, 65, 0.6) 0%,
+			rgba(0, 255, 65, 0.4) 50%,
+			rgba(0, 255, 65, 0.6) 100%
+		);
+		border-radius: 4px;
+		box-shadow:
+			0 0 4px rgba(0, 255, 65, 0.4),
+			inset 0 0 2px rgba(0, 255, 65, 0.2);
+	}
+
+	.xterm-container :global(.xterm-viewport::-webkit-scrollbar-thumb:hover) {
+		background: linear-gradient(
+			180deg,
+			rgba(0, 255, 65, 0.8) 0%,
+			rgba(0, 255, 65, 0.6) 50%,
+			rgba(0, 255, 65, 0.8) 100%
+		);
+		box-shadow:
+			0 0 8px rgba(0, 255, 65, 0.6),
+			inset 0 0 4px rgba(0, 255, 65, 0.3);
+	}
+
+	.xterm-container :global(.xterm-viewport::-webkit-scrollbar-thumb:active) {
+		background: rgba(0, 255, 65, 0.9);
+		box-shadow: 0 0 12px rgba(0, 255, 65, 0.8);
 	}
 </style>

@@ -6,26 +6,26 @@ styleguide: 1.0.0
 description: Floating context menu with action items, toggles, and dividers
 usage: Pass items array and position to render a context menu at specific coordinates
 -->
-<script lang="ts">
+<script lang="ts" generics="TId extends string = string">
 import { ContextMenuItemType, type ContextMenuItem, type ContextMenuPosition } from "./contextMenu.lib";
 
 interface Props {
-	items: ContextMenuItem[];
+	items: ContextMenuItem<TId>[];
 	position: ContextMenuPosition;
-	onAction?: (id: string) => void;
-	onToggle?: (id: string, checked: boolean) => void;
+	onAction?: (id: TId) => void;
+	onToggle?: (id: TId, checked: boolean) => void;
 	onClose?: () => void;
 }
 
 let { items, position, onAction, onToggle, onClose }: Props = $props();
 
-function handleAction(id: string, disabled?: boolean) {
+function handleAction(id: TId, disabled?: boolean) {
 	if (disabled) return;
 	onAction?.(id);
 	onClose?.();
 }
 
-function handleToggle(id: string, currentChecked: boolean, disabled?: boolean) {
+function handleToggle(id: TId, currentChecked: boolean, disabled?: boolean) {
 	if (disabled) return;
 	onToggle?.(id, !currentChecked);
 }

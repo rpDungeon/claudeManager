@@ -25,6 +25,7 @@ interface Props {
 	onItemReorder?: (containerId: string, fromItemId: string, toItemId: string) => void;
 	onItemDrop?: (droppedItemId: string, targetContainerId: string) => void;
 	onSplitDrop?: (droppedItemId: string, targetContainerId: string, position: LayoutDropZonePosition) => void;
+	onAddItem?: (containerId: string) => void;
 }
 
 let {
@@ -38,6 +39,7 @@ let {
 	onItemReorder,
 	onItemDrop,
 	onSplitDrop,
+	onAddItem,
 }: Props = $props();
 </script>
 
@@ -51,6 +53,7 @@ let {
 		{onItemReorder}
 		{onItemDrop}
 		{onSplitDrop}
+		{onAddItem}
 	/>
 {:else if container.type === "split"}
 	<LayoutContainerSplit
@@ -64,5 +67,6 @@ let {
 		{onItemReorder}
 		{onItemDrop}
 		{onSplitDrop}
+		{onAddItem}
 	/>
 {/if}

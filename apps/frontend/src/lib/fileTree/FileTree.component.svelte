@@ -21,6 +21,7 @@ interface Props {
 	expandedIds?: SvelteSet<ItemId>;
 	draggable?: boolean;
 	onSelect?: (itemId: ItemId) => void;
+	onToggle?: (itemId: ItemId) => void;
 	onNodeMove?: (sourceId: ItemId, targetId: ItemId) => void;
 	onDoubleClick?: (itemId: ItemId) => void;
 	onContextMenu?: (itemId: ItemId, event: MouseEvent) => void;
@@ -34,6 +35,7 @@ let {
 	expandedIds = new SvelteSet<string>(),
 	draggable = false,
 	onSelect,
+	onToggle,
 	onNodeMove,
 	onDoubleClick,
 	onContextMenu,
@@ -45,10 +47,14 @@ function handleSelect(itemId: ItemId) {
 }
 
 function handleToggle(itemId: ItemId) {
-	if (expandedIds.has(itemId)) {
-		expandedIds.delete(itemId);
+	if (onToggle) {
+		onToggle(itemId);
 	} else {
-		expandedIds.add(itemId);
+		if (expandedIds.has(itemId)) {
+			expandedIds.delete(itemId);
+		} else {
+			expandedIds.add(itemId);
+		}
 	}
 }
 
@@ -100,5 +106,6 @@ function handleKeyDown(event: KeyboardEvent) {
 		onToggle={handleToggle}
 		onDragStart={handleDragStart}
 		onDrop={handleDrop}
+		{onContextMenu}
 	/>
 </div>

@@ -3,7 +3,7 @@ import { FitAddon } from "@xterm/addon-fit";
 import { SearchAddon } from "@xterm/addon-search";
 import { SerializeAddon } from "@xterm/addon-serialize";
 import { WebLinksAddon } from "@xterm/addon-web-links";
-import { WebglAddon } from "@xterm/addon-webgl";
+import type { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal } from "@xterm/xterm";
 import { SvelteMap } from "svelte/reactivity";
 import { api } from "$lib/api/api.client";
@@ -102,19 +102,20 @@ export function terminalInstanceMount(terminalId: TerminalId, container: HTMLEle
 	instance.container = container;
 	instance.terminal.open(container);
 
-	if (!instance.addons.webgl) {
-		try {
-			const webglAddon = new WebglAddon();
-			webglAddon.onContextLoss(() => {
-				webglAddon.dispose();
-				instance.addons.webgl = null;
-			});
-			instance.terminal.loadAddon(webglAddon);
-			instance.addons.webgl = webglAddon;
-		} catch {
-			console.warn("WebGL addon failed to load, using default renderer");
-		}
-	}
+	// Disabled WebGL - causes rendering issues
+	// if (!instance.addons.webgl) {
+	// 	try {
+	// 		const webglAddon = new WebglAddon();
+	// 		webglAddon.onContextLoss(() => {
+	// 			webglAddon.dispose();
+	// 			instance.addons.webgl = null;
+	// 		});
+	// 		instance.terminal.loadAddon(webglAddon);
+	// 		instance.addons.webgl = webglAddon;
+	// 	} catch {
+	// 		console.warn("WebGL addon failed to load, using default renderer");
+	// 	}
+	// }
 
 	instance.addons.fit.fit();
 }
@@ -125,7 +126,7 @@ export function terminalInstanceFit(terminalId: TerminalId): void {
 
 	instance.addons.fit.fit();
 
-	if (instance.websocket) {
+	if (instance.websocket && instance.connectionStatus === TerminalConnectionStatus.Connected) {
 		const dims = instance.addons.fit.proposeDimensions();
 		if (dims) {
 			instance.websocket.send({
@@ -137,17 +138,50 @@ export function terminalInstanceFit(terminalId: TerminalId): void {
 	}
 }
 
+const wsConnectAttempts = new Map<
+	TerminalId,
+	{
+		count: number;
+		lastAttempt: number;
+	}
+>();
+
 export function terminalWebsocketConnect(terminalId: TerminalId): void {
+	console.log("[WS] terminalWebsocketConnect called for:", terminalId);
+
+	const now = Date.now();
+	const attempts = wsConnectAttempts.get(terminalId) ?? {
+		count: 0,
+		lastAttempt: 0,
+	};
+
+	if (now - attempts.lastAttempt < 1000) {
+		attempts.count++;
+		if (attempts.count > 3) {
+			console.error("[WS] LOOP DETECTED! Blocking rapid reconnection for:", terminalId);
+			return;
+		}
+	} else {
+		attempts.count = 1;
+	}
+	attempts.lastAttempt = now;
+	wsConnectAttempts.set(terminalId, attempts);
+
 	const instance = instances.get(terminalId);
-	if (!instance) return;
+	if (!instance) {
+		console.log("[WS] No instance found, returning");
+		return;
+	}
 
 	if (instance.websocket) {
+		console.log("[WS] Closing existing websocket");
 		terminalWebsocketClose(terminalId);
 	}
 
 	instance.connectionStatus = TerminalConnectionStatus.Connecting;
 	instance.lastError = null;
 
+	console.log("[WS] Creating new websocket connection");
 	const ws = api.ws
 		.terminal({
 			terminalId,
@@ -155,6 +189,7 @@ export function terminalWebsocketConnect(terminalId: TerminalId): void {
 		.subscribe();
 
 	ws.on("open", () => {
+		console.log("[WS] Connection opened for:", terminalId);
 		instance.connectionStatus = TerminalConnectionStatus.Connected;
 
 		const dims = instance.addons.fit.proposeDimensions();
@@ -168,16 +203,22 @@ export function terminalWebsocketConnect(terminalId: TerminalId): void {
 	});
 
 	ws.subscribe((event) => {
+		if (event.data.type !== "output") {
+			console.log("[WS] Message received:", event.data.type);
+		}
 		terminalDispatchServerMessage(terminalId, event.data);
 	});
 
 	ws.on("close", () => {
+		console.log("[WS] Connection closed for:", terminalId);
 		instance.connectionStatus = TerminalConnectionStatus.Disconnected;
 	});
 
 	ws.on("error", () => {
+		console.log("[WS] Connection error for:", terminalId);
 		instance.connectionStatus = TerminalConnectionStatus.Error;
 		instance.lastError = "WebSocket connection error";
+		instance.websocket = null;
 	});
 
 	instance.websocket = ws;

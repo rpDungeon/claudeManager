@@ -27,6 +27,7 @@ interface Props {
 	onItemReorder?: (containerId: string, fromItemId: string, toItemId: string) => void;
 	onItemDrop?: (droppedItemId: string, targetContainerId: string) => void;
 	onSplitDrop?: (droppedItemId: string, targetContainerId: string, position: LayoutDropZonePosition) => void;
+	onAddItem?: (containerId: string) => void;
 }
 
 let {
@@ -40,6 +41,7 @@ let {
 	onItemReorder,
 	onItemDrop,
 	onSplitDrop,
+	onAddItem,
 }: Props = $props();
 
 function handleLayoutChange(sizes: number[]) {
@@ -106,6 +108,7 @@ function handleItemClick(itemId: string) {
 					{onItemReorder}
 					{onItemDrop}
 					{onSplitDrop}
+					{onAddItem}
 				/>
 			{:else if child?.type === "item"}
 				<LayoutItem_

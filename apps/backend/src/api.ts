@@ -1,7 +1,7 @@
 import cors from "@elysiajs/cors";
 import { Elysia } from "elysia";
 
-import { authPlugin } from "./auth/auth.plugin";
+// import { authPlugin } from "./auth/auth.plugin";
 import { authRoutes } from "./auth/auth.routes";
 import { claudeSessionRoutes } from "./claude/session/session.routes";
 import { dashboardRoutes } from "./dashboard/dashboard.routes";
@@ -22,20 +22,19 @@ export const api = new Elysia()
 			origin: true,
 		}),
 	)
-	.use(authPlugin)
-	.onBeforeHandle(
-		{
-			as: "global",
-		},
-		({ user, path, status }) => {
-			if (path.startsWith("/auth")) return;
-			if (path.startsWith("/ws")) return;
-			if (!user)
-				return status(401, {
-					error: "Unauthorized",
-				});
-		},
-	)
+	// .use(authPlugin)
+	// .onBeforeHandle(
+	// 	{
+	// 		as: "global",
+	// 	},
+	// 	({ user, path, status }) => {
+	// 		if (path.startsWith("/auth")) return;
+	// 		if (!user)
+	// 			return status(401, {
+	// 				error: "Unauthorized",
+	// 			});
+	// 	},
+	// )
 	.use(authRoutes)
 	.use(dashboardRoutes)
 	.use(fsRoutes)

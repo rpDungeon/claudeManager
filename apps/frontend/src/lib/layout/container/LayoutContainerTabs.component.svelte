@@ -23,6 +23,7 @@ interface Props {
 	onItemReorder?: (containerId: string, fromItemId: string, toItemId: string) => void;
 	onItemDrop?: (droppedItemId: string, targetContainerId: string) => void;
 	onSplitDrop?: (droppedItemId: string, targetContainerId: string, position: LayoutDropZonePosition) => void;
+	onAddItem?: (containerId: string) => void;
 }
 
 let {
@@ -34,6 +35,7 @@ let {
 	onItemReorder,
 	onItemDrop,
 	onSplitDrop,
+	onAddItem,
 }: Props = $props();
 
 const activeTabId = $derived(container.activeTabId ?? container.childIds[0] ?? null);
@@ -174,6 +176,17 @@ function handleDropZoneDrop(containerId: string, zone: LayoutDropZonePosition, e
 				</button>
 			{/if}
 		{/each}
+
+		{#if onAddItem}
+			<button
+				type="button"
+				class="ml-1 flex size-4 items-center justify-center text-[10px] text-text-tertiary hover:text-terminal-green hover:bg-bg-elevated/50 transition-colors duration-100"
+				onclick={() => onAddItem(container.id)}
+				title="Add terminal"
+			>
+				+
+			</button>
+		{/if}
 	</div>
 
 	<div

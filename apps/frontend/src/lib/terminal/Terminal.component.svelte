@@ -60,6 +60,7 @@ let {
 }: Props = $props();
 
 let resizeObserver: ResizeObserver | undefined;
+let mountCount = 0;
 
 const instance = $derived(terminalId ? terminalInstanceGet(terminalId) : undefined);
 const connectionStatus = $derived(instance?.connectionStatus ?? TerminalConnectionStatus.Disconnected);
@@ -77,19 +78,39 @@ const statusColor = $derived.by(() => {
 	}
 });
 
+let hasConnected = false;
+
 function handleBodyMount(container: HTMLDivElement) {
+	mountCount++;
+	console.log("[Terminal] handleBodyMount:", terminalId, "count:", mountCount, "hasConnected:", hasConnected);
+
 	if (!terminalId) return;
+
+	if (hasConnected) {
+		console.log("[Terminal] Already connected, skipping");
+		return;
+	}
+
+	const inst = terminalInstanceGet(terminalId);
+	if (!inst) {
+		console.log("[Terminal] No instance yet, creating...");
+		terminalInstanceCreate(terminalId);
+	}
 
 	terminalInstanceMount(terminalId, container);
 
-	resizeObserver = new ResizeObserver(() => {
-		if (terminalId) {
-			terminalInstanceFit(terminalId);
-		}
-	});
-	resizeObserver.observe(container);
+	if (!resizeObserver) {
+		resizeObserver = new ResizeObserver(() => {
+			if (terminalId && terminalInstanceGet(terminalId)?.websocket) {
+				terminalInstanceFit(terminalId);
+			}
+		});
+		resizeObserver.observe(container);
+	}
 
-	if (autoConnect) {
+	if (autoConnect && !hasConnected) {
+		console.log("[Terminal] autoConnect, calling websocketConnect");
+		hasConnected = true;
 		terminalWebsocketConnect(terminalId);
 	}
 }
@@ -112,11 +133,11 @@ function handleBodyClick(event: MouseEvent) {
 }
 
 onMount(() => {
-	if (!terminalId) return;
-	terminalInstanceCreate(terminalId);
+	console.log("[Terminal] onMount:", terminalId);
 });
 
 onDestroy(() => {
+	console.log("[Terminal] onDestroy:", terminalId);
 	resizeObserver?.disconnect();
 	if (terminalId) {
 		terminalInstanceDestroy(terminalId);

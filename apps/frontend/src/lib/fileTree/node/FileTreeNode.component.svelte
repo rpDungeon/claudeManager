@@ -31,6 +31,7 @@ interface Props {
 	onToggle?: (itemId: ItemId) => void;
 	onDragStart?: (itemId: ItemId, event: DragEvent) => void;
 	onDrop?: (targetId: ItemId, dragData: FileTreeDragData) => void;
+	onContextMenu?: (itemId: ItemId, event: MouseEvent) => void;
 }
 
 let {
@@ -45,6 +46,7 @@ let {
 	onToggle,
 	onDragStart,
 	onDrop,
+	onContextMenu,
 }: Props = $props();
 
 const item = $derived(items.get(itemId) ?? FILETREE_NOTFOUND_ITEM);
@@ -110,6 +112,10 @@ function handleDrop(event: DragEvent) {
 		// Invalid JSON, ignore
 	}
 }
+
+function handleContextMenu(event: MouseEvent) {
+	onContextMenu?.(itemId, event);
+}
 </script>
 
 <div class="tree-node">
@@ -128,6 +134,7 @@ function handleDrop(event: DragEvent) {
 		onToggle={handleToggle}
 		ondragstart={handleDragStart}
 		ondrop={handleDrop}
+		oncontextmenu={handleContextMenu}
 	/>
 
 	{#if isFolder && isExpanded && hasChildren}
@@ -145,6 +152,7 @@ function handleDrop(event: DragEvent) {
 					{onToggle}
 					{onDragStart}
 					{onDrop}
+					{onContextMenu}
 				/>
 			{/each}
 		</div>
