@@ -6,6 +6,7 @@ import { Elysia } from "elysia";
 import { z } from "zod";
 
 import { db } from "../db/db.client";
+import { terminalPtyService } from "./pty/pty.service";
 
 export const terminalRoutes = new Elysia({
 	prefix: "/terminals",
@@ -31,6 +32,10 @@ export const terminalRoutes = new Elysia({
 			}),
 		},
 	)
+	.get("/active/list", async () => {
+		const activeInstances = terminalPtyService.instancesInfo();
+		return activeInstances;
+	})
 	.get(
 		"/:id",
 		async ({ params, status }) => {
@@ -97,8 +102,40 @@ export const terminalRoutes = new Elysia({
 				});
 			}
 
+			terminalPtyService.instanceKill(params.id);
+
 			return {
 				deleted: true,
+			};
+		},
+		{
+			params: z.object({
+				id: terminalIdSchema,
+			}),
+		},
+	)
+	.get(
+		"/:id/status",
+		async ({ params }) => {
+			const isRunning = terminalPtyService.instanceIsRunning(params.id);
+			const info = terminalPtyService.instanceInfo(params.id);
+			return {
+				isRunning,
+				...info,
+			};
+		},
+		{
+			params: z.object({
+				id: terminalIdSchema,
+			}),
+		},
+	)
+	.post(
+		"/:id/kill",
+		async ({ params }) => {
+			const killed = terminalPtyService.instanceKill(params.id);
+			return {
+				killed,
 			};
 		},
 		{

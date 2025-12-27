@@ -16,9 +16,17 @@ type TerminalPtyInstance = {
 
 type InternalPtyState = {
 	callbacks: Set<(message: TerminalPtyMessageServer) => void>;
+	cols: number;
+	createdAt: Date;
 	process: IPty;
+	rows: number;
 	terminalId: TerminalId;
+	tmuxSessionId: string;
 };
+
+function terminalIdToTmuxSession(terminalId: TerminalId): string {
+	return terminalId.replace(/[^a-zA-Z0-9_-]/g, "_");
+}
 
 class PtyService {
 	private instances = new Map<TerminalId, InternalPtyState>();
@@ -33,6 +41,8 @@ class PtyService {
 				};
 			},
 			resize: (cols, rows) => {
+				state.cols = cols;
+				state.rows = rows;
 				state.process.resize(cols, rows);
 			},
 			write: (data) => {
@@ -53,7 +63,7 @@ class PtyService {
 			return this.instanceWrap(existing);
 		}
 
-		const shell = Bun.env.SHELL ?? "/bin/bash";
+		const tmuxSessionId = terminalIdToTmuxSession(terminalId);
 
 		const envStrings: Record<string, string> = {};
 		for (const [key, value] of Object.entries(Bun.env)) {
@@ -62,24 +72,37 @@ class PtyService {
 			}
 		}
 
-		const process = spawn(shell, [], {
-			cols,
-			cwd,
-			env: {
-				...envStrings,
-				COLORTERM: "truecolor",
-				TERM: "xterm-256color",
+		const process = spawn(
+			"tmux",
+			[
+				"new-session",
+				"-A",
+				"-s",
+				tmuxSessionId,
+			],
+			{
+				cols,
+				cwd,
+				env: {
+					...envStrings,
+					COLORTERM: "truecolor",
+					TERM: "xterm-256color",
+				},
+				name: "xterm-256color",
+				rows,
 			},
-			name: "xterm-256color",
-			rows,
-		});
+		);
 
 		const callbacks = new Set<(message: TerminalPtyMessageServer) => void>();
 
 		const state: InternalPtyState = {
 			callbacks,
+			cols,
+			createdAt: new Date(),
 			process,
+			rows,
 			terminalId,
+			tmuxSessionId,
 		};
 
 		process.onData((data) => {
@@ -110,6 +133,15 @@ class PtyService {
 
 	instanceKill(terminalId: TerminalId): boolean {
 		const state = this.instances.get(terminalId);
+
+		const tmuxSessionId = terminalIdToTmuxSession(terminalId);
+		Bun.spawn([
+			"tmux",
+			"kill-session",
+			"-t",
+			tmuxSessionId,
+		]);
+
 		if (!state) {
 			return false;
 		}
@@ -128,6 +160,40 @@ class PtyService {
 		return [
 			...this.instances.keys(),
 		];
+	}
+
+	instanceIsRunning(terminalId: TerminalId): boolean {
+		return this.instances.has(terminalId);
+	}
+
+	instanceInfo(terminalId: TerminalId):
+		| {
+				cols: number;
+				createdAt: Date;
+				rows: number;
+		  }
+		| undefined {
+		const state = this.instances.get(terminalId);
+		if (!state) return undefined;
+		return {
+			cols: state.cols,
+			createdAt: state.createdAt,
+			rows: state.rows,
+		};
+	}
+
+	instancesInfo(): Array<{
+		cols: number;
+		createdAt: Date;
+		rows: number;
+		terminalId: TerminalId;
+	}> {
+		return Array.from(this.instances.entries()).map(([terminalId, state]) => ({
+			cols: state.cols,
+			createdAt: state.createdAt,
+			rows: state.rows,
+			terminalId,
+		}));
 	}
 }
 
