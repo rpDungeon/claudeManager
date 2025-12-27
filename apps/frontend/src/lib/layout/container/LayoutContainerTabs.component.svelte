@@ -43,6 +43,33 @@ const activeTabId = $derived(container.activeTabId ?? container.childIds[0] ?? n
 let dragOverTabId = $state<string | null>(null);
 let isDragOverContent = $state(false);
 
+let tabListEl = $state<HTMLElement | null>(null);
+let canScrollLeft = $state(false);
+let canScrollRight = $state(false);
+
+function updateScrollState() {
+	if (!tabListEl) return;
+	const { scrollLeft, scrollWidth, clientWidth } = tabListEl;
+	canScrollLeft = scrollLeft > 0;
+	canScrollRight = scrollLeft < scrollWidth - clientWidth - 1;
+}
+
+$effect(() => {
+	if (!tabListEl) return;
+
+	updateScrollState();
+
+	const resizeObserver = new ResizeObserver(() => updateScrollState());
+	resizeObserver.observe(tabListEl);
+
+	return () => resizeObserver.disconnect();
+});
+
+$effect(() => {
+	container.childIds;
+	updateScrollState();
+});
+
 function handleTabClick(itemId: string) {
 	onTabSelect?.(container.id, itemId);
 }
@@ -146,41 +173,59 @@ function handleDropZoneDrop(containerId: string, zone: LayoutDropZonePosition, e
 </script>
 
 <div class="relative flex h-full flex-col">
-	<div
-		class="flex h-5 items-center gap-0.5 border-b border-border-default bg-bg-surface px-1"
-		role="tablist"
-		tabindex="-1"
-		ondragover={handleContainerDragOver}
-		ondrop={handleContainerDrop}
-	>
-		{#each container.childIds as childId (childId)}
-			{@const item = items[childId]}
-			{#if item}
-				<button
-					type="button"
-					role="tab"
-					aria-selected={activeTabId === childId}
-					class="px-2 py-0.5 text-[10px] transition-colors duration-100 cursor-grab
-						{activeTabId === childId
-							? 'bg-bg-elevated text-text-primary'
-							: 'text-text-tertiary hover:text-text-secondary hover:bg-bg-elevated/50'}
-						{dragOverTabId === childId ? 'ring-1 ring-terminal-green ring-inset' : ''}"
-					draggable="true"
-					onclick={() => handleTabClick(childId)}
-					ondragstart={(e) => handleTabDragStart(childId, e)}
-					ondragover={(e) => handleTabDragOver(childId, e)}
-					ondragleave={(e) => handleTabDragLeave(childId, e)}
-					ondrop={(e) => handleTabDrop(childId, e)}
-				>
-					{item.label ?? item.type}
-				</button>
-			{/if}
-		{/each}
+	<div class="relative flex h-5 items-center border-b border-border-default bg-bg-surface">
+		{#if canScrollLeft}
+			<div
+				class="pointer-events-none absolute left-0 top-0 bottom-0 z-10 w-0.5 bg-terminal-amber transition-opacity"
+			></div>
+		{/if}
+
+		<div
+			bind:this={tabListEl}
+			class="flex flex-1 items-center gap-0.5 overflow-x-auto px-1 scrollbar-none"
+			role="tablist"
+			tabindex="-1"
+			onscroll={updateScrollState}
+			ondragover={handleContainerDragOver}
+			ondrop={handleContainerDrop}
+		>
+			{#each container.childIds as childId (childId)}
+				{@const item = items[childId]}
+				{#if item}
+					<button
+						type="button"
+						role="tab"
+						aria-selected={activeTabId === childId}
+						class="shrink-0 px-2 py-0.5 text-[10px] transition-colors duration-100 cursor-grab
+							{activeTabId === childId
+								? 'bg-bg-elevated text-text-primary'
+								: 'text-text-tertiary hover:text-text-secondary hover:bg-bg-elevated/50'}
+							{dragOverTabId === childId ? 'ring-1 ring-terminal-green ring-inset' : ''}"
+						draggable="true"
+						onclick={() => handleTabClick(childId)}
+						ondragstart={(e) => handleTabDragStart(childId, e)}
+						ondragover={(e) => handleTabDragOver(childId, e)}
+						ondragleave={(e) => handleTabDragLeave(childId, e)}
+						ondrop={(e) => handleTabDrop(childId, e)}
+					>
+						{item.label ?? item.type}
+					</button>
+				{/if}
+			{/each}
+		</div>
+
+		{#if canScrollRight}
+			<div
+				class="pointer-events-none absolute top-0 bottom-0 z-10 w-0.5 bg-terminal-amber transition-opacity"
+				class:right-5={onAddItem}
+				class:right-0={!onAddItem}
+			></div>
+		{/if}
 
 		{#if onAddItem}
 			<button
 				type="button"
-				class="ml-1 flex size-4 items-center justify-center text-[10px] text-text-tertiary hover:text-terminal-green hover:bg-bg-elevated/50 transition-colors duration-100"
+				class="shrink-0 flex size-5 items-center justify-center text-[10px] text-text-tertiary hover:text-terminal-green hover:bg-bg-elevated/50 transition-colors duration-100"
 				onclick={() => onAddItem(container.id)}
 				title="Add terminal"
 			>
@@ -198,16 +243,23 @@ function handleDropZoneDrop(containerId: string, zone: LayoutDropZonePosition, e
 	>
 		{#each container.childIds as childId (childId)}
 			{@const item = items[childId]}
-			{#if item && activeTabId === childId}
-				<LayoutItem_
-					{item}
-					isActive={activeItemId === childId}
-					draggable={true}
-					isDropTarget={true}
-					onclick={handleItemClick(childId)}
-					onDragStart={handleTabDragStart}
-					onDrop={(droppedId, _targetId, e) => handleTabDrop(childId, e)}
-				/>
+			{@const isActiveTab = activeTabId === childId}
+			{#if item}
+				<div
+					class="absolute inset-0"
+					class:hidden={!isActiveTab}
+					aria-hidden={!isActiveTab}
+				>
+					<LayoutItem_
+						{item}
+						isActive={activeItemId === childId}
+						draggable={true}
+						isDropTarget={true}
+						onclick={handleItemClick(childId)}
+						onDragStart={handleTabDragStart}
+						onDrop={(droppedId, _targetId, e) => handleTabDrop(childId, e)}
+					/>
+				</div>
 			{/if}
 		{/each}
 
