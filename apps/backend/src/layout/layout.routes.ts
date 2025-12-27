@@ -1,6 +1,6 @@
 import { layoutIdSchema } from "@claude-manager/common/src/layout/layout.id";
 import { layoutSchema } from "@claude-manager/common/src/layout/layout.schema";
-import { layoutCreate, layoutPatch } from "@claude-manager/common/src/layout/layout.types";
+import { type LayoutInsert, layoutCreate, layoutPatch } from "@claude-manager/common/src/layout/layout.types";
 import { eq } from "drizzle-orm";
 import { Elysia } from "elysia";
 import { z } from "zod";
@@ -43,7 +43,13 @@ export const layoutRoutes = new Elysia({
 	.post(
 		"/",
 		async ({ body, status }) => {
-			const [layout] = await db.insert(layoutSchema).values(body).returning();
+			const parsed = layoutCreate.parse(body);
+			const insertData: LayoutInsert = {
+				data: parsed.data,
+				name: parsed.name,
+				projectId: parsed.projectId,
+			};
+			const [layout] = await db.insert(layoutSchema).values(insertData).returning();
 			return status(201, layout);
 		},
 		{
