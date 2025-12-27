@@ -5,6 +5,7 @@ import svelte from "eslint-plugin-svelte";
 import svelteParser from "svelte-eslint-parser";
 import ts from "typescript-eslint";
 import exportPrefixFromPath from "./eslint-rules/export-prefix-from-path.js";
+import noStringOnlyUnion from "./eslint-rules/no-string-only-union.js";
 import svelteComponentJsdoc from "./eslint-rules/svelte-component-jsdoc.js";
 
 /**
@@ -36,6 +37,7 @@ export default [
 			custom: {
 				rules: {
 					"export-prefix-from-path": exportPrefixFromPath,
+					"no-string-only-union": noStringOnlyUnion,
 				},
 			},
 		},
@@ -51,6 +53,7 @@ export default [
 					],
 				},
 			],
+			"custom/no-string-only-union": "error",
 		},
 	}, // Svelte-only config
 	{
