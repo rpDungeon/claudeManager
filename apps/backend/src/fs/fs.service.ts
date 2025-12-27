@@ -1,15 +1,18 @@
 import type * as nodefs from "node:fs";
 import * as nodefsPromises from "node:fs/promises";
 import * as path from "node:path";
+import process from "node:process";
 import { fsMaxFileSize } from "@claude-manager/common/src/fs/fs.config";
 import {
 	type FsEntry,
+	FsEntryErrorCode,
 	FsEntryType,
 	type FsReadResponse,
 	FsWatchEventType,
 	type FsWatchMessageServer,
 	FsWatchMessageServerType,
 } from "@claude-manager/common/src/fs/fs.types";
+import { fsPathNormalize } from "@claude-manager/common/src/fs/fs.utils";
 import { type FSWatcher, watch } from "chokidar";
 
 type Unsubscribe = () => void;
@@ -66,21 +69,55 @@ type FsRenameResult =
 	  };
 
 function fsEntryFromStats(filePath: string, stats: nodefs.Stats): FsEntry {
+	const isDirectory = stats.isDirectory();
+	const normalizedPath = fsPathNormalize(filePath, isDirectory);
 	return {
 		modifiedAt: stats.mtime.getTime(),
 		name: path.basename(filePath),
-		path: filePath,
+		path: normalizedPath,
 		size: stats.size,
-		type: stats.isDirectory() ? FsEntryType.Directory : FsEntryType.File,
+		type: isDirectory ? FsEntryType.Directory : FsEntryType.File,
 	};
 }
 
-async function fsEntryFromPath(filePath: string): Promise<FsEntry | null> {
+function fsEntryErrorCreate(filePath: string, errnoCode?: string): FsEntry {
+	let errorCode: FsEntryErrorCode;
+	let message: string;
+
+	switch (errnoCode) {
+		case "EACCES":
+			errorCode = FsEntryErrorCode.PermissionDenied;
+			message = "Permission denied";
+			break;
+		case "ENOENT":
+			errorCode = FsEntryErrorCode.NotFound;
+			message = "File not found";
+			break;
+		default:
+			errorCode = FsEntryErrorCode.Unknown;
+			message = errnoCode ? `Cannot access: ${errnoCode}` : "Unknown error";
+	}
+
+	return {
+		error: {
+			code: errorCode,
+			message,
+		},
+		modifiedAt: 0,
+		name: path.basename(filePath),
+		path: filePath,
+		size: 0,
+		type: FsEntryType.File,
+	};
+}
+
+async function fsEntryFromPath(filePath: string): Promise<FsEntry> {
 	try {
 		const stats = await nodefsPromises.stat(filePath);
 		return fsEntryFromStats(filePath, stats);
-	} catch {
-		return null;
+	} catch (err) {
+		const code = (err as NodeJS.ErrnoException).code;
+		return fsEntryErrorCreate(filePath, code);
 	}
 }
 
@@ -91,14 +128,14 @@ async function fsDirEntries(dirPath: string): Promise<FsEntry[]> {
 	for (const name of names) {
 		const entryPath = path.join(dirPath, name);
 		const entry = await fsEntryFromPath(entryPath);
-		if (entry) {
-			entries.push(entry);
-		}
+		entries.push(entry);
 	}
 
 	entries.sort((a, b) => {
-		if (a.type !== b.type) {
-			return a.type === FsEntryType.Directory ? -1 : 1;
+		const aIsFolder = a.type === FsEntryType.Directory && !a.error;
+		const bIsFolder = b.type === FsEntryType.Directory && !b.error;
+		if (aIsFolder !== bIsFolder) {
+			return aIsFolder ? -1 : 1;
 		}
 		return a.name.localeCompare(b.name);
 	});
@@ -172,6 +209,7 @@ class FsService {
 
 	async watchStart(dirPath: string, recursive: boolean, callback: FsWatchCallback): Promise<Unsubscribe> {
 		const key = this.watcherKeyCreate(dirPath, recursive);
+
 		let state = this.watchers.get(key);
 
 		if (state) {
@@ -181,10 +219,14 @@ class FsService {
 			callbacks.add(callback);
 
 			try {
+				process.stderr.write(`[FS Watch] Creating watcher for: ${dirPath}\n`);
 				const watcher = watch(dirPath, {
+					atomic: true,
 					depth: recursive ? undefined : 0,
 					ignoreInitial: true,
+					interval: 100,
 					persistent: true,
+					usePolling: true,
 				});
 
 				const sendChange = (changedPath: string, event: FsWatchEventType, entry?: FsEntry) => {
@@ -198,6 +240,8 @@ class FsService {
 						cb(message);
 					}
 				};
+
+				watcher.on("ready", () => {});
 
 				watcher.on("add", (filePath) => {
 					void fsEntryFromPath(filePath).then((entry) => {
@@ -226,10 +270,10 @@ class FsService {
 					sendChange(filePath, FsWatchEventType.Delete);
 				});
 
-				watcher.on("error", (err) => {
+				watcher.on("error", (err: unknown) => {
 					for (const cb of callbacks) {
 						cb({
-							message: err.message,
+							message: err instanceof Error ? err.message : String(err),
 							path: dirPath,
 							type: FsWatchMessageServerType.Error,
 						});
@@ -271,7 +315,9 @@ class FsService {
 
 		return () => {
 			const currentState = this.watchers.get(key);
-			if (!currentState) return;
+			if (!currentState) {
+				return;
+			}
 
 			currentState.callbacks.delete(callback);
 
