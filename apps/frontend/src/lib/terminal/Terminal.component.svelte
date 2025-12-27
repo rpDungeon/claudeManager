@@ -20,10 +20,14 @@ import {
 	terminalInstanceFocus,
 	terminalInstanceGet,
 	terminalInstanceMount,
+	terminalInstancePaste,
 	terminalWebsocketConnect,
 } from "./terminal.service.svelte";
 import { TerminalConnectionStatus } from "./terminal.lib";
 import { IndicatorDotColor } from "$lib/common/indicatorDot.lib";
+import VoiceRecorder from "$lib/common/input/VoiceRecorder.component.svelte";
+import { VoiceRecorderState } from "$lib/common/input/voiceRecorder.lib";
+import { api } from "$lib/api/api.client";
 
 interface Props {
 	terminalId?: TerminalId;
@@ -61,6 +65,9 @@ let {
 
 let resizeObserver: ResizeObserver | undefined;
 let mountCount = 0;
+let voiceRecorderState = $state(VoiceRecorderState.Idle);
+let mediaRecorder: MediaRecorder | null = null;
+let audioChunks: Blob[] = [];
 
 const instance = $derived(terminalId ? terminalInstanceGet(terminalId) : undefined);
 const connectionStatus = $derived(instance?.connectionStatus ?? TerminalConnectionStatus.Disconnected);
@@ -132,6 +139,85 @@ function handleBodyClick(event: MouseEvent) {
 	}
 }
 
+let audioStream: MediaStream | null = null;
+
+async function handleVoiceToggle() {
+	if (voiceRecorderState === VoiceRecorderState.Recording) {
+		if (mediaRecorder) {
+			mediaRecorder.stop();
+		}
+		return;
+	}
+
+	if (voiceRecorderState !== VoiceRecorderState.Idle) return;
+
+	try {
+		audioStream = await navigator.mediaDevices.getUserMedia({
+			audio: true,
+		});
+		mediaRecorder = new MediaRecorder(audioStream, {
+			mimeType: "audio/webm",
+		});
+		audioChunks = [];
+
+		mediaRecorder.ondataavailable = (e) => {
+			if (e.data.size > 0) {
+				audioChunks.push(e.data);
+			}
+		};
+
+		mediaRecorder.onstop = async () => {
+			if (audioStream) {
+				for (const track of audioStream.getTracks()) {
+					track.stop();
+				}
+				audioStream = null;
+			}
+
+			if (audioChunks.length === 0) {
+				voiceRecorderState = VoiceRecorderState.Idle;
+				return;
+			}
+
+			voiceRecorderState = VoiceRecorderState.Processing;
+			const audioBlob = new Blob(audioChunks, {
+				type: "audio/webm",
+			});
+
+			try {
+				const { data, error } = await api.transcription.post({
+					audio: new File(
+						[
+							audioBlob,
+						],
+						"recording.webm",
+						{
+							type: "audio/webm",
+						},
+					),
+				});
+
+				if (error || !data) {
+					console.error("[VoiceRecorder] Transcription error:", error);
+				} else if (terminalId) {
+					terminalInstancePaste(terminalId, data.transcription);
+					terminalInstanceFocus(terminalId);
+				}
+			} catch (err) {
+				console.error("[VoiceRecorder] Transcription failed:", err);
+			} finally {
+				voiceRecorderState = VoiceRecorderState.Idle;
+			}
+		};
+
+		mediaRecorder.start();
+		voiceRecorderState = VoiceRecorderState.Recording;
+	} catch (err) {
+		console.error("[VoiceRecorder] Failed to access microphone:", err);
+		voiceRecorderState = VoiceRecorderState.Idle;
+	}
+}
+
 onMount(() => {
 	console.log("[Terminal] onMount:", terminalId);
 });
@@ -145,7 +231,7 @@ onDestroy(() => {
 });
 </script>
 
-<div class="flex h-full flex-col">
+<div class="relative flex h-full flex-col">
 	<TerminalHeader
 		{title}
 		{info}
@@ -164,4 +250,13 @@ onDestroy(() => {
 		onclick={handleBodyClick}
 		onMount={handleBodyMount}
 	/>
+
+	{#if terminalId}
+		<div class="absolute bottom-3 right-3 z-10">
+			<VoiceRecorder
+				state={voiceRecorderState}
+				onclick={handleVoiceToggle}
+			/>
+		</div>
+	{/if}
 </div>

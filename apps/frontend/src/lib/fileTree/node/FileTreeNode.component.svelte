@@ -1,3 +1,4 @@
+<!-- Review pending by Autumnlight -->
 <!--
 @component
 name: FileTreeNode
@@ -50,11 +51,15 @@ let {
 }: Props = $props();
 
 const item = $derived(items.get(itemId) ?? FILETREE_NOTFOUND_ITEM);
+const isError = $derived(item.type === FileTreeItemType.Error);
 const isFolder = $derived(item.type === FileTreeItemType.Folder);
 const isExpanded = $derived(expandedIds?.has(itemId) ?? false);
 const isSelected = $derived(selectedId === itemId);
+const canExpand = $derived(isFolder && !isError);
 
 const childIds = $derived.by(() => {
+	void parentMap.size;
+	void items.size;
 	const ids: string[] = [];
 	for (const [childId, pId] of parentMap.entries()) {
 		if (pId === itemId) {
@@ -65,8 +70,10 @@ const childIds = $derived.by(() => {
 		const itemA = items.get(a);
 		const itemB = items.get(b);
 		if (!(itemA && itemB)) return 0;
-		if (itemA.type !== itemB.type) {
-			return itemA.type === FileTreeItemType.Folder ? -1 : 1;
+		const aIsFolder = itemA.type === FileTreeItemType.Folder;
+		const bIsFolder = itemB.type === FileTreeItemType.Folder;
+		if (aIsFolder !== bIsFolder) {
+			return aIsFolder ? -1 : 1;
 		}
 		return itemA.name.localeCompare(itemB.name);
 	});
@@ -76,10 +83,13 @@ const hasChildren = $derived(childIds.length > 0);
 
 function handleClick() {
 	onSelect?.(itemId);
+	if (canExpand) {
+		onToggle?.(itemId);
+	}
 }
 
 function handleToggle() {
-	if (isFolder) {
+	if (canExpand) {
 		onToggle?.(itemId);
 	}
 }
@@ -124,6 +134,7 @@ function handleContextMenu(event: MouseEvent) {
 		type={item.type}
 		status={item.status}
 		meta={item.meta}
+		errorMessage={item.errorMessage}
 		{depth}
 		{isExpanded}
 		{isSelected}
@@ -137,7 +148,7 @@ function handleContextMenu(event: MouseEvent) {
 		oncontextmenu={handleContextMenu}
 	/>
 
-	{#if isFolder && isExpanded && hasChildren}
+	{#if canExpand && isExpanded && hasChildren}
 		<div class="ml-3 border-l border-border-default pl-1">
 			{#each childIds as childId (childId)}
 				<Self

@@ -37,6 +37,8 @@ interface Props {
 	onItemDrop?: (droppedItemId: string, targetContainerId: string) => void;
 	onSplitDrop?: (droppedItemId: string, targetContainerId: string, position: LayoutDropZonePosition) => void;
 	onAddItem?: (containerId: string) => void;
+	onItemRename?: (containerId: string, itemId: string) => void;
+	onItemClose?: (containerId: string, itemId: string) => void;
 }
 
 let {
@@ -50,6 +52,8 @@ let {
 	onItemDrop,
 	onSplitDrop,
 	onAddItem,
+	onItemRename,
+	onItemClose,
 }: Props = $props();
 
 const arrangement = $derived(mode === "desktop" ? data.desktop : data.mobile);
@@ -100,6 +104,8 @@ function handleItemClick(itemId: string) {
 			{onItemDrop}
 			{onSplitDrop}
 			{onAddItem}
+			{onItemRename}
+			{onItemClose}
 		/>
 	{:else if root?.type === "item"}
 		<LayoutItem_

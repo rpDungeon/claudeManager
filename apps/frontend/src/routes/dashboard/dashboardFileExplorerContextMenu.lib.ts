@@ -1,4 +1,6 @@
+// Review pending by Autumnlight
 export enum TargetType {
+	Error = "error",
 	File = "file",
 	Folder = "folder",
 }
@@ -18,4 +20,9 @@ export enum FolderActionId {
 	Delete = "delete",
 }
 
-export type ActionId = FileActionId | FolderActionId;
+export enum ErrorActionId {
+	CopyPath = "copy-path",
+	CopyRelativePath = "copy-relative-path",
+}
+
+export type ActionId = FileActionId | FolderActionId | ErrorActionId;

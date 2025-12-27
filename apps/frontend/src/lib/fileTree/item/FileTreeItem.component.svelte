@@ -1,3 +1,4 @@
+<!-- Review pending by Autumnlight -->
 <!--
 @component
 name: FileTreeItem
@@ -17,6 +18,7 @@ interface Props {
 	type: FileTreeItemType;
 	status?: FileStatus;
 	meta?: string;
+	errorMessage?: string;
 	depth?: number;
 	isExpanded?: boolean;
 	isSelected?: boolean;
@@ -38,6 +40,7 @@ let {
 	type,
 	status,
 	meta,
+	errorMessage,
 	depth: _depth = 0,
 	isExpanded = false,
 	isSelected = false,
@@ -56,8 +59,9 @@ let {
 
 let isDragOver = $state(false);
 
+const isError = $derived(type === FileTreeItemType.Error);
 const isFolder = $derived(type === FileTreeItemType.Folder);
-const showChevron = $derived(isFolder);
+const showChevron = $derived(isFolder && !isError);
 const statusColor = $derived(status ? fileStatusColorMap[status] : IndicatorDotColor.Gray);
 
 function handleClick() {
@@ -114,9 +118,13 @@ function handleContextMenu(event: MouseEvent) {
 
 <button
 	type="button"
-	class="flex w-full items-center gap-1 rounded-[3px] px-1 py-[3px] text-[11px] transition-colors duration-100 hover:bg-bg-elevated {isDragOver ? 'bg-terminal-cyan/20 ring-1 ring-terminal-cyan/50' : ''}"
+	class="flex w-full items-center gap-1 rounded-[3px] px-1 py-[3px] text-[11px] transition-colors duration-100
+		{isError ? 'opacity-60 cursor-not-allowed' : 'hover:bg-bg-elevated'}
+		{isDragOver ? 'bg-terminal-cyan/20 ring-1 ring-terminal-cyan/50' : ''}"
 	class:bg-bg-elevated={isSelected}
-	{draggable}
+	draggable={isError ? false : draggable}
+	disabled={isError}
+	title={errorMessage}
 	onclick={handleClick}
 	onkeydown={handleKeyDown}
 	ondragstart={handleDragStart}
@@ -143,14 +151,16 @@ function handleContextMenu(event: MouseEvent) {
 	</span>
 
 	<span class="flex size-[13px] shrink-0 items-center justify-center text-[11px] text-text-secondary">
-		{#if isFolder}
+		{#if isError}
+			<span class="text-terminal-red">🚫</span>
+		{:else if isFolder}
 			<span class:text-amber-500={isExpanded}>📁</span>
 		{:else}
 			<span>📄</span>
 		{/if}
 	</span>
 
-	<span class="min-w-0 flex-1 truncate text-left font-medium text-text-primary">
+	<span class="min-w-0 flex-1 truncate text-left font-medium {isError ? 'text-text-tertiary line-through' : 'text-text-primary'}">
 		{name}
 	</span>
 

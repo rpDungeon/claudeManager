@@ -1,3 +1,4 @@
+<!-- Review pending by Autumnlight -->
 <!--
 @component
 name: DashboardFileExplorerContextMenu
@@ -13,7 +14,13 @@ import {
 	type ContextMenuItem,
 	type ContextMenuPosition,
 } from "$lib/common/contextMenu/contextMenu.lib";
-import { FileActionId, FolderActionId, TargetType, type ActionId } from "./dashboardFileExplorerContextMenu.lib";
+import {
+	ErrorActionId,
+	FileActionId,
+	FolderActionId,
+	TargetType,
+	type ActionId,
+} from "./dashboardFileExplorerContextMenu.lib";
 
 interface Props {
 	targetType: TargetType;
@@ -103,9 +110,24 @@ const folderMenuItems: ContextMenuItem<FolderActionId>[] = [
 	},
 ];
 
-const menuItems = $derived<ContextMenuItem<ActionId>[]>(
-	targetType === TargetType.File ? fileMenuItems : folderMenuItems,
-);
+const errorMenuItems: ContextMenuItem<ErrorActionId>[] = [
+	{
+		id: ErrorActionId.CopyPath,
+		label: "Copy Path",
+		type: ContextMenuItemType.Action,
+	},
+	{
+		id: ErrorActionId.CopyRelativePath,
+		label: "Copy Relative Path",
+		type: ContextMenuItemType.Action,
+	},
+];
+
+const menuItems = $derived.by<ContextMenuItem<ActionId>[]>(() => {
+	if (targetType === TargetType.Error) return errorMenuItems;
+	if (targetType === TargetType.File) return fileMenuItems;
+	return folderMenuItems;
+});
 
 function handleAction(actionId: ActionId) {
 	switch (actionId) {
@@ -113,9 +135,11 @@ function handleAction(actionId: ActionId) {
 			onOpenToSide?.();
 			break;
 		case FileActionId.CopyPath:
+		case ErrorActionId.CopyPath:
 			onCopyPath?.();
 			break;
 		case FileActionId.CopyRelativePath:
+		case ErrorActionId.CopyRelativePath:
 			onCopyRelativePath?.();
 			break;
 		case FolderActionId.NewFile:

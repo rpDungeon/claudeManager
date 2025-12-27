@@ -1,3 +1,4 @@
+// Review pending by Autumnlight
 import type { TerminalId } from "@claude-manager/common/src/terminal/terminal.types";
 import { FitAddon } from "@xterm/addon-fit";
 import { SearchAddon } from "@xterm/addon-search";
@@ -130,8 +131,8 @@ export function terminalInstanceFit(terminalId: TerminalId): void {
 		const dims = instance.addons.fit.proposeDimensions();
 		if (dims) {
 			instance.websocket.send({
-				cols: dims.cols,
-				rows: dims.rows,
+				cols: dims.cols - 1,
+				rows: dims.rows - 1,
 				type: "resize",
 			});
 		}
@@ -188,6 +189,13 @@ export function terminalWebsocketConnect(terminalId: TerminalId): void {
 		})
 		.subscribe();
 
+	ws.subscribe((event) => {
+		if (event.data.type !== "output") {
+			console.log("[WS] Message received:", event.data.type);
+		}
+		terminalDispatchServerMessage(terminalId, event.data);
+	});
+
 	ws.on("open", () => {
 		console.log("[WS] Connection opened for:", terminalId);
 		instance.connectionStatus = TerminalConnectionStatus.Connected;
@@ -195,18 +203,11 @@ export function terminalWebsocketConnect(terminalId: TerminalId): void {
 		const dims = instance.addons.fit.proposeDimensions();
 		if (dims) {
 			ws.send({
-				cols: dims.cols,
-				rows: dims.rows,
+				cols: dims.cols - 1,
+				rows: dims.rows - 1,
 				type: "resize",
 			});
 		}
-	});
-
-	ws.subscribe((event) => {
-		if (event.data.type !== "output") {
-			console.log("[WS] Message received:", event.data.type);
-		}
-		terminalDispatchServerMessage(terminalId, event.data);
 	});
 
 	ws.on("close", () => {
@@ -311,6 +312,16 @@ export function terminalInstanceFocus(terminalId: TerminalId): void {
 	if (!instance) return;
 
 	instance.terminal.focus();
+}
+
+export function terminalInstancePaste(terminalId: TerminalId, text: string): void {
+	const instance = instances.get(terminalId);
+	if (!instance?.websocket) return;
+
+	instance.websocket.send({
+		data: text,
+		type: "input",
+	});
 }
 
 export type { TerminalInstance, TerminalInstanceAddons };

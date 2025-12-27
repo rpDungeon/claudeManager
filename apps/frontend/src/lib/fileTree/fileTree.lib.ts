@@ -1,6 +1,8 @@
+// Review pending by Autumnlight
 import { IndicatorDotColor } from "$lib/common/indicatorDot.lib";
 
 export enum FileTreeItemType {
+	Error = "error",
 	File = "file",
 	Folder = "folder",
 }
@@ -8,6 +10,7 @@ export enum FileTreeItemType {
 export enum FileStatus {
 	Clean = "clean",
 	Conflicted = "conflicted",
+	Error = "error",
 	Ignored = "ignored",
 	Modified = "modified",
 	Staged = "staged",
@@ -17,6 +20,7 @@ export enum FileStatus {
 export const fileStatusColorMap: Record<FileStatus, IndicatorDotColor> = {
 	[FileStatus.Clean]: IndicatorDotColor.Gray,
 	[FileStatus.Conflicted]: IndicatorDotColor.Red,
+	[FileStatus.Error]: IndicatorDotColor.Red,
 	[FileStatus.Ignored]: IndicatorDotColor.Gray,
 	[FileStatus.Modified]: IndicatorDotColor.Amber,
 	[FileStatus.Staged]: IndicatorDotColor.Green,
@@ -24,6 +28,7 @@ export const fileStatusColorMap: Record<FileStatus, IndicatorDotColor> = {
 };
 
 export interface FileTreeItemData {
+	errorMessage?: string;
 	id: string;
 	isLoading?: boolean;
 	meta?: string;

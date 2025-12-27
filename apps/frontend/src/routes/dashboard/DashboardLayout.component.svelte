@@ -32,6 +32,7 @@ let data = $state<LayoutData>(createDefaultLayout());
 let activeItemId = $state<string | null>(null);
 let isLoading = $state(false);
 let error = $state<string | null>(null);
+let isReconnecting = $state(false);
 let isDirty = $state(false);
 let currentProjectId = $state<ProjectId | null>(null);
 let terminalCounter = $state(0);
@@ -82,59 +83,109 @@ async function saveLayout() {
 	}
 }
 
-let sseEffectRunCount = 0;
+let previousLayoutId: LayoutId | null = null;
+let currentEventSource: EventSource | null = null;
+let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+let reconnectAttempts = 0;
+const MAX_RECONNECT_DELAY = 30_000;
+const BASE_RECONNECT_DELAY = 1000;
+
+function connectSSE(targetLayoutId: LayoutId, _isInitial: boolean) {
+	const token = localStorage.getItem("auth_token");
+	const url = `${PUBLIC_API_URL}/layouts/${targetLayoutId}/stream${token ? `?token=${encodeURIComponent(token)}` : ""}`;
+
+	const eventSource = new EventSource(url);
+	currentEventSource = eventSource;
+
+	eventSource.addEventListener("initial", async (e: MessageEvent) => {
+		const layout: LayoutType = JSON.parse(e.data);
+		const hasValidLayout = layout.data?.desktop?.rootId != null;
+
+		if (hasValidLayout && layout.data) {
+			data = layout.data;
+		} else {
+			const defaultData = createDefaultLayout();
+			data = defaultData;
+			await api
+				.layouts({
+					id: targetLayoutId,
+				})
+				.patch({
+					data: defaultData,
+				});
+		}
+		isLoading = false;
+		isReconnecting = false;
+		error = null;
+		isDirty = false;
+		reconnectAttempts = 0;
+	});
+
+	eventSource.addEventListener("update", (e: MessageEvent) => {
+		const layout: LayoutType = JSON.parse(e.data);
+		if (layout.data) {
+			data = layout.data;
+		}
+		isDirty = false;
+	});
+
+	eventSource.addEventListener("heartbeat", () => {});
+
+	eventSource.onerror = () => {
+		eventSource.close();
+		currentEventSource = null;
+		isLoading = false;
+
+		if (targetLayoutId !== layoutId) {
+			return;
+		}
+
+		isReconnecting = true;
+		reconnectAttempts++;
+		const delay = Math.min(BASE_RECONNECT_DELAY * 2 ** (reconnectAttempts - 1), MAX_RECONNECT_DELAY);
+
+		reconnectTimeout = setTimeout(() => {
+			if (targetLayoutId === layoutId) {
+				connectSSE(targetLayoutId, false);
+			}
+		}, delay);
+	};
+
+	return eventSource;
+}
 
 $effect(() => {
-	sseEffectRunCount++;
-	console.log("[SSE] Effect running, layoutId:", layoutId, "runCount:", sseEffectRunCount);
-
-	if (sseEffectRunCount > 5) {
-		console.error("[SSE] LOOP DETECTED! Effect ran too many times");
-		return;
+	if (layoutId !== previousLayoutId) {
+		previousLayoutId = layoutId;
 	}
 
 	if (!layoutId) return;
 
+	if (currentEventSource) {
+		currentEventSource.close();
+		currentEventSource = null;
+	}
+	if (reconnectTimeout) {
+		clearTimeout(reconnectTimeout);
+		reconnectTimeout = null;
+	}
+
 	isLoading = true;
 	error = null;
+	isReconnecting = false;
+	reconnectAttempts = 0;
 
-	const token = localStorage.getItem("auth_token");
-	const url = `${PUBLIC_API_URL}/layouts/${layoutId}/stream${token ? `?token=${encodeURIComponent(token)}` : ""}`;
-	console.log("[SSE] Connecting to:", url);
-	const eventSource = new EventSource(url);
-
-	eventSource.addEventListener("initial", (e: MessageEvent) => {
-		console.log("[SSE] Received initial event");
-		const layout: LayoutType = JSON.parse(e.data);
-		if (layout.data) {
-			data = layout.data;
-		}
-		isLoading = false;
-		isDirty = false;
-	});
-
-	eventSource.addEventListener("update", (e: MessageEvent) => {
-		console.log("[SSE] Received update event");
-		const layout: LayoutType = JSON.parse(e.data);
-		if (layout.data) {
-			data = layout.data;
-		}
-		isDirty = false;
-	});
-
-	eventSource.addEventListener("heartbeat", () => {
-		console.log("[SSE] Received heartbeat");
-	});
-
-	eventSource.onerror = () => {
-		console.log("[SSE] Connection error");
-		error = "Connection lost";
-		isLoading = false;
-	};
+	connectSSE(layoutId, true);
 
 	return () => {
-		console.log("[SSE] Cleanup, closing EventSource");
-		eventSource.close();
+		if (currentEventSource) {
+			currentEventSource.close();
+			currentEventSource = null;
+		}
+		if (reconnectTimeout) {
+			clearTimeout(reconnectTimeout);
+			reconnectTimeout = null;
+		}
 	};
 });
 
@@ -145,7 +196,7 @@ function markDirty() {
 
 	if (saveTimeout) clearTimeout(saveTimeout);
 	saveTimeout = setTimeout(() => {
-		saveLayout();
+		void saveLayout();
 	}, 2000);
 }
 
@@ -383,7 +434,6 @@ async function ensureProject(): Promise<ProjectId | null> {
 }
 
 async function handleAddItem(containerId: string) {
-	console.log("[DashboardLayout] handleAddItem called for container:", containerId);
 	const projectId = await ensureProject();
 	if (!projectId) {
 		console.error("Failed to get or create project");
@@ -391,7 +441,6 @@ async function handleAddItem(containerId: string) {
 	}
 
 	const terminalName = `Shell ${++terminalCounter}`;
-	console.log("[DashboardLayout] Creating terminal:", terminalName);
 
 	const response = await api.terminals.post({
 		name: terminalName,
@@ -405,12 +454,10 @@ async function handleAddItem(containerId: string) {
 	}
 
 	const terminal = response.data;
-	console.log("[DashboardLayout] Terminal created:", terminal.id);
 
 	const terminalItem: LayoutItemTerminal = {
 		id: terminal.id,
 		label: terminalName,
-		terminalId: terminal.id,
 		type: "terminal",
 	};
 
@@ -426,16 +473,56 @@ async function handleAddItem(containerId: string) {
 		tabsContainer.activeTabId = terminal.id;
 	}
 
-	console.log("[DashboardLayout] Updating data state");
 	data = {
 		...data,
 	};
 	markDirty();
-	console.log("[DashboardLayout] handleAddItem complete");
+}
+
+function handleItemRename(_containerId: string, itemId: string) {
+	const item = data.items[itemId];
+	if (!item) return;
+
+	const newLabel = prompt("Enter new name:", item.label);
+	if (newLabel && newLabel !== item.label) {
+		item.label = newLabel;
+		data = {
+			...data,
+		};
+		markDirty();
+	}
+}
+
+async function handleItemClose(containerId: string, itemId: string) {
+	const item = data.items[itemId];
+	const container = data.desktop.containers[containerId];
+	if (container?.type !== "tabs") return;
+
+	if (item?.type === "terminal") {
+		await api
+			.terminals({
+				id: itemId,
+			})
+			.delete();
+	}
+
+	const tabsContainer = container as LayoutContainerTabs;
+	tabsContainer.childIds = tabsContainer.childIds.filter((id) => id !== itemId);
+
+	if (tabsContainer.activeTabId === itemId) {
+		tabsContainer.activeTabId = tabsContainer.childIds[0] ?? null;
+	}
+
+	delete data.items[itemId];
+	cleanupEmptyContainers();
+	data = {
+		...data,
+	};
+	markDirty();
 }
 </script>
 
-<div class="h-full w-full">
+<div class="h-full w-full relative">
 	{#if isLoading}
 		<div class="flex h-full items-center justify-center bg-bg-void text-text-tertiary">
 			Loading layout...
@@ -445,6 +532,12 @@ async function handleAddItem(containerId: string) {
 			{error}
 		</div>
 	{:else}
+		{#if isReconnecting}
+			<div class="absolute top-2 right-2 z-50 flex items-center gap-2 rounded bg-bg-elevated px-3 py-1.5 text-xs text-terminal-amber border border-terminal-amber/30">
+				<span class="inline-block w-2 h-2 rounded-full bg-terminal-amber animate-pulse"></span>
+				Reconnecting...
+			</div>
+		{/if}
 		<Layout
 			{data}
 			{activeItemId}
@@ -455,6 +548,8 @@ async function handleAddItem(containerId: string) {
 			onSplitResize={handleSplitResize}
 			onSplitDrop={handleSplitDrop}
 			onAddItem={handleAddItem}
+			onItemRename={handleItemRename}
+			onItemClose={handleItemClose}
 		/>
 	{/if}
 </div>

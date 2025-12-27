@@ -9,6 +9,7 @@ usage: Pass terminal item data to render the Terminal component
 -->
 <script lang="ts">
 import type { LayoutItemTerminal } from "@claude-manager/common/src/layout/item/item.terminal";
+import type { TerminalId } from "@claude-manager/common/src/terminal/terminal.types";
 import Terminal from "$lib/terminal/Terminal.component.svelte";
 
 interface Props {
@@ -35,7 +36,7 @@ let {
 </script>
 
 <Terminal
-	terminalId={item.terminalId}
+	terminalId={item.id as TerminalId}
 	title={item.label ?? "shell"}
 	{isActive}
 	{onclick}

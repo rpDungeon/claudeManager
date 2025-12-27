@@ -28,6 +28,8 @@ interface Props {
 	onItemDrop?: (droppedItemId: string, targetContainerId: string) => void;
 	onSplitDrop?: (droppedItemId: string, targetContainerId: string, position: LayoutDropZonePosition) => void;
 	onAddItem?: (containerId: string) => void;
+	onItemRename?: (containerId: string, itemId: string) => void;
+	onItemClose?: (containerId: string, itemId: string) => void;
 }
 
 let {
@@ -42,6 +44,8 @@ let {
 	onItemDrop,
 	onSplitDrop,
 	onAddItem,
+	onItemRename,
+	onItemClose,
 }: Props = $props();
 
 function handleLayoutChange(sizes: number[]) {
@@ -109,6 +113,8 @@ function handleItemClick(itemId: string) {
 					{onItemDrop}
 					{onSplitDrop}
 					{onAddItem}
+					{onItemRename}
+					{onItemClose}
 				/>
 			{:else if child?.type === "item"}
 				<LayoutItem_

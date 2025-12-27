@@ -10,9 +10,11 @@ usage: Pass container data with childIds to render tabs with content switching a
 <script lang="ts">
 import type { LayoutContainerTabs } from "@claude-manager/common/src/layout/container/container.tabs";
 import type { LayoutItem } from "@claude-manager/common/src/layout/item/item.types";
-import type { LayoutDropZonePosition } from "../dropzone/dropzone.lib";
-import LayoutItem_ from "../item/_LayoutItem.svelte";
-import LayoutDropZone from "../dropzone/LayoutDropZone.component.svelte";
+import type { LayoutDropZonePosition } from "../../dropzone/dropzone.lib";
+import type { ContextMenuPosition } from "$lib/common/contextMenu/contextMenu.lib";
+import LayoutItem_ from "../../item/_LayoutItem.svelte";
+import LayoutDropZone from "../../dropzone/LayoutDropZone.component.svelte";
+import LayoutContainerTabsContextMenu from "./LayoutContainerTabsContextMenu.component.svelte";
 
 interface Props {
 	container: LayoutContainerTabs;
@@ -24,6 +26,8 @@ interface Props {
 	onItemDrop?: (droppedItemId: string, targetContainerId: string) => void;
 	onSplitDrop?: (droppedItemId: string, targetContainerId: string, position: LayoutDropZonePosition) => void;
 	onAddItem?: (containerId: string) => void;
+	onItemRename?: (containerId: string, itemId: string) => void;
+	onItemClose?: (containerId: string, itemId: string) => void;
 }
 
 let {
@@ -36,12 +40,16 @@ let {
 	onItemDrop,
 	onSplitDrop,
 	onAddItem,
+	onItemRename,
+	onItemClose,
 }: Props = $props();
 
 const activeTabId = $derived(container.activeTabId ?? container.childIds[0] ?? null);
 
 let dragOverTabId = $state<string | null>(null);
 let isDragOverContent = $state(false);
+let contextMenuPosition = $state<ContextMenuPosition | null>(null);
+let contextMenuItemId = $state<string | null>(null);
 
 let tabListEl = $state<HTMLElement | null>(null);
 let canScrollLeft = $state(false);
@@ -78,6 +86,34 @@ function handleItemClick(itemId: string) {
 	return (_event: MouseEvent) => {
 		onItemSelect?.(itemId);
 	};
+}
+
+function handleTabContextMenu(itemId: string, event: MouseEvent) {
+	event.preventDefault();
+	contextMenuItemId = itemId;
+	contextMenuPosition = {
+		x: event.clientX,
+		y: event.clientY,
+	};
+}
+
+function handleContextMenuClose() {
+	contextMenuPosition = null;
+	contextMenuItemId = null;
+}
+
+function handleContextMenuRename() {
+	if (contextMenuItemId) {
+		onItemRename?.(container.id, contextMenuItemId);
+	}
+	handleContextMenuClose();
+}
+
+function handleContextMenuCloseItem() {
+	if (contextMenuItemId) {
+		onItemClose?.(container.id, contextMenuItemId);
+	}
+	handleContextMenuClose();
 }
 
 function handleTabDragStart(itemId: string, event: DragEvent) {
@@ -203,6 +239,7 @@ function handleDropZoneDrop(containerId: string, zone: LayoutDropZonePosition, e
 							{dragOverTabId === childId ? 'ring-1 ring-terminal-green ring-inset' : ''}"
 						draggable="true"
 						onclick={() => handleTabClick(childId)}
+						oncontextmenu={(e) => handleTabContextMenu(childId, e)}
 						ondragstart={(e) => handleTabDragStart(childId, e)}
 						ondragover={(e) => handleTabDragOver(childId, e)}
 						ondragleave={(e) => handleTabDragLeave(childId, e)}
@@ -270,3 +307,12 @@ function handleDropZoneDrop(containerId: string, zone: LayoutDropZonePosition, e
 		/>
 	</div>
 </div>
+
+{#if contextMenuPosition}
+	<LayoutContainerTabsContextMenu
+		position={contextMenuPosition}
+		onRename={handleContextMenuRename}
+		onClose={handleContextMenuCloseItem}
+		onMenuClose={handleContextMenuClose}
+	/>
+{/if}

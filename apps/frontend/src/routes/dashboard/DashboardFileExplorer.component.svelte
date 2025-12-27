@@ -1,3 +1,4 @@
+<!-- Review pending by Autumnlight -->
 <!--
 @component
 name: DashboardFileExplorer
@@ -16,6 +17,7 @@ import {
 	FsWatchEventType,
 	type FsEntry,
 } from "@claude-manager/common/src/fs/fs.types";
+import { fsPathEnsureTrailingSlash, fsPathParent } from "@claude-manager/common/src/fs/fs.utils";
 import FileTree from "$lib/fileTree/FileTree.component.svelte";
 import { FileTreeItemType, type FileTreeItemData } from "$lib/fileTree/fileTree.lib";
 import { api } from "$lib/api/api.client";
@@ -38,8 +40,6 @@ let {
 type ItemId = string;
 type WsConnection = ReturnType<typeof api.ws.fs.watch.subscribe>;
 
-const LEADING_SLASH_REGEX = /^\//;
-
 let items = $state(new SvelteMap<ItemId, FileTreeItemData>());
 let parentMap = $state(new SvelteMap<ItemId, ItemId>());
 let expandedIds = $state(new SvelteSet<ItemId>());
@@ -55,13 +55,24 @@ let contextMenuPosition = $state<ContextMenuPosition>({
 	y: 0,
 });
 
-const rootId = $derived(rootPath);
+const normalizedRootPath = $derived(fsPathEnsureTrailingSlash(rootPath));
+const rootId = $derived(normalizedRootPath);
 
 function fsEntryToTreeItem(entry: FsEntry): FileTreeItemData {
+	const hasError = Boolean(entry.error);
+
+	let type: FileTreeItemType;
+	if (hasError) {
+		type = FileTreeItemType.Error;
+	} else {
+		type = entry.type === FsEntryType.Directory ? FileTreeItemType.Folder : FileTreeItemType.File;
+	}
+
 	return {
+		errorMessage: entry.error?.message,
 		id: entry.path,
 		name: entry.name,
-		type: entry.type === FsEntryType.Directory ? FileTreeItemType.Folder : FileTreeItemType.File,
+		type,
 	};
 }
 
@@ -79,8 +90,9 @@ onMount(() => {
 	wsConnection = ws;
 
 	ws.on("open", () => {
+		console.log("[FileExplorer] Sending watch for:", normalizedRootPath);
 		ws.send({
-			path: rootPath,
+			path: normalizedRootPath,
 			recursive: false,
 			type: FsWatchMessageClientType.Watch,
 		});
@@ -90,18 +102,19 @@ onMount(() => {
 		const msg = message.data;
 
 		if (msg.type === FsWatchMessageServerType.Initial) {
-			const isRoot = msg.path === rootPath;
+			const isRoot = msg.path === normalizedRootPath;
 
 			if (isRoot) {
 				items.clear();
 				parentMap.clear();
 
+				const rootName = normalizedRootPath.slice(0, -1).split("/").pop() || normalizedRootPath;
 				const rootItem: FileTreeItemData = {
-					id: rootPath,
-					name: rootPath.split("/").pop() || rootPath,
+					id: normalizedRootPath,
+					name: rootName,
 					type: FileTreeItemType.Folder,
 				};
-				items.set(rootPath, rootItem);
+				items.set(normalizedRootPath, rootItem);
 				isLoading = false;
 			}
 
@@ -121,7 +134,7 @@ onMount(() => {
 				parentMap.delete(msg.path);
 			} else if (msg.entry) {
 				items.set(msg.path, fsEntryToTreeItem(msg.entry));
-				const parentPath = msg.path.substring(0, msg.path.lastIndexOf("/"));
+				const parentPath = fsPathParent(msg.path);
 				if (parentPath && items.has(parentPath)) {
 					parentMap.set(msg.path, parentPath);
 				}
@@ -144,8 +157,9 @@ onMount(() => {
 	isLoading = true;
 
 	return () => {
+		console.log("[FileExplorer] Cleanup: sending unwatch for:", normalizedRootPath);
 		ws.send({
-			path: rootPath,
+			path: normalizedRootPath,
 			type: FsWatchMessageClientType.Unwatch,
 		});
 		ws.close();
@@ -198,7 +212,13 @@ function handleContextMenu(itemId: ItemId, event: MouseEvent) {
 	if (!item) return;
 
 	contextMenuTargetPath = itemId;
-	contextMenuTargetType = item.type === FileTreeItemType.File ? TargetType.File : TargetType.Folder;
+	if (item.type === FileTreeItemType.Error) {
+		contextMenuTargetType = TargetType.Error;
+	} else if (item.type === FileTreeItemType.File) {
+		contextMenuTargetType = TargetType.File;
+	} else {
+		contextMenuTargetType = TargetType.Folder;
+	}
 	contextMenuPosition = {
 		x: event.clientX,
 		y: event.clientY,
@@ -221,7 +241,7 @@ function handleCopyPath() {
 
 function handleCopyRelativePath() {
 	if (!contextMenuTargetPath) return;
-	const relativePath = contextMenuTargetPath.replace(rootPath, "").replace(LEADING_SLASH_REGEX, "");
+	const relativePath = contextMenuTargetPath.replace(normalizedRootPath, "");
 	navigator.clipboard.writeText(relativePath);
 }
 
@@ -230,14 +250,17 @@ async function handleNewFile() {
 	const fileName = prompt("Enter file name:");
 	if (!fileName) return;
 
-	const filePath = `${contextMenuTargetPath}/${fileName}`;
+	const parentPath = contextMenuTargetPath.endsWith("/") ? contextMenuTargetPath.slice(0, -1) : contextMenuTargetPath;
+	const filePath = `${parentPath}/${fileName}`;
 	const result = await api.fs.file.post({
 		content: "",
 		path: filePath,
 	});
 
 	if (result.error) {
-		console.error("[FileExplorer] Failed to create file:", result.error);
+		const errorMsg = result.error.value?.message || "Unknown error";
+		console.error("[FileExplorer] Failed to create file:", errorMsg);
+		alert(`Failed to create file: ${errorMsg}`);
 	}
 	handleContextMenuClose();
 }
@@ -247,13 +270,16 @@ async function handleNewFolder() {
 	const folderName = prompt("Enter folder name:");
 	if (!folderName) return;
 
-	const folderPath = `${contextMenuTargetPath}/${folderName}`;
+	const parentPath = contextMenuTargetPath.endsWith("/") ? contextMenuTargetPath.slice(0, -1) : contextMenuTargetPath;
+	const folderPath = `${parentPath}/${folderName}`;
 	const result = await api.fs.folder.post({
 		path: folderPath,
 	});
 
 	if (result.error) {
-		console.error("[FileExplorer] Failed to create folder:", result.error);
+		const errorMsg = result.error.value?.message || "Unknown error";
+		console.error("[FileExplorer] Failed to create folder:", errorMsg);
+		alert(`Failed to create folder: ${errorMsg}`);
 	}
 	handleContextMenuClose();
 }
@@ -266,7 +292,7 @@ async function handleRename() {
 	const newName = prompt("Enter new name:", item.name);
 	if (!newName || newName === item.name) return;
 
-	const parentPath = contextMenuTargetPath.substring(0, contextMenuTargetPath.lastIndexOf("/"));
+	const parentPath = fsPathParent(contextMenuTargetPath).slice(0, -1);
 	const newPath = `${parentPath}/${newName}`;
 	const result = await api.fs.rename.post({
 		newPath,
@@ -274,7 +300,9 @@ async function handleRename() {
 	});
 
 	if (result.error) {
-		console.error("[FileExplorer] Failed to rename:", result.error);
+		const errorMsg = result.error.value?.message || "Unknown error";
+		console.error("[FileExplorer] Failed to rename:", errorMsg);
+		alert(`Failed to rename: ${errorMsg}`);
 	}
 	handleContextMenuClose();
 }
@@ -292,7 +320,9 @@ async function handleDelete() {
 	});
 
 	if (result.error) {
-		console.error("[FileExplorer] Failed to delete:", result.error);
+		const errorMsg = result.error.value?.message || "Unknown error";
+		console.error("[FileExplorer] Failed to delete:", errorMsg);
+		alert(`Failed to delete: ${errorMsg}`);
 	}
 	handleContextMenuClose();
 }
