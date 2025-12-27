@@ -6,6 +6,7 @@ import { Elysia } from "elysia";
 import { z } from "zod";
 
 import { db } from "../db/db.client";
+import { layoutService } from "./layout.service";
 
 export const layoutRoutes = new Elysia({
 	prefix: "/layouts",
@@ -66,6 +67,8 @@ export const layoutRoutes = new Elysia({
 					message: "Layout not found",
 				});
 			}
+
+			layoutService.notify(layout);
 
 			return layout;
 		},

@@ -8,6 +8,7 @@ import { dashboardRoutes } from "./dashboard/dashboard.routes";
 import { fsRoutes } from "./fs/fs.routes";
 import { fsWatchWebsocket } from "./fs/fs.websocket";
 import { layoutRoutes } from "./layout/layout.routes";
+import { layoutSse } from "./layout/layout.sse";
 import { projectRoutes } from "./project/project.routes";
 import { systemRoutes } from "./system/system.routes";
 import { systemWebsocket } from "./system/system.websocket";
@@ -40,6 +41,7 @@ export const api = new Elysia()
 	.use(fsRoutes)
 	.use(fsWatchWebsocket)
 	.use(layoutRoutes)
+	.use(layoutSse)
 	.use(projectRoutes)
 	.use(claudeSessionRoutes)
 	.use(systemRoutes)

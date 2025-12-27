@@ -1,4 +1,4 @@
-import * as nodefs from "node:fs";
+import type * as nodefs from "node:fs";
 import * as nodefsPromises from "node:fs/promises";
 import * as path from "node:path";
 import { fsMaxFileSize } from "@claude-manager/common/src/fs/fs.config";
@@ -10,6 +10,7 @@ import {
 	type FsWatchMessageServer,
 	FsWatchMessageServerType,
 } from "@claude-manager/common/src/fs/fs.types";
+import { type FSWatcher, watch } from "chokidar";
 
 type Unsubscribe = () => void;
 type FsWatchCallback = (message: FsWatchMessageServer) => void;
@@ -18,7 +19,7 @@ type FsWatcherState = {
 	callbacks: Set<FsWatchCallback>;
 	dirPath: string;
 	recursive: boolean;
-	watcher: nodefs.FSWatcher;
+	watcher: FSWatcher;
 };
 
 type FsReadResult =
@@ -30,6 +31,38 @@ type FsReadResult =
 			ok: false;
 			error: string;
 			status: 400 | 403 | 404;
+	  };
+
+type FsWriteResult =
+	| {
+			ok: true;
+			data: FsEntry;
+	  }
+	| {
+			ok: false;
+			error: string;
+			status: 400 | 403 | 404 | 409;
+	  };
+
+type FsDeleteResult =
+	| {
+			ok: true;
+	  }
+	| {
+			ok: false;
+			error: string;
+			status: 403 | 404;
+	  };
+
+type FsRenameResult =
+	| {
+			ok: true;
+			data: FsEntry;
+	  }
+	| {
+			ok: false;
+			error: string;
+			status: 400 | 403 | 404 | 409;
 	  };
 
 function fsEntryFromStats(filePath: string, stats: nodefs.Stats): FsEntry {
@@ -148,31 +181,60 @@ class FsService {
 			callbacks.add(callback);
 
 			try {
-				const watcher = nodefs.watch(
-					dirPath,
-					{
-						recursive,
-					},
-					(eventType, filename) => {
-						if (!filename) return;
+				const watcher = watch(dirPath, {
+					depth: recursive ? undefined : 0,
+					ignoreInitial: true,
+					persistent: true,
+				});
 
-						const changedPath = path.join(dirPath, filename);
-						const event = eventType === "rename" ? FsWatchEventType.Rename : FsWatchEventType.Modify;
+				const sendChange = (changedPath: string, event: FsWatchEventType, entry?: FsEntry) => {
+					const message: FsWatchMessageServer = {
+						entry,
+						event,
+						path: changedPath,
+						type: FsWatchMessageServerType.Change,
+					};
+					for (const cb of callbacks) {
+						cb(message);
+					}
+				};
 
-						void fsEntryFromPath(changedPath).then((entry) => {
-							const message: FsWatchMessageServer = {
-								entry: entry ?? undefined,
-								event: entry ? event : FsWatchEventType.Delete,
-								path: changedPath,
-								type: FsWatchMessageServerType.Change,
-							};
+				watcher.on("add", (filePath) => {
+					void fsEntryFromPath(filePath).then((entry) => {
+						if (entry) sendChange(filePath, FsWatchEventType.Rename, entry);
+					});
+				});
 
-							for (const cb of callbacks) {
-								cb(message);
-							}
+				watcher.on("addDir", (filePath) => {
+					if (filePath === dirPath) return;
+					void fsEntryFromPath(filePath).then((entry) => {
+						if (entry) sendChange(filePath, FsWatchEventType.Rename, entry);
+					});
+				});
+
+				watcher.on("change", (filePath) => {
+					void fsEntryFromPath(filePath).then((entry) => {
+						if (entry) sendChange(filePath, FsWatchEventType.Modify, entry);
+					});
+				});
+
+				watcher.on("unlink", (filePath) => {
+					sendChange(filePath, FsWatchEventType.Delete);
+				});
+
+				watcher.on("unlinkDir", (filePath) => {
+					sendChange(filePath, FsWatchEventType.Delete);
+				});
+
+				watcher.on("error", (err) => {
+					for (const cb of callbacks) {
+						cb({
+							message: err.message,
+							path: dirPath,
+							type: FsWatchMessageServerType.Error,
 						});
-					},
-				);
+					}
+				});
 
 				state = {
 					callbacks,
@@ -214,7 +276,7 @@ class FsService {
 			currentState.callbacks.delete(callback);
 
 			if (currentState.callbacks.size === 0) {
-				currentState.watcher.close();
+				void currentState.watcher.close();
 				this.watchers.delete(key);
 			}
 		};
@@ -222,6 +284,309 @@ class FsService {
 
 	watchersCount(): number {
 		return this.watchers.size;
+	}
+
+	async rename(oldPath: string, newPath: string): Promise<FsRenameResult> {
+		try {
+			await nodefsPromises.stat(oldPath);
+		} catch (err) {
+			const code = (err as NodeJS.ErrnoException).code;
+			if (code === "ENOENT") {
+				return {
+					error: "Source path not found",
+					ok: false,
+					status: 404,
+				};
+			}
+			if (code === "EACCES") {
+				return {
+					error: "Permission denied",
+					ok: false,
+					status: 403,
+				};
+			}
+			throw err;
+		}
+
+		try {
+			await nodefsPromises.stat(newPath);
+			return {
+				error: "Destination already exists",
+				ok: false,
+				status: 409,
+			};
+		} catch (err) {
+			const code = (err as NodeJS.ErrnoException).code;
+			if (code !== "ENOENT") {
+				if (code === "EACCES") {
+					return {
+						error: "Permission denied",
+						ok: false,
+						status: 403,
+					};
+				}
+				throw err;
+			}
+		}
+
+		try {
+			await nodefsPromises.rename(oldPath, newPath);
+			const entry = await fsEntryFromPath(newPath);
+			if (!entry) {
+				return {
+					error: "Failed to read renamed entry",
+					ok: false,
+					status: 400,
+				};
+			}
+			return {
+				data: entry,
+				ok: true,
+			};
+		} catch (err) {
+			const code = (err as NodeJS.ErrnoException).code;
+			if (code === "EACCES") {
+				return {
+					error: "Permission denied",
+					ok: false,
+					status: 403,
+				};
+			}
+			throw err;
+		}
+	}
+
+	async delete(targetPath: string): Promise<FsDeleteResult> {
+		try {
+			const stats = await nodefsPromises.stat(targetPath);
+			if (stats.isDirectory()) {
+				await nodefsPromises.rm(targetPath, {
+					recursive: true,
+				});
+			} else {
+				await nodefsPromises.unlink(targetPath);
+			}
+			return {
+				ok: true,
+			};
+		} catch (err) {
+			const code = (err as NodeJS.ErrnoException).code;
+			if (code === "ENOENT") {
+				return {
+					error: "Path not found",
+					ok: false,
+					status: 404,
+				};
+			}
+			if (code === "EACCES") {
+				return {
+					error: "Permission denied",
+					ok: false,
+					status: 403,
+				};
+			}
+			throw err;
+		}
+	}
+
+	async fileCreate(filePath: string, content?: string): Promise<FsWriteResult> {
+		try {
+			await nodefsPromises.stat(filePath);
+			return {
+				error: "File already exists",
+				ok: false,
+				status: 409,
+			};
+		} catch (err) {
+			const code = (err as NodeJS.ErrnoException).code;
+			if (code !== "ENOENT") {
+				if (code === "EACCES") {
+					return {
+						error: "Permission denied",
+						ok: false,
+						status: 403,
+					};
+				}
+				throw err;
+			}
+		}
+
+		const parentDir = path.dirname(filePath);
+		try {
+			await nodefsPromises.stat(parentDir);
+		} catch (err) {
+			const code = (err as NodeJS.ErrnoException).code;
+			if (code === "ENOENT") {
+				return {
+					error: "Parent directory does not exist",
+					ok: false,
+					status: 404,
+				};
+			}
+			if (code === "EACCES") {
+				return {
+					error: "Permission denied",
+					ok: false,
+					status: 403,
+				};
+			}
+			throw err;
+		}
+
+		try {
+			const data = content ? Buffer.from(content, "base64") : Buffer.alloc(0);
+			await nodefsPromises.writeFile(filePath, data);
+			const entry = await fsEntryFromPath(filePath);
+			if (!entry) {
+				return {
+					error: "Failed to read created file",
+					ok: false,
+					status: 400,
+				};
+			}
+			return {
+				data: entry,
+				ok: true,
+			};
+		} catch (err) {
+			const code = (err as NodeJS.ErrnoException).code;
+			if (code === "EACCES") {
+				return {
+					error: "Permission denied",
+					ok: false,
+					status: 403,
+				};
+			}
+			throw err;
+		}
+	}
+
+	async folderCreate(folderPath: string): Promise<FsWriteResult> {
+		try {
+			await nodefsPromises.stat(folderPath);
+			return {
+				error: "Folder already exists",
+				ok: false,
+				status: 409,
+			};
+		} catch (err) {
+			const code = (err as NodeJS.ErrnoException).code;
+			if (code !== "ENOENT") {
+				if (code === "EACCES") {
+					return {
+						error: "Permission denied",
+						ok: false,
+						status: 403,
+					};
+				}
+				throw err;
+			}
+		}
+
+		const parentDir = path.dirname(folderPath);
+		try {
+			await nodefsPromises.stat(parentDir);
+		} catch (err) {
+			const code = (err as NodeJS.ErrnoException).code;
+			if (code === "ENOENT") {
+				return {
+					error: "Parent directory does not exist",
+					ok: false,
+					status: 404,
+				};
+			}
+			if (code === "EACCES") {
+				return {
+					error: "Permission denied",
+					ok: false,
+					status: 403,
+				};
+			}
+			throw err;
+		}
+
+		try {
+			await nodefsPromises.mkdir(folderPath);
+			const entry = await fsEntryFromPath(folderPath);
+			if (!entry) {
+				return {
+					error: "Failed to read created folder",
+					ok: false,
+					status: 400,
+				};
+			}
+			return {
+				data: entry,
+				ok: true,
+			};
+		} catch (err) {
+			const code = (err as NodeJS.ErrnoException).code;
+			if (code === "EACCES") {
+				return {
+					error: "Permission denied",
+					ok: false,
+					status: 403,
+				};
+			}
+			throw err;
+		}
+	}
+
+	async fileUpdate(filePath: string, content: string): Promise<FsWriteResult> {
+		try {
+			const stats = await nodefsPromises.stat(filePath);
+			if (stats.isDirectory()) {
+				return {
+					error: "Path is a directory",
+					ok: false,
+					status: 400,
+				};
+			}
+		} catch (err) {
+			const code = (err as NodeJS.ErrnoException).code;
+			if (code === "ENOENT") {
+				return {
+					error: "File not found",
+					ok: false,
+					status: 404,
+				};
+			}
+			if (code === "EACCES") {
+				return {
+					error: "Permission denied",
+					ok: false,
+					status: 403,
+				};
+			}
+			throw err;
+		}
+
+		try {
+			const data = Buffer.from(content, "base64");
+			await nodefsPromises.writeFile(filePath, data);
+			const entry = await fsEntryFromPath(filePath);
+			if (!entry) {
+				return {
+					error: "Failed to read updated file",
+					ok: false,
+					status: 400,
+				};
+			}
+			return {
+				data: entry,
+				ok: true,
+			};
+		} catch (err) {
+			const code = (err as NodeJS.ErrnoException).code;
+			if (code === "EACCES") {
+				return {
+					error: "Permission denied",
+					ok: false,
+					status: 403,
+				};
+			}
+			throw err;
+		}
 	}
 }
 

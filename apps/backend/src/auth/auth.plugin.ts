@@ -18,8 +18,15 @@ export const authPlugin = new Elysia({
 		{
 			as: "scoped",
 		},
-		async ({ jwt, bearer }) => {
-			const payload = await jwt.verify(bearer);
+		async ({ jwt, bearer, query }) => {
+			const token =
+				bearer ||
+				(
+					query as {
+						token?: string;
+					}
+				)?.token;
+			const payload = await jwt.verify(token);
 			return {
 				user: payload
 					? {

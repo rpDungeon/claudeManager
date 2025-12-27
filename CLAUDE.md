@@ -85,9 +85,9 @@ This convention:
 - Makes it clear what domain/feature an export belongs to
 - Enforced by ESLint rule
 
-## TypeScript Enums Over Union Types
+## HARD RULE: TypeScript Enums Over Union Types
 
-**Prefer TypeScript enums over union string types for type definitions:**
+**ALWAYS use TypeScript enums instead of union string types:**
 
 ```typescript
 // GOOD - Use enum
@@ -232,6 +232,14 @@ Use `termux` for interactive terminal commands:
 - `termux vim file.txt` - Edit files interactively
 - `termux bun run dev` - If you need to interact with dev server output
 
+## Port Allocation
+
+| Service   | Port  | Range       |
+|-----------|-------|-------------|
+| Backend   | 4030  | 4030 - 4034 |
+| Frontend  | 4035  | 4035 - 4038 |
+| Storybook | 4039  | 4039        |
+
 ## Development Commands
 
 ```bash
@@ -242,8 +250,11 @@ bun install
 bun run dev
 
 # Run specific app
-bun run backend:dev
-bun run frontend:dev
+bun run dev:backend   # Backend at http://localhost:4030
+bun run dev:frontend  # Frontend at http://localhost:4035
+
+# Storybook (from apps/frontend)
+cd apps/frontend && bun run storybook  # Storybook at http://localhost:4039
 
 # Database (from apps/backend)
 bun run db:push      # Push schema to SQLite
@@ -255,7 +266,7 @@ bun run db:studio    # Open Drizzle Studio
 
 ```env
 # Server
-PORT=3000
+PORT=4030
 HOST=0.0.0.0
 
 # Database
