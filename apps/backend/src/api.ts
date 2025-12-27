@@ -14,6 +14,7 @@ import { systemRoutes } from "./system/system.routes";
 import { systemWebsocket } from "./system/system.websocket";
 import { terminalPtyWebsocket } from "./terminal/pty/pty.websocket";
 import { terminalRoutes } from "./terminal/terminal.routes";
+import { transcriptionRoutes } from "./transcription/transcription.routes";
 
 export const api = new Elysia()
 	.use(
@@ -46,6 +47,7 @@ export const api = new Elysia()
 	.use(systemRoutes)
 	.use(systemWebsocket)
 	.use(terminalRoutes)
-	.use(terminalPtyWebsocket);
+	.use(terminalPtyWebsocket)
+	.use(transcriptionRoutes);
 
 export type Api = typeof api;

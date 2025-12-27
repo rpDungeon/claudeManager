@@ -1,5 +1,6 @@
 import { authEnvs } from "../auth/auth.env";
 import { dbEnvs } from "../db/db.env";
+import { transcriptionEnvs } from "../transcription/transcription.env";
 
 const commonEnvs = [
 	"HOST",
@@ -10,6 +11,7 @@ const allEnvs = [
 	...commonEnvs,
 	...dbEnvs,
 	...authEnvs,
+	...transcriptionEnvs,
 ] as const;
 
 type AllEnvKeys = (typeof allEnvs)[number];
