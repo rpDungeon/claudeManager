@@ -45,6 +45,10 @@ export default [
 			"custom/export-prefix-from-path": [
 				"error",
 				{
+					ignoreDirs: [
+						"src",
+						"components",
+					],
 					// Only "src" is ignored by default, rest auto-detected from package.json
 					ignorePatterns: [
 						".config.",

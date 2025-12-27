@@ -3,6 +3,7 @@ import {
 	terminalPtyMessageClientSchema,
 	terminalPtyMessageServerSchema,
 } from "@claude-manager/common/src/terminal/pty.types";
+import { terminalInputLogSchema } from "@claude-manager/common/src/terminal/terminal.inputlog.schema";
 import { terminalSchema } from "@claude-manager/common/src/terminal/terminal.schema";
 import { terminalIdSchema } from "@claude-manager/common/src/terminal/terminal.types";
 import { eq } from "drizzle-orm";
@@ -20,13 +21,11 @@ export const terminalPtyWebsocket = new Elysia({
 	body: terminalPtyMessageClientSchema,
 
 	close(ws) {
-		const { terminalId } = ws.data.params;
 		const unsubscribe = unsubscribeMap.get(ws.id);
 		if (unsubscribe) {
 			unsubscribe();
 			unsubscribeMap.delete(ws.id);
 		}
-		terminalPtyService.instanceKill(terminalId);
 	},
 
 	message(ws, message) {
@@ -43,6 +42,13 @@ export const terminalPtyWebsocket = new Elysia({
 
 		if (message.type === "input") {
 			instance.write(message.data);
+
+			db.insert(terminalInputLogSchema)
+				.values({
+					input: message.data,
+					terminalId,
+				})
+				.run();
 		} else if (message.type === "resize") {
 			instance.resize(message.cols, message.rows);
 		}
@@ -50,6 +56,16 @@ export const terminalPtyWebsocket = new Elysia({
 
 	async open(ws) {
 		const { terminalId } = ws.data.params;
+
+		const existingInstance = terminalPtyService.instanceGet(terminalId);
+		if (existingInstance) {
+			const unsubscribe = existingInstance.onData((message) => {
+				ws.send(message);
+			});
+
+			unsubscribeMap.set(ws.id, unsubscribe);
+			return;
+		}
 
 		const terminal = await db.query.terminal.findFirst({
 			where: eq(terminalSchema.id, terminalId),

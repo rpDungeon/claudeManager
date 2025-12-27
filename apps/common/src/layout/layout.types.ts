@@ -1,6 +1,7 @@
-import type { InferSelectModel } from "drizzle-orm";
+import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import { z } from "zod";
 
+import { projectIdSchema } from "../project/project.id";
 import { layoutContainerSchema } from "./container/container.types";
 import { layoutItemSchema } from "./item/item.types";
 
@@ -28,8 +29,9 @@ const layoutDataDefault: LayoutData = {
 };
 
 export const layoutCreate = z.object({
-	data: layoutDataSchema.default(layoutDataDefault),
+	data: layoutDataSchema.optional().default(layoutDataDefault),
 	name: z.string().min(1),
+	projectId: projectIdSchema,
 });
 
 export const layoutPatch = z.object({
@@ -38,5 +40,6 @@ export const layoutPatch = z.object({
 });
 
 export type Layout = InferSelectModel<typeof import("./layout.schema").layoutSchema>;
+export type LayoutInsert = InferInsertModel<typeof import("./layout.schema").layoutSchema>;
 export type LayoutArrangement = z.infer<typeof layoutArrangementSchema>;
 export type LayoutData = z.infer<typeof layoutDataSchema>;

@@ -5,7 +5,21 @@ export enum FsEntryType {
 	File = "file",
 }
 
+export enum FsEntryErrorCode {
+	NotFound = "not_found",
+	PermissionDenied = "permission_denied",
+	Unknown = "unknown",
+}
+
+export const fsEntryErrorSchema = z.object({
+	code: z.enum(FsEntryErrorCode),
+	message: z.string(),
+});
+
+export type FsEntryError = z.infer<typeof fsEntryErrorSchema>;
+
 export const fsEntrySchema = z.object({
+	error: fsEntryErrorSchema.optional(),
 	modifiedAt: z.number(),
 	name: z.string(),
 	path: z.string(),
