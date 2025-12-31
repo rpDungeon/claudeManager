@@ -26,6 +26,44 @@ import Layout from "$lib/layout/Layout.component.svelte";
 import { api } from "$lib/api/api.client";
 import { PUBLIC_API_URL } from "$env/static/public";
 
+type LocalhostUrlResult = {
+	converted: boolean;
+	label: string;
+	url: string;
+};
+
+const LOCALHOST_URL_REGEX = /^(https?:\/\/)?localhost:(\d+)(\/.*)?$/;
+
+function localhostUrlConvert(inputUrl: string): LocalhostUrlResult {
+	const match = inputUrl.match(LOCALHOST_URL_REGEX);
+
+	if (!match) {
+		let label: string;
+		try {
+			label = new URL(inputUrl).hostname;
+		} catch {
+			label = "iframe";
+		}
+		return {
+			converted: false,
+			label,
+			url: inputUrl,
+		};
+	}
+
+	const port = match[2];
+	const path = match[3] || "/";
+	const protocol = window.location.protocol;
+	const backendHost = PUBLIC_API_URL ? new URL(PUBLIC_API_URL).host : window.location.host;
+	const proxyUrl = `${protocol}//${backendHost}/proxy/${port}${path}`;
+
+	return {
+		converted: true,
+		label: `localhost:${port}`,
+		url: proxyUrl,
+	};
+}
+
 interface Props {
 	layoutId?: LayoutId | null;
 }
@@ -473,13 +511,15 @@ async function handleAddItem(containerId: string, itemType: AddItemType) {
 		}
 
 		case AddItemType.Iframe: {
-			const url = prompt("Enter URL:", "https://");
-			if (!url) return;
+			const inputUrl = prompt("Enter URL:", "https://");
+			if (!inputUrl) return;
+
+			const { url, label } = localhostUrlConvert(inputUrl);
 
 			itemId = crypto.randomUUID();
 			const iframeItem: LayoutItemIframe = {
 				id: itemId,
-				label: new URL(url).hostname,
+				label,
 				type: "iframe",
 				url,
 			};
@@ -554,14 +594,11 @@ function handleItemChangeUrl(_containerId: string, itemId: string) {
 	const item = data.items[itemId];
 	if (!item || item.type !== "iframe") return;
 
-	const newUrl = prompt("Enter new URL:", item.url);
-	if (newUrl && newUrl !== item.url) {
-		item.url = newUrl;
-		try {
-			item.label = new URL(newUrl).hostname;
-		} catch {
-			item.label = "iframe";
-		}
+	const inputUrl = prompt("Enter new URL:", item.url);
+	if (inputUrl && inputUrl !== item.url) {
+		const { url, label } = localhostUrlConvert(inputUrl);
+		item.url = url;
+		item.label = label;
 		data = {
 			...data,
 		};
@@ -633,13 +670,15 @@ async function handleAddItemToEmptyLayout(itemType: AddItemType) {
 		}
 
 		case AddItemType.Iframe: {
-			const url = prompt("Enter URL:", "https://");
-			if (!url) return;
+			const inputUrl = prompt("Enter URL:", "https://");
+			if (!inputUrl) return;
+
+			const { url, label } = localhostUrlConvert(inputUrl);
 
 			itemId = crypto.randomUUID();
 			const iframeItem: LayoutItemIframe = {
 				id: itemId,
-				label: new URL(url).hostname,
+				label,
 				type: "iframe",
 				url,
 			};
