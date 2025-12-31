@@ -12,9 +12,11 @@ import type { LayoutContainer } from "@claude-manager/common/src/layout/containe
 import type { LayoutItem } from "@claude-manager/common/src/layout/item/item.types";
 import type { LayoutData } from "@claude-manager/common/src/layout/layout.types";
 import type { LayoutDropZonePosition } from "./dropzone/dropzone.lib";
+import type { ContextMenuPosition } from "$lib/common/contextMenu/contextMenu.lib";
 import { AddItemType } from "./container/tabs/layoutContainerTabsAddMenu.lib";
 import LayoutContainer_ from "./container/_LayoutContainer.svelte";
 import LayoutItem_ from "./item/_LayoutItem.svelte";
+import LayoutContainerTabsAddMenu from "./container/tabs/LayoutContainerTabsAddMenu.component.svelte";
 
 type ResolvedRoot =
 	| {
@@ -41,6 +43,7 @@ interface Props {
 	onItemRename?: (containerId: string, itemId: string) => void;
 	onItemChangeUrl?: (containerId: string, itemId: string) => void;
 	onItemClose?: (containerId: string, itemId: string) => void;
+	onAddItemToEmptyLayout?: (itemType: AddItemType) => void;
 }
 
 let {
@@ -57,7 +60,28 @@ let {
 	onItemRename,
 	onItemChangeUrl,
 	onItemClose,
+	onAddItemToEmptyLayout,
 }: Props = $props();
+
+let addMenuPosition = $state<ContextMenuPosition | null>(null);
+
+function handleAddButtonClick(event: MouseEvent) {
+	const button = event.currentTarget as HTMLButtonElement;
+	const rect = button.getBoundingClientRect();
+	addMenuPosition = {
+		x: rect.right,
+		y: rect.bottom + 4,
+	};
+}
+
+function handleAddItem(itemType: AddItemType) {
+	onAddItemToEmptyLayout?.(itemType);
+	addMenuPosition = null;
+}
+
+function handleMenuClose() {
+	addMenuPosition = null;
+}
 
 const arrangement = $derived(mode === "desktop" ? data.desktop : data.mobile);
 const rootId = $derived(arrangement.rootId);
@@ -119,8 +143,28 @@ function handleItemClick(itemId: string) {
 			onclick={handleItemClick(rootId!)}
 		/>
 	{:else}
-		<div class="flex h-full items-center justify-center text-text-tertiary text-xs">
-			No layout configured
+		<div class="flex h-full flex-col items-center justify-center gap-3 text-text-tertiary text-xs">
+			<span>No layout configured</span>
+			{#if onAddItemToEmptyLayout}
+				<button
+					type="button"
+					class="flex size-8 items-center justify-center rounded border border-border-default bg-bg-elevated text-text-secondary transition-colors hover:border-terminal-green hover:text-terminal-green cursor-pointer"
+					onclick={handleAddButtonClick}
+					title="Add item"
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<line x1="12" y1="5" x2="12" y2="19"></line>
+						<line x1="5" y1="12" x2="19" y2="12"></line>
+					</svg>
+				</button>
+			{/if}
 		</div>
+		{#if addMenuPosition}
+			<LayoutContainerTabsAddMenu
+				position={addMenuPosition}
+				onAddItem={handleAddItem}
+				onMenuClose={handleMenuClose}
+			/>
+		{/if}
 	{/if}
 </div>

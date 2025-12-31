@@ -596,6 +596,107 @@ async function handleItemClose(containerId: string, itemId: string) {
 	};
 	markDirty();
 }
+
+async function handleAddItemToEmptyLayout(itemType: AddItemType) {
+	let newItem: LayoutItemTerminal | LayoutItemIframe | LayoutItemImage | LayoutItemMarkdown;
+	let itemId: string;
+
+	switch (itemType) {
+		case AddItemType.Terminal: {
+			const projectId = await ensureProject();
+			if (!projectId) {
+				console.error("Failed to get or create project");
+				return;
+			}
+
+			const terminalName = `Shell ${++terminalCounter}`;
+
+			const response = await api.terminals.post({
+				name: terminalName,
+				projectId,
+				type: TerminalType.Shell,
+			});
+
+			if (response.error || !response.data) {
+				console.error("Failed to create terminal:", response.error);
+				return;
+			}
+
+			const terminal = response.data;
+			itemId = terminal.id;
+			newItem = {
+				id: terminal.id,
+				label: terminalName,
+				type: "terminal",
+			};
+			break;
+		}
+
+		case AddItemType.Iframe: {
+			const url = prompt("Enter URL:", "https://");
+			if (!url) return;
+
+			itemId = crypto.randomUUID();
+			const iframeItem: LayoutItemIframe = {
+				id: itemId,
+				label: new URL(url).hostname,
+				type: "iframe",
+				url,
+			};
+			newItem = iframeItem;
+			break;
+		}
+
+		case AddItemType.Image: {
+			const src = prompt("Enter image URL:");
+			if (!src) return;
+
+			itemId = crypto.randomUUID();
+			const imageItem: LayoutItemImage = {
+				id: itemId,
+				label: "Image",
+				src,
+				type: "image",
+			};
+			newItem = imageItem;
+			break;
+		}
+
+		case AddItemType.Markdown: {
+			itemId = crypto.randomUUID();
+			const markdownItem: LayoutItemMarkdown = {
+				content: "# New Note\n\nStart typing here...",
+				id: itemId,
+				label: "Note",
+				type: "markdown",
+			};
+			newItem = markdownItem;
+			break;
+		}
+
+		default:
+			return;
+	}
+
+	const newContainerId = `main-tabs-${Date.now()}`;
+	const newTabsContainer: LayoutContainerTabs = {
+		activeTabId: itemId,
+		childIds: [
+			itemId,
+		],
+		id: newContainerId,
+		type: "tabs",
+	};
+
+	data.items[itemId] = newItem;
+	data.desktop.containers[newContainerId] = newTabsContainer;
+	data.desktop.rootId = newContainerId;
+
+	data = {
+		...data,
+	};
+	markDirty();
+}
 </script>
 
 <div class="h-full w-full relative">
@@ -627,6 +728,7 @@ async function handleItemClose(containerId: string, itemId: string) {
 			onItemRename={handleItemRename}
 			onItemChangeUrl={handleItemChangeUrl}
 			onItemClose={handleItemClose}
+			onAddItemToEmptyLayout={handleAddItemToEmptyLayout}
 		/>
 	{/if}
 </div>
