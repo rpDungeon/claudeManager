@@ -8,6 +8,7 @@ import type { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal } from "@xterm/xterm";
 import { SvelteMap } from "svelte/reactivity";
 import { api } from "$lib/api/api.client";
+import { settingsTerminalFontSizeGet } from "$lib/settings/settings.service.svelte";
 import { TerminalConnectionStatus, terminalThemeCrt } from "./terminal.lib";
 
 type EdenWebSocket = ReturnType<ReturnType<typeof api.ws.terminal>["subscribe"]>;
@@ -49,7 +50,7 @@ export function terminalInstanceCreate(terminalId: TerminalId): TerminalInstance
 		cursorBlink: true,
 		cursorStyle: "block",
 		fontFamily: "'IBM Plex Mono', monospace",
-		fontSize: 12,
+		fontSize: settingsTerminalFontSizeGet(),
 		lineHeight: 1.2,
 		scrollback: 10_000,
 		theme: terminalThemeCrt,
@@ -456,6 +457,13 @@ export async function terminalInstanceCopySelection(terminalId: TerminalId): Pro
 		return true;
 	} catch {
 		return false;
+	}
+}
+
+export function terminalInstancesSetFontSize(fontSize: number): void {
+	for (const instance of instances.values()) {
+		instance.terminal.options.fontSize = fontSize;
+		instance.addons.fit.fit();
 	}
 }
 

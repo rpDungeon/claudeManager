@@ -13,12 +13,15 @@ import StatusBarItem from "$lib/statusBar/_StatusBarItem.svelte";
 import StatusBarSeparator from "$lib/statusBar/_StatusBarSeparator.svelte";
 import { IndicatorDotColor } from "$lib/common/indicatorDot.lib";
 import { api } from "$lib/api/api.client";
+import { Settings } from "lucide-svelte";
+import GeneralSettingsModal from "./GeneralSettingsModal.component.svelte";
 
 let currentTime = $state(new Date().toLocaleTimeString());
 let cpuPercent = $state(0);
 let memoryPercent = $state(0);
 let ptyCount = $state(0);
 let isConnected = $state(false);
+let settingsOpen = $state(false);
 
 onMount(() => {
 	const ws = api.ws.system.stats.subscribe();
@@ -79,5 +82,14 @@ const connectionIndicator = $derived(isConnected ? IndicatorDotColor.Green : Ind
 	{/snippet}
 	{#snippet right()}
 		<StatusBarItem>{currentTime}</StatusBarItem>
+		<button
+			type="button"
+			onclick={() => (settingsOpen = true)}
+			class="-ml-2 flex items-center justify-center text-text-tertiary hover:text-text-secondary transition-colors"
+		>
+			<Settings class="size-3" />
+		</button>
 	{/snippet}
 </StatusBar>
+
+<GeneralSettingsModal bind:open={settingsOpen} />
