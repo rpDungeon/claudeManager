@@ -24,6 +24,7 @@ import { api } from "$lib/api/api.client";
 import DashboardFileExplorerContextMenu from "./DashboardFileExplorerContextMenu.component.svelte";
 import { TargetType } from "./dashboardFileExplorerContextMenu.lib";
 import type { ContextMenuPosition } from "$lib/common/contextMenu/contextMenu.lib";
+import { gitStore } from "$lib/git/gitStore.svelte";
 
 interface Props {
 	rootPath?: string;
@@ -61,6 +62,21 @@ let mediaRecorder = $state<MediaRecorder | null>(null);
 
 const normalizedRootPath = $derived(fsPathEnsureTrailingSlash(rootPath));
 const rootId = $derived(normalizedRootPath);
+const gitStatusMap = $derived(gitStore.statusMap);
+
+$effect(() => {
+	const _statusMap = gitStatusMap;
+	for (const [id, item] of items) {
+		if (item.type === FileTreeItemType.Folder) continue;
+		const newStatus = gitStore.getFileStatus(id);
+		if (item.status !== newStatus) {
+			items.set(id, {
+				...item,
+				status: newStatus,
+			});
+		}
+	}
+});
 
 function fsEntryToTreeItem(entry: FsEntry): FileTreeItemData {
 	const hasError = Boolean(entry.error);
@@ -72,10 +88,13 @@ function fsEntryToTreeItem(entry: FsEntry): FileTreeItemData {
 		type = entry.type === FsEntryType.Directory ? FileTreeItemType.Folder : FileTreeItemType.File;
 	}
 
+	const gitStatus = gitStore.getFileStatus(entry.path);
+
 	return {
 		errorMessage: entry.error?.message,
 		id: entry.path,
 		name: entry.name,
+		status: gitStatus,
 		type,
 	};
 }
@@ -89,85 +108,129 @@ function addEntries(entries: FsEntry[], parentId?: string) {
 	}
 }
 
-onMount(() => {
-	const ws = api.ws.fs.watch.subscribe();
-	wsConnection = ws;
+let currentWatchPath = $state<string | null>(null);
 
-	ws.on("open", () => {
-		console.log("[FileExplorer] Sending watch for:", normalizedRootPath);
-		ws.send({
-			path: normalizedRootPath,
+$effect(() => {
+	const pathToWatch = normalizedRootPath;
+
+	if (currentWatchPath === pathToWatch) return;
+
+	if (wsConnection && currentWatchPath) {
+		console.log("[FileExplorer] Unwatching old path:", currentWatchPath);
+		wsConnection.send({
+			path: currentWatchPath,
+			type: FsWatchMessageClientType.Unwatch,
+		});
+		gitStore.disconnect();
+	}
+
+	items.clear();
+	parentMap.clear();
+	expandedIds.clear();
+	error = null;
+	isLoading = true;
+	currentWatchPath = pathToWatch;
+
+	const repoPath = pathToWatch.endsWith("/") ? pathToWatch.slice(0, -1) : pathToWatch;
+	gitStore.connect(repoPath);
+
+	if (!wsConnection) {
+		const ws = api.ws.fs.watch.subscribe();
+		wsConnection = ws;
+
+		ws.on("open", () => {
+			console.log("[FileExplorer] Sending watch for:", currentWatchPath);
+			if (currentWatchPath) {
+				ws.send({
+					path: currentWatchPath,
+					recursive: false,
+					type: FsWatchMessageClientType.Watch,
+				});
+			}
+		});
+
+		ws.subscribe((message) => {
+			const msg = message.data;
+
+			if (msg.type === FsWatchMessageServerType.Initial) {
+				const isRoot = msg.path === currentWatchPath;
+
+				if (isRoot) {
+					items.clear();
+					parentMap.clear();
+
+					const rootName = msg.path.slice(0, -1).split("/").pop() || msg.path;
+					const rootItem: FileTreeItemData = {
+						id: msg.path,
+						name: rootName,
+						type: FileTreeItemType.Folder,
+					};
+					items.set(msg.path, rootItem);
+					isLoading = false;
+				}
+
+				addEntries(msg.entries, msg.path);
+				expandedIds.add(msg.path);
+
+				const folderItem = items.get(msg.path);
+				if (folderItem) {
+					folderItem.isLoading = false;
+					items.set(msg.path, {
+						...folderItem,
+					});
+				}
+			} else if (msg.type === FsWatchMessageServerType.Change) {
+				if (msg.event === FsWatchEventType.Delete) {
+					items.delete(msg.path);
+					parentMap.delete(msg.path);
+				} else if (msg.entry) {
+					items.set(msg.path, fsEntryToTreeItem(msg.entry));
+					const parentPath = fsPathParent(msg.path);
+					if (parentPath && items.has(parentPath)) {
+						parentMap.set(msg.path, parentPath);
+					}
+				}
+			} else if (msg.type === FsWatchMessageServerType.Error) {
+				error = msg.message;
+				isLoading = false;
+			}
+		});
+
+		ws.on("error", (err) => {
+			console.error("[FileExplorer] WebSocket error:", err);
+			error = "Connection error";
+		});
+
+		ws.on("close", () => {
+			wsConnection = null;
+		});
+	} else if (wsConnection.ws.readyState === WebSocket.OPEN) {
+		console.log("[FileExplorer] Sending watch for new path:", pathToWatch);
+		wsConnection.send({
+			path: pathToWatch,
 			recursive: false,
 			type: FsWatchMessageClientType.Watch,
 		});
-	});
-
-	ws.subscribe((message) => {
-		const msg = message.data;
-
-		if (msg.type === FsWatchMessageServerType.Initial) {
-			const isRoot = msg.path === normalizedRootPath;
-
-			if (isRoot) {
-				items.clear();
-				parentMap.clear();
-
-				const rootName = normalizedRootPath.slice(0, -1).split("/").pop() || normalizedRootPath;
-				const rootItem: FileTreeItemData = {
-					id: normalizedRootPath,
-					name: rootName,
-					type: FileTreeItemType.Folder,
-				};
-				items.set(normalizedRootPath, rootItem);
-				isLoading = false;
-			}
-
-			addEntries(msg.entries, msg.path);
-			expandedIds.add(msg.path);
-
-			const folderItem = items.get(msg.path);
-			if (folderItem) {
-				folderItem.isLoading = false;
-				items.set(msg.path, {
-					...folderItem,
-				});
-			}
-		} else if (msg.type === FsWatchMessageServerType.Change) {
-			if (msg.event === FsWatchEventType.Delete) {
-				items.delete(msg.path);
-				parentMap.delete(msg.path);
-			} else if (msg.entry) {
-				items.set(msg.path, fsEntryToTreeItem(msg.entry));
-				const parentPath = fsPathParent(msg.path);
-				if (parentPath && items.has(parentPath)) {
-					parentMap.set(msg.path, parentPath);
-				}
-			}
-		} else if (msg.type === FsWatchMessageServerType.Error) {
-			error = msg.message;
-			isLoading = false;
-		}
-	});
-
-	ws.on("error", (err) => {
-		console.error("[FileExplorer] WebSocket error:", err);
-		error = "Connection error";
-	});
-
-	ws.on("close", () => {
-		wsConnection = null;
-	});
-
-	isLoading = true;
+	}
 
 	return () => {
-		console.log("[FileExplorer] Cleanup: sending unwatch for:", normalizedRootPath);
-		ws.send({
-			path: normalizedRootPath,
-			type: FsWatchMessageClientType.Unwatch,
-		});
-		ws.close();
-		wsConnection = null;
+		if (wsConnection && currentWatchPath) {
+			console.log("[FileExplorer] Cleanup: sending unwatch for:", currentWatchPath);
+			wsConnection.send({
+				path: currentWatchPath,
+				type: FsWatchMessageClientType.Unwatch,
+			});
+		}
+	};
+});
+
+onMount(() => {
+	return () => {
+		if (wsConnection) {
+			wsConnection.close();
+			wsConnection = null;
+		}
+		gitStore.disconnect();
 	};
 });
 
