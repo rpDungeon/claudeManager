@@ -140,7 +140,7 @@ function formatInput(input: string): string {
 				</button>
 			</div>
 
-			<div class="flex-1 overflow-y-auto">
+			<div class="activity-scroll flex-1 overflow-y-auto">
 				{#if activeTab === TerminalSidebarTab.Activity}
 					{#if isLoading}
 						<div class="flex items-center justify-center p-4 text-[10px] text-text-tertiary">
@@ -171,3 +171,30 @@ function formatInput(input: string): string {
 		</div>
 	</div>
 </div>
+
+<style>
+	.activity-scroll {
+		scrollbar-width: thin;
+		scrollbar-color: rgba(0, 255, 65, 0.5) rgba(0, 0, 0, 0.3);
+	}
+
+	.activity-scroll::-webkit-scrollbar {
+		width: 6px;
+	}
+
+	.activity-scroll::-webkit-scrollbar-track {
+		background: rgba(0, 0, 0, 0.3);
+		border-radius: 3px;
+	}
+
+	.activity-scroll::-webkit-scrollbar-thumb {
+		background: rgba(0, 255, 65, 0.5);
+		border-radius: 3px;
+		box-shadow: 0 0 4px rgba(0, 255, 65, 0.3);
+	}
+
+	.activity-scroll::-webkit-scrollbar-thumb:hover {
+		background: rgba(0, 255, 65, 0.7);
+		box-shadow: 0 0 6px rgba(0, 255, 65, 0.5);
+	}
+</style>
