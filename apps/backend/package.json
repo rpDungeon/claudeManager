@@ -12,6 +12,7 @@
 		"drizzle-orm": "^0.38.3",
 		"elysia": "^1.2.9",
 		"nanoid": "^5.0.9",
+		"simple-git": "^3.30.0",
 		"zod": "^4.2.1"
 	},
 	"devDependencies": {

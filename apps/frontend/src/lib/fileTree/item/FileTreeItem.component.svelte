@@ -62,6 +62,7 @@ let isDragOver = $state(false);
 const isError = $derived(type === FileTreeItemType.Error);
 const isFolder = $derived(type === FileTreeItemType.Folder);
 const showChevron = $derived(isFolder && !isError);
+const showStatusIndicator = $derived(status && status !== "clean" && status !== "ignored");
 const statusColor = $derived(status ? fileStatusColorMap[status] : IndicatorDotColor.Gray);
 
 function handleClick() {
@@ -170,5 +171,7 @@ function handleContextMenu(event: MouseEvent) {
 		</span>
 	{/if}
 
-	<IndicatorDot color={statusColor} glow={isActive} pulse={isActive} />
+	{#if showStatusIndicator}
+		<IndicatorDot color={statusColor} glow={isActive} pulse={isActive} />
+	{/if}
 </button>

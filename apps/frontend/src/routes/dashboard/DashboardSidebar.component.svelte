@@ -14,7 +14,10 @@ import type { ProjectId } from "@claude-manager/common/src/project/project.id";
 import { onMount } from "svelte";
 import { api } from "$lib/api/api.client";
 import DashboardFileExplorer from "./DashboardFileExplorer.component.svelte";
+import DashboardGitPanel from "./DashboardGitPanel.component.svelte";
 import DashboardSelector from "./DashboardSelector.component.svelte";
+
+type SidebarTab = "files" | "git";
 
 const defaultLayoutData: LayoutData = {
 	desktop: {
@@ -69,6 +72,7 @@ let projects = $state<Project[]>([]);
 let layouts = $state<Layout[]>([]);
 let isLoadingProjects = $state(true);
 let isLoadingLayouts = $state(false);
+let activeTab = $state<SidebarTab>("files");
 
 const selectedProject = $derived(projects.find((p) => p.id === selectedProjectId));
 
@@ -212,13 +216,38 @@ onMount(() => {
 		/>
 	</div>
 
+	<div class="flex border-b border-border-default">
+		<button
+			type="button"
+			onclick={() => (activeTab = "files")}
+			class="flex-1 px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider transition-colors
+				{activeTab === 'files'
+				? 'bg-bg-elevated border-b-2 border-terminal-green text-text-primary -mb-px'
+				: 'text-text-tertiary hover:text-text-secondary'}"
+		>
+			Files
+		</button>
+		<button
+			type="button"
+			onclick={() => (activeTab = "git")}
+			class="flex-1 px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider transition-colors
+				{activeTab === 'git'
+				? 'bg-bg-elevated border-b-2 border-terminal-green text-text-primary -mb-px'
+				: 'text-text-tertiary hover:text-text-secondary'}"
+		>
+			Git
+		</button>
+	</div>
+
 	<div class="flex-1 overflow-hidden">
-		{#if selectedProject}
-			<DashboardFileExplorer rootPath={selectedProject.path} />
-		{:else}
+		{#if !selectedProject}
 			<div class="flex h-full items-center justify-center text-[10px] text-text-tertiary">
 				Select a project
 			</div>
+		{:else if activeTab === "files"}
+			<DashboardFileExplorer rootPath={selectedProject.path} />
+		{:else}
+			<DashboardGitPanel rootPath={selectedProject.path} />
 		{/if}
 	</div>
 </div>
