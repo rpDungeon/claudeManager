@@ -1,4 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
 import {
 	type TerminalPtyMessageServer,
 	TerminalPtyMessageServerType,
@@ -31,7 +32,7 @@ type InternalPtyState = {
 	terminalId: TerminalId;
 };
 
-const TERMINAL_DATA_DIR = Bun.env.TERMINAL_DATA_DIR;
+const TERMINAL_DATA_DIR = resolve(Bun.env.TERMINAL_DATA_DIR);
 const SOCKET_DIR = `${TERMINAL_DATA_DIR}/sockets`;
 const SCROLLBACK_DIR = `${TERMINAL_DATA_DIR}/scrollback`;
 const SCROLLBACK_LINES = 10_000;

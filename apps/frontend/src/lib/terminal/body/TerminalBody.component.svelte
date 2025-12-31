@@ -125,4 +125,8 @@ $effect(() => {
 		background: rgba(0, 255, 65, 0.9);
 		box-shadow: 0 0 12px rgba(0, 255, 65, 0.8);
 	}
+
+	.xterm-container :global(.xterm-selection div) {
+		background-color: rgba(0, 255, 65, 0.2) !important;
+	}
 </style>

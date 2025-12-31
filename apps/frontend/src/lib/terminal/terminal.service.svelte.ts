@@ -1,6 +1,5 @@
 // Review pending by Autumnlight
 import type { TerminalId } from "@claude-manager/common/src/terminal/terminal.types";
-import { ClipboardAddon } from "@xterm/addon-clipboard";
 import { FitAddon } from "@xterm/addon-fit";
 import { SearchAddon } from "@xterm/addon-search";
 import { SerializeAddon } from "@xterm/addon-serialize";
@@ -17,7 +16,6 @@ type EdenOnMessage = Parameters<Parameters<EdenWebSocket["subscribe"]>[0]>[0];
 type ServerMessage = EdenOnMessage["data"];
 
 type TerminalInstanceAddons = {
-	clipboard: ClipboardAddon;
 	fit: FitAddon;
 	search: SearchAddon;
 	serialize: SerializeAddon;
@@ -57,13 +55,11 @@ export function terminalInstanceCreate(terminalId: TerminalId): TerminalInstance
 		theme: terminalThemeCrt,
 	});
 
-	const clipboardAddon = new ClipboardAddon();
 	const fitAddon = new FitAddon();
 	const searchAddon = new SearchAddon();
 	const serializeAddon = new SerializeAddon();
 	const webLinksAddon = new WebLinksAddon();
 
-	terminal.loadAddon(clipboardAddon);
 	terminal.loadAddon(fitAddon);
 	terminal.loadAddon(searchAddon);
 	terminal.loadAddon(serializeAddon);
@@ -71,7 +67,6 @@ export function terminalInstanceCreate(terminalId: TerminalId): TerminalInstance
 
 	const instance: TerminalInstance = $state({
 		addons: {
-			clipboard: clipboardAddon,
 			fit: fitAddon,
 			search: searchAddon,
 			serialize: serializeAddon,
@@ -108,21 +103,53 @@ export function terminalInstanceMount(terminalId: TerminalId, container: HTMLEle
 	instance.container = container;
 	instance.terminal.open(container);
 
+	const textarea = container.querySelector("textarea.xterm-helper-textarea");
+	if (textarea) {
+		textarea.addEventListener(
+			"paste",
+			(event) => {
+				event.preventDefault();
+				event.stopImmediatePropagation();
+			},
+			{
+				capture: true,
+			},
+		);
+	}
+
+	let selectionAnchor: {
+		col: number;
+		row: number;
+	} | null = null;
+	let selectionEnd: {
+		col: number;
+		row: number;
+	} | null = null;
+	let lastCopyTime = 0;
+
 	instance.terminal.attachCustomKeyEventHandler((event) => {
 		if (event.type !== "keydown") return true;
 
-		if (event.ctrlKey && event.code === "KeyC") {
+		if (event.ctrlKey && !event.shiftKey && event.code === "KeyC") {
+			const now = Date.now();
 			const selection = instance.terminal.getSelection();
-			if (instance.terminal.hasSelection() && selection) {
+
+			if (instance.terminal.hasSelection() && selection && now - lastCopyTime > 1000) {
 				navigator.clipboard.writeText(selection);
 				instance.terminal.clearSelection();
+				selectionAnchor = null;
+				selectionEnd = null;
+				lastCopyTime = now;
 				return false;
 			}
+
+			lastCopyTime = 0;
+			return true;
 		}
 
-		if (event.ctrlKey && event.code === "KeyV") {
+		if (event.ctrlKey && !event.shiftKey && event.code === "KeyV") {
 			navigator.clipboard.readText().then((text) => {
-				if (instance.websocket) {
+				if (text && instance.websocket) {
 					instance.websocket.send({
 						data: text,
 						type: "input",
@@ -130,6 +157,75 @@ export function terminalInstanceMount(terminalId: TerminalId, container: HTMLEle
 				}
 			});
 			return false;
+		}
+
+		if (
+			event.shiftKey &&
+			!event.ctrlKey &&
+			!event.altKey &&
+			(event.code === "ArrowLeft" || event.code === "ArrowRight")
+		) {
+			const buffer = instance.terminal.buffer.active;
+			const cols = instance.terminal.cols;
+
+			if (!selectionAnchor) {
+				selectionAnchor = {
+					col: buffer.cursorX,
+					row: buffer.cursorY + buffer.baseY,
+				};
+				selectionEnd = {
+					col: buffer.cursorX,
+					row: buffer.cursorY + buffer.baseY,
+				};
+			}
+
+			if (event.code === "ArrowLeft") {
+				if (selectionEnd!.col > 0) {
+					selectionEnd!.col--;
+				} else if (selectionEnd!.row > 0) {
+					selectionEnd!.row--;
+					selectionEnd!.col = cols - 1;
+				}
+				instance.websocket?.send({
+					data: "\x1b[D",
+					type: "input",
+				});
+			} else {
+				if (selectionEnd!.col < cols - 1) {
+					selectionEnd!.col++;
+				} else {
+					selectionEnd!.row++;
+					selectionEnd!.col = 0;
+				}
+				instance.websocket?.send({
+					data: "\x1b[C",
+					type: "input",
+				});
+			}
+
+			const startCol = Math.min(selectionAnchor.col, selectionEnd!.col);
+			const startRow = Math.min(selectionAnchor.row, selectionEnd!.row);
+			const endCol = Math.max(selectionAnchor.col, selectionEnd!.col);
+			const endRow = Math.max(selectionAnchor.row, selectionEnd!.row);
+
+			if (startRow === endRow) {
+				instance.terminal.select(startCol, startRow, endCol - startCol);
+			} else {
+				instance.terminal.selectLines(startRow, endRow);
+			}
+
+			return false;
+		}
+
+		if (
+			!event.shiftKey &&
+			(event.code === "ArrowLeft" ||
+				event.code === "ArrowRight" ||
+				event.code === "ArrowUp" ||
+				event.code === "ArrowDown")
+		) {
+			selectionAnchor = null;
+			selectionEnd = null;
 		}
 
 		return true;
