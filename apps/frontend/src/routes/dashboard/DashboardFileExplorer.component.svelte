@@ -55,6 +55,10 @@ let contextMenuPosition = $state<ContextMenuPosition>({
 	y: 0,
 });
 
+let voiceInputText = $state("");
+let isRecording = $state(false);
+let mediaRecorder = $state<MediaRecorder | null>(null);
+
 const normalizedRootPath = $derived(fsPathEnsureTrailingSlash(rootPath));
 const rootId = $derived(normalizedRootPath);
 
@@ -326,6 +330,68 @@ async function handleDelete() {
 	}
 	handleContextMenuClose();
 }
+
+async function voiceInputToggle() {
+	if (isRecording) {
+		mediaRecorder?.stop();
+		isRecording = false;
+		return;
+	}
+
+	try {
+		const stream = await navigator.mediaDevices.getUserMedia({
+			audio: true,
+		});
+		const recorder = new MediaRecorder(stream);
+		const chunks: Blob[] = [];
+
+		recorder.ondataavailable = (e) => {
+			if (e.data.size > 0) {
+				chunks.push(e.data);
+			}
+		};
+
+		recorder.onstop = async () => {
+			for (const track of stream.getTracks()) {
+				track.stop();
+			}
+			const audioBlob = new Blob(chunks, {
+				type: "audio/webm",
+			});
+			await voiceInputTranscribe(audioBlob);
+		};
+
+		recorder.start();
+		mediaRecorder = recorder;
+		isRecording = true;
+	} catch (err) {
+		console.error("[FileExplorer] Microphone access denied:", err);
+	}
+}
+
+async function voiceInputTranscribe(audioBlob: Blob) {
+	const formData = new FormData();
+	formData.append("audio", audioBlob, "recording.webm");
+
+	try {
+		const response = await fetch("http://localhost:4030/transcription", {
+			body: formData,
+			method: "POST",
+		});
+		if (response.ok) {
+			const result = await response.json();
+			voiceInputText = result.transcription || "";
+		}
+	} catch (err) {
+		console.error("[FileExplorer] Transcription failed:", err);
+	}
+}
+
+function voiceInputSubmit() {
+	if (!voiceInputText.trim()) return;
+	console.log("[FileExplorer] Voice input submitted:", voiceInputText);
+	voiceInputText = "";
+}
 </script>
 
 <div class="flex h-full flex-col bg-bg-surface">
@@ -362,6 +428,28 @@ async function handleDelete() {
 				No files
 			</div>
 		{/if}
+	</div>
+
+	<div class="flex items-center gap-1.5 border-t border-border-default p-2">
+		<input
+			type="text"
+			bind:value={voiceInputText}
+			onkeydown={(e) => e.key === "Enter" && voiceInputSubmit()}
+			placeholder="Voice input..."
+			class="flex-1 bg-bg-elevated border border-border-default rounded px-2 py-1 text-[11px] text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-terminal-green"
+		/>
+		<button
+			onclick={voiceInputToggle}
+			class="flex items-center justify-center size-7 rounded border transition-colors {isRecording
+				? 'bg-terminal-red/20 border-terminal-red text-terminal-red'
+				: 'bg-bg-elevated border-border-default text-text-secondary hover:border-border-active hover:text-text-primary'}"
+			title={isRecording ? "Stop recording" : "Start recording"}
+		>
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-4">
+				<path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z" />
+				<path d="M19 11a1 1 0 1 0-2 0 5 5 0 0 1-10 0 1 1 0 1 0-2 0 7 7 0 0 0 6 6.92V21h-2a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-3.08A7 7 0 0 0 19 11Z" />
+			</svg>
+		</button>
 	</div>
 </div>
 

@@ -59,6 +59,14 @@ export const terminalPtyWebsocket = new Elysia({
 
 		const existingInstance = terminalPtyService.instanceGet(terminalId);
 		if (existingInstance) {
+			const scrollback = existingInstance.getScrollback();
+			if (scrollback) {
+				ws.send({
+					data: scrollback,
+					type: TerminalPtyMessageServerType.Output,
+				});
+			}
+
 			const unsubscribe = existingInstance.onData((message) => {
 				ws.send(message);
 			});
