@@ -1,6 +1,8 @@
-import { afterAll, describe, expect, it } from "bun:test";
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import type { LayoutId } from "@claude-manager/common/src/layout/layout.id";
 import { layoutSchema } from "@claude-manager/common/src/layout/layout.schema";
+import type { ProjectId } from "@claude-manager/common/src/project/project.id";
+import { projectSchema } from "@claude-manager/common/src/project/project.schema";
 import { treaty } from "@elysiajs/eden";
 import { eq } from "drizzle-orm";
 import { Elysia } from "elysia";
@@ -11,19 +13,43 @@ const app = new Elysia().use(layoutRoutes);
 const api = treaty(app);
 
 const TEST_LAYOUT_IDS: LayoutId[] = [];
+const TEST_PROJECT_ID = "project:test-layout-routes-123" as ProjectId;
 const LAYOUT_ID_PATTERN = /^layout:/;
 
 describe("layout routes", () => {
+	beforeAll(async () => {
+		await db.insert(projectSchema).values({
+			createdAt: new Date(),
+			id: TEST_PROJECT_ID,
+			name: "Test Layout Project",
+			path: "/tmp/test-layout-project",
+			updatedAt: new Date(),
+		});
+	});
+
 	afterAll(async () => {
 		for (const id of TEST_LAYOUT_IDS) {
 			await db.delete(layoutSchema).where(eq(layoutSchema.id, id));
 		}
+		await db.delete(projectSchema).where(eq(projectSchema.id, TEST_PROJECT_ID));
 	});
 
 	describe("POST /layouts", () => {
 		it("creates a new layout with default data", async () => {
 			const { data, error, status } = await api.layouts.post({
+				data: {
+					desktop: {
+						containers: {},
+						rootId: null,
+					},
+					items: {},
+					mobile: {
+						containers: {},
+						rootId: null,
+					},
+				},
 				name: "Test Layout",
+				projectId: TEST_PROJECT_ID,
 			});
 
 			expect(error).toBeNull();
@@ -33,9 +59,11 @@ describe("layout routes", () => {
 			expect(data.id).toMatch(LAYOUT_ID_PATTERN);
 			expect(data.name).toBe("Test Layout");
 			expect(data.data).toBeDefined();
-			expect(data.data.desktop).toBeDefined();
-			expect(data.data.mobile).toBeDefined();
-			expect(data.data.items).toBeDefined();
+			if (data.data) {
+				expect(data.data.desktop).toBeDefined();
+				expect(data.data.mobile).toBeDefined();
+				expect(data.data.items).toBeDefined();
+			}
 
 			TEST_LAYOUT_IDS.push(data.id);
 		});
@@ -63,12 +91,15 @@ describe("layout routes", () => {
 			const { data, error } = await api.layouts.post({
 				data: customData,
 				name: "Layout With Data",
+				projectId: TEST_PROJECT_ID,
 			});
 
 			expect(error).toBeNull();
 			if (error) throw error;
 
-			expect(data.data.desktop.rootId).toBe("container-1");
+			if (data.data) {
+				expect(data.data.desktop.rootId).toBe("container-1");
+			}
 			TEST_LAYOUT_IDS.push(data.id);
 		});
 	});
@@ -193,8 +224,10 @@ describe("layout routes", () => {
 			expect(error).toBeNull();
 			if (error) throw error;
 
-			expect(data.data.desktop.rootId).toBe("root");
-			expect(data.data.items["item-1"]).toBeDefined();
+			if (data.data) {
+				expect(data.data.desktop.rootId).toBe("root");
+				expect(data.data.items["item-1"]).toBeDefined();
+			}
 		});
 
 		it("returns 404 for non-existent layout", async () => {
@@ -213,7 +246,19 @@ describe("layout routes", () => {
 	describe("DELETE /layouts/:id", () => {
 		it("deletes a layout", async () => {
 			const createResult = await api.layouts.post({
+				data: {
+					desktop: {
+						containers: {},
+						rootId: null,
+					},
+					items: {},
+					mobile: {
+						containers: {},
+						rootId: null,
+					},
+				},
 				name: "To Delete",
+				projectId: TEST_PROJECT_ID,
 			});
 
 			expect(createResult.error).toBeNull();

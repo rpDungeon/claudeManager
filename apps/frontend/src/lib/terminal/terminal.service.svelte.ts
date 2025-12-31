@@ -1,5 +1,6 @@
 // Review pending by Autumnlight
 import type { TerminalId } from "@claude-manager/common/src/terminal/terminal.types";
+import { ClipboardAddon } from "@xterm/addon-clipboard";
 import { FitAddon } from "@xterm/addon-fit";
 import { SearchAddon } from "@xterm/addon-search";
 import { SerializeAddon } from "@xterm/addon-serialize";
@@ -16,6 +17,7 @@ type EdenOnMessage = Parameters<Parameters<EdenWebSocket["subscribe"]>[0]>[0];
 type ServerMessage = EdenOnMessage["data"];
 
 type TerminalInstanceAddons = {
+	clipboard: ClipboardAddon;
 	fit: FitAddon;
 	search: SearchAddon;
 	serialize: SerializeAddon;
@@ -55,11 +57,13 @@ export function terminalInstanceCreate(terminalId: TerminalId): TerminalInstance
 		theme: terminalThemeCrt,
 	});
 
+	const clipboardAddon = new ClipboardAddon();
 	const fitAddon = new FitAddon();
 	const searchAddon = new SearchAddon();
 	const serializeAddon = new SerializeAddon();
 	const webLinksAddon = new WebLinksAddon();
 
+	terminal.loadAddon(clipboardAddon);
 	terminal.loadAddon(fitAddon);
 	terminal.loadAddon(searchAddon);
 	terminal.loadAddon(serializeAddon);
@@ -67,6 +71,7 @@ export function terminalInstanceCreate(terminalId: TerminalId): TerminalInstance
 
 	const instance: TerminalInstance = $state({
 		addons: {
+			clipboard: clipboardAddon,
 			fit: fitAddon,
 			search: searchAddon,
 			serialize: serializeAddon,
@@ -103,20 +108,32 @@ export function terminalInstanceMount(terminalId: TerminalId, container: HTMLEle
 	instance.container = container;
 	instance.terminal.open(container);
 
-	// Disabled WebGL - causes rendering issues
-	// if (!instance.addons.webgl) {
-	// 	try {
-	// 		const webglAddon = new WebglAddon();
-	// 		webglAddon.onContextLoss(() => {
-	// 			webglAddon.dispose();
-	// 			instance.addons.webgl = null;
-	// 		});
-	// 		instance.terminal.loadAddon(webglAddon);
-	// 		instance.addons.webgl = webglAddon;
-	// 	} catch {
-	// 		console.warn("WebGL addon failed to load, using default renderer");
-	// 	}
-	// }
+	instance.terminal.attachCustomKeyEventHandler((event) => {
+		if (event.type !== "keydown") return true;
+
+		if (event.ctrlKey && event.code === "KeyC") {
+			const selection = instance.terminal.getSelection();
+			if (instance.terminal.hasSelection() && selection) {
+				navigator.clipboard.writeText(selection);
+				instance.terminal.clearSelection();
+				return false;
+			}
+		}
+
+		if (event.ctrlKey && event.code === "KeyV") {
+			navigator.clipboard.readText().then((text) => {
+				if (instance.websocket) {
+					instance.websocket.send({
+						data: text,
+						type: "input",
+					});
+				}
+			});
+			return false;
+		}
+
+		return true;
+	});
 
 	instance.addons.fit.fit();
 }
@@ -322,6 +339,28 @@ export function terminalInstancePaste(terminalId: TerminalId, text: string): voi
 		data: text,
 		type: "input",
 	});
+}
+
+export function terminalInstanceGetSelection(terminalId: TerminalId): string {
+	const instance = instances.get(terminalId);
+	if (!instance) return "";
+
+	return instance.terminal.getSelection();
+}
+
+export async function terminalInstanceCopySelection(terminalId: TerminalId): Promise<boolean> {
+	const instance = instances.get(terminalId);
+	if (!instance) return false;
+
+	const selection = instance.terminal.getSelection();
+	if (!selection) return false;
+
+	try {
+		await navigator.clipboard.writeText(selection);
+		return true;
+	} catch {
+		return false;
+	}
 }
 
 export type { TerminalInstance, TerminalInstanceAddons };

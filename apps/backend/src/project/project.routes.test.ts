@@ -13,13 +13,21 @@ const app = new Elysia().use(projectRoutes);
 const api = treaty(app);
 
 const TEST_PROJECT_IDS: ProjectId[] = [];
+const TEST_LAYOUT_PROJECT_ID = "project:test-layout-owner-123" as ProjectId;
 const TEST_LAYOUT_ID = "layout:test-project-routes-123" as LayoutId;
 const PROJECT_ID_PATTERN = /^project:/;
 
 describe("project routes", () => {
 	beforeAll(async () => {
-		await db.insert(layoutSchema).values({
+		await db.insert(projectSchema).values({
 			createdAt: new Date(),
+			id: TEST_LAYOUT_PROJECT_ID,
+			name: "Layout Owner Project",
+			path: "/tmp/layout-owner",
+			updatedAt: new Date(),
+		});
+
+		await db.insert(layoutSchema).values({
 			data: {
 				desktop: {
 					containers: {},
@@ -33,7 +41,7 @@ describe("project routes", () => {
 			},
 			id: TEST_LAYOUT_ID,
 			name: "Test Layout",
-			updatedAt: new Date(),
+			projectId: TEST_LAYOUT_PROJECT_ID,
 		});
 	});
 
@@ -42,6 +50,7 @@ describe("project routes", () => {
 			await db.delete(projectSchema).where(eq(projectSchema.id, id));
 		}
 		await db.delete(layoutSchema).where(eq(layoutSchema.id, TEST_LAYOUT_ID));
+		await db.delete(projectSchema).where(eq(projectSchema.id, TEST_LAYOUT_PROJECT_ID));
 	});
 
 	describe("POST /projects", () => {

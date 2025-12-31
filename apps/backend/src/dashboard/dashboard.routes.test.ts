@@ -27,12 +27,10 @@ describe("dashboard routes", () => {
 		});
 
 		await db.insert(terminalSchema).values({
-			createdAt: new Date(),
 			id: TEST_TERMINAL_ID,
 			name: "Dashboard Test Terminal",
 			projectId: TEST_PROJECT_ID,
 			type: TerminalType.Shell,
-			updatedAt: new Date(),
 		});
 	});
 

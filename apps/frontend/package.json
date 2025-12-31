@@ -3,6 +3,7 @@
 		"@claude-manager/backend": "workspace:*",
 		"@claude-manager/common": "workspace:*",
 		"@elysiajs/eden": "^1.4.5",
+		"@xterm/addon-clipboard": "^0.2.0",
 		"@xterm/addon-fit": "^0.10.0",
 		"@xterm/addon-search": "^0.15.0",
 		"@xterm/addon-serialize": "^0.13.0",
