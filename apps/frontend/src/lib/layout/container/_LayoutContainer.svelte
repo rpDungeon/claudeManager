@@ -11,6 +11,7 @@ usage: Pass a LayoutContainer and it will render the appropriate specialized com
 import type { LayoutContainer } from "@claude-manager/common/src/layout/container/container.types";
 import type { LayoutItem } from "@claude-manager/common/src/layout/item/item.types";
 import type { LayoutDropZonePosition } from "../dropzone/dropzone.lib";
+import { AddItemType } from "./tabs/layoutContainerTabsAddMenu.lib";
 import LayoutContainerTabs from "./tabs/LayoutContainerTabs.component.svelte";
 import LayoutContainerSplit from "./LayoutContainerSplit.component.svelte";
 
@@ -25,8 +26,9 @@ interface Props {
 	onItemReorder?: (containerId: string, fromItemId: string, toItemId: string) => void;
 	onItemDrop?: (droppedItemId: string, targetContainerId: string) => void;
 	onSplitDrop?: (droppedItemId: string, targetContainerId: string, position: LayoutDropZonePosition) => void;
-	onAddItem?: (containerId: string) => void;
+	onAddItem?: (containerId: string, itemType: AddItemType) => void;
 	onItemRename?: (containerId: string, itemId: string) => void;
+	onItemChangeUrl?: (containerId: string, itemId: string) => void;
 	onItemClose?: (containerId: string, itemId: string) => void;
 }
 
@@ -43,6 +45,7 @@ let {
 	onSplitDrop,
 	onAddItem,
 	onItemRename,
+	onItemChangeUrl,
 	onItemClose,
 }: Props = $props();
 </script>
@@ -59,6 +62,7 @@ let {
 		{onSplitDrop}
 		{onAddItem}
 		{onItemRename}
+		{onItemChangeUrl}
 		{onItemClose}
 	/>
 {:else if container.type === "split"}
@@ -75,6 +79,7 @@ let {
 		{onSplitDrop}
 		{onAddItem}
 		{onItemRename}
+		{onItemChangeUrl}
 		{onItemClose}
 	/>
 {/if}

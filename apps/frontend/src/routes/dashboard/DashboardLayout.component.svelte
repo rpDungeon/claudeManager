@@ -13,10 +13,14 @@ import type { Layout as LayoutType } from "@claude-manager/common/src/layout/lay
 import type { LayoutContainerTabs } from "@claude-manager/common/src/layout/container/container.tabs";
 import type { LayoutContainerSplit } from "@claude-manager/common/src/layout/container/container.split";
 import type { LayoutItemTerminal } from "@claude-manager/common/src/layout/item/item.terminal";
+import type { LayoutItemIframe } from "@claude-manager/common/src/layout/item/item.iframe";
+import type { LayoutItemImage } from "@claude-manager/common/src/layout/item/item.image";
+import type { LayoutItemMarkdown } from "@claude-manager/common/src/layout/item/item.markdown";
 import type { LayoutId } from "@claude-manager/common/src/layout/layout.id";
 import type { ProjectId } from "@claude-manager/common/src/project/project.id";
 import type { Percentage } from "@claude-manager/common/src/types/common.types";
 import type { LayoutDropZonePosition } from "$lib/layout/dropzone/dropzone.lib";
+import { AddItemType } from "$lib/layout/container/tabs/layoutContainerTabsAddMenu.lib";
 import { TerminalType } from "@claude-manager/common/src/terminal/terminal.types";
 import Layout from "$lib/layout/Layout.component.svelte";
 import { api } from "$lib/api/api.client";
@@ -433,44 +437,97 @@ async function ensureProject(): Promise<ProjectId | null> {
 	return null;
 }
 
-async function handleAddItem(containerId: string) {
-	const projectId = await ensureProject();
-	if (!projectId) {
-		console.error("Failed to get or create project");
-		return;
+async function handleAddItem(containerId: string, itemType: AddItemType) {
+	let newItem: LayoutItemTerminal | LayoutItemIframe | LayoutItemImage | LayoutItemMarkdown;
+	let itemId: string;
+
+	switch (itemType) {
+		case AddItemType.Terminal: {
+			const projectId = await ensureProject();
+			if (!projectId) {
+				console.error("Failed to get or create project");
+				return;
+			}
+
+			const terminalName = `Shell ${++terminalCounter}`;
+
+			const response = await api.terminals.post({
+				name: terminalName,
+				projectId,
+				type: TerminalType.Shell,
+			});
+
+			if (response.error || !response.data) {
+				console.error("Failed to create terminal:", response.error);
+				return;
+			}
+
+			const terminal = response.data;
+			itemId = terminal.id;
+			newItem = {
+				id: terminal.id,
+				label: terminalName,
+				type: "terminal",
+			};
+			break;
+		}
+
+		case AddItemType.Iframe: {
+			const url = prompt("Enter URL:", "https://");
+			if (!url) return;
+
+			itemId = crypto.randomUUID();
+			const iframeItem: LayoutItemIframe = {
+				id: itemId,
+				label: new URL(url).hostname,
+				type: "iframe",
+				url,
+			};
+			newItem = iframeItem;
+			break;
+		}
+
+		case AddItemType.Image: {
+			const src = prompt("Enter image URL:");
+			if (!src) return;
+
+			itemId = crypto.randomUUID();
+			const imageItem: LayoutItemImage = {
+				id: itemId,
+				label: "Image",
+				src,
+				type: "image",
+			};
+			newItem = imageItem;
+			break;
+		}
+
+		case AddItemType.Markdown: {
+			itemId = crypto.randomUUID();
+			const markdownItem: LayoutItemMarkdown = {
+				content: "# New Note\n\nStart typing here...",
+				id: itemId,
+				label: "Note",
+				type: "markdown",
+			};
+			newItem = markdownItem;
+			break;
+		}
+
+		default:
+			return;
 	}
 
-	const terminalName = `Shell ${++terminalCounter}`;
-
-	const response = await api.terminals.post({
-		name: terminalName,
-		projectId,
-		type: TerminalType.Shell,
-	});
-
-	if (response.error || !response.data) {
-		console.error("Failed to create terminal:", response.error);
-		return;
-	}
-
-	const terminal = response.data;
-
-	const terminalItem: LayoutItemTerminal = {
-		id: terminal.id,
-		label: terminalName,
-		type: "terminal",
-	};
-
-	data.items[terminal.id] = terminalItem;
+	data.items[itemId] = newItem;
 
 	const container = data.desktop.containers[containerId];
 	if (container?.type === "tabs") {
 		const tabsContainer = container as LayoutContainerTabs;
 		tabsContainer.childIds = [
 			...tabsContainer.childIds,
-			terminal.id,
+			itemId,
 		];
-		tabsContainer.activeTabId = terminal.id;
+		tabsContainer.activeTabId = itemId;
 	}
 
 	data = {
@@ -486,6 +543,25 @@ function handleItemRename(_containerId: string, itemId: string) {
 	const newLabel = prompt("Enter new name:", item.label);
 	if (newLabel && newLabel !== item.label) {
 		item.label = newLabel;
+		data = {
+			...data,
+		};
+		markDirty();
+	}
+}
+
+function handleItemChangeUrl(_containerId: string, itemId: string) {
+	const item = data.items[itemId];
+	if (!item || item.type !== "iframe") return;
+
+	const newUrl = prompt("Enter new URL:", item.url);
+	if (newUrl && newUrl !== item.url) {
+		item.url = newUrl;
+		try {
+			item.label = new URL(newUrl).hostname;
+		} catch {
+			item.label = "iframe";
+		}
 		data = {
 			...data,
 		};
@@ -549,6 +625,7 @@ async function handleItemClose(containerId: string, itemId: string) {
 			onSplitDrop={handleSplitDrop}
 			onAddItem={handleAddItem}
 			onItemRename={handleItemRename}
+			onItemChangeUrl={handleItemChangeUrl}
 			onItemClose={handleItemClose}
 		/>
 	{/if}

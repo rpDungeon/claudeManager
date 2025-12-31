@@ -5,15 +5,54 @@ import {
 } from "@claude-manager/common/src/terminal/pty.types";
 import { terminalInputLogSchema } from "@claude-manager/common/src/terminal/terminal.inputlog.schema";
 import { terminalSchema } from "@claude-manager/common/src/terminal/terminal.schema";
+import type { TerminalId } from "@claude-manager/common/src/terminal/terminal.types";
 import { terminalIdSchema } from "@claude-manager/common/src/terminal/terminal.types";
 import { eq } from "drizzle-orm";
 import { Elysia } from "elysia";
 import { z } from "zod";
 
 import { db } from "../../db/db.client";
+import { terminalInputlogService } from "../inputlog/inputlog.service";
 import { terminalPtyService } from "./pty.service";
 
 const unsubscribeMap = new Map<string, () => void>();
+const processPollingMap = new Map<string, ReturnType<typeof setInterval>>();
+const lastProcessMap = new Map<string, string | null>();
+const inputBufferMap = new Map<TerminalId, string>();
+
+const PROCESS_POLL_INTERVAL_MS = 500;
+
+function inputBufferProcess(terminalId: TerminalId, data: string) {
+	let buffer = inputBufferMap.get(terminalId) ?? "";
+
+	for (const char of data) {
+		if (char === "\r" || char === "\n") {
+			if (buffer.trim().length > 0) {
+				const inserted = db
+					.insert(terminalInputLogSchema)
+					.values({
+						input: buffer,
+						terminalId,
+					})
+					.returning()
+					.get();
+
+				if (inserted) {
+					terminalInputlogService.publish(inserted);
+				}
+			}
+			buffer = "";
+		} else if (char === "\x7f") {
+			buffer = buffer.slice(0, -1);
+		} else if (char === "\x03") {
+			buffer = "";
+		} else if (char >= " " || char === "\t") {
+			buffer += char;
+		}
+	}
+
+	inputBufferMap.set(terminalId, buffer);
+}
 
 export const terminalPtyWebsocket = new Elysia({
 	prefix: "/ws",
@@ -26,6 +65,13 @@ export const terminalPtyWebsocket = new Elysia({
 			unsubscribe();
 			unsubscribeMap.delete(ws.id);
 		}
+
+		const processPolling = processPollingMap.get(ws.id);
+		if (processPolling) {
+			clearInterval(processPolling);
+			processPollingMap.delete(ws.id);
+		}
+		lastProcessMap.delete(ws.id);
 	},
 
 	message(ws, message) {
@@ -42,13 +88,7 @@ export const terminalPtyWebsocket = new Elysia({
 
 		if (message.type === "input") {
 			instance.write(message.data);
-
-			db.insert(terminalInputLogSchema)
-				.values({
-					input: message.data,
-					terminalId,
-				})
-				.run();
+			inputBufferProcess(terminalId, message.data);
 		} else if (message.type === "resize") {
 			instance.resize(message.cols, message.rows);
 		}
@@ -56,6 +96,39 @@ export const terminalPtyWebsocket = new Elysia({
 
 	async open(ws) {
 		const { terminalId } = ws.data.params;
+
+		const setupProcessPolling = (ptyInstance: ReturnType<typeof terminalPtyService.instanceGet>) => {
+			if (!ptyInstance) return;
+
+			const currentProcess = ptyInstance.foregroundProcessGet();
+			lastProcessMap.set(ws.id, currentProcess);
+			ws.send({
+				process: currentProcess,
+				type: TerminalPtyMessageServerType.ForegroundProcess,
+			});
+
+			const polling = setInterval(() => {
+				const inst = terminalPtyService.instanceGet(terminalId);
+				if (!inst) {
+					clearInterval(polling);
+					processPollingMap.delete(ws.id);
+					return;
+				}
+
+				const newProcess = inst.foregroundProcessGet();
+				const lastProcess = lastProcessMap.get(ws.id);
+
+				if (newProcess !== lastProcess) {
+					lastProcessMap.set(ws.id, newProcess);
+					ws.send({
+						process: newProcess,
+						type: TerminalPtyMessageServerType.ForegroundProcess,
+					});
+				}
+			}, PROCESS_POLL_INTERVAL_MS);
+
+			processPollingMap.set(ws.id, polling);
+		};
 
 		const existingInstance = terminalPtyService.instanceGet(terminalId);
 		if (existingInstance) {
@@ -72,6 +145,7 @@ export const terminalPtyWebsocket = new Elysia({
 			});
 
 			unsubscribeMap.set(ws.id, unsubscribe);
+			setupProcessPolling(existingInstance);
 			return;
 		}
 
@@ -98,6 +172,7 @@ export const terminalPtyWebsocket = new Elysia({
 		});
 
 		unsubscribeMap.set(ws.id, unsubscribe);
+		setupProcessPolling(instance);
 	},
 	params: z.object({
 		terminalId: terminalIdSchema,

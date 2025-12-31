@@ -29,6 +29,7 @@ type TerminalInstance = {
 	container: HTMLElement | null;
 	connectionStatus: TerminalConnectionStatus;
 	exitCode: number | null;
+	foregroundProcess: string | null;
 	lastError: string | null;
 	terminal: Terminal;
 	websocket: EdenWebSocket | null;
@@ -77,6 +78,7 @@ export function terminalInstanceCreate(terminalId: TerminalId): TerminalInstance
 		connectionStatus: TerminalConnectionStatus.Disconnected,
 		container: null,
 		exitCode: null,
+		foregroundProcess: null,
 		lastError: null,
 		terminal,
 		websocket: null,
@@ -370,6 +372,10 @@ function terminalDispatchServerMessage(terminalId: TerminalId, message: ServerMe
 		case "error":
 			instance.lastError = message.message;
 			break;
+
+		case "foreground_process":
+			instance.foregroundProcess = message.process;
+			break;
 	}
 }
 
@@ -458,6 +464,13 @@ export async function terminalInstanceCopySelection(terminalId: TerminalId): Pro
 	} catch {
 		return false;
 	}
+}
+
+export function terminalInstanceSelectAll(terminalId: TerminalId): void {
+	const instance = instances.get(terminalId);
+	if (!instance) return;
+
+	instance.terminal.selectAll();
 }
 
 export function terminalInstancesSetFontSize(fontSize: number): void {

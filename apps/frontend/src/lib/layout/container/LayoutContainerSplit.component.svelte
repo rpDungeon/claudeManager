@@ -12,6 +12,7 @@ import type { LayoutContainerSplit } from "@claude-manager/common/src/layout/con
 import type { LayoutContainer } from "@claude-manager/common/src/layout/container/container.types";
 import type { LayoutItem } from "@claude-manager/common/src/layout/item/item.types";
 import type { LayoutDropZonePosition } from "../dropzone/dropzone.lib";
+import { AddItemType } from "./tabs/layoutContainerTabsAddMenu.lib";
 import { PaneGroup, Pane, PaneResizer } from "paneforge";
 import LayoutContainer_ from "./_LayoutContainer.svelte";
 import LayoutItem_ from "../item/_LayoutItem.svelte";
@@ -27,8 +28,9 @@ interface Props {
 	onItemReorder?: (containerId: string, fromItemId: string, toItemId: string) => void;
 	onItemDrop?: (droppedItemId: string, targetContainerId: string) => void;
 	onSplitDrop?: (droppedItemId: string, targetContainerId: string, position: LayoutDropZonePosition) => void;
-	onAddItem?: (containerId: string) => void;
+	onAddItem?: (containerId: string, itemType: AddItemType) => void;
 	onItemRename?: (containerId: string, itemId: string) => void;
+	onItemChangeUrl?: (containerId: string, itemId: string) => void;
 	onItemClose?: (containerId: string, itemId: string) => void;
 }
 
@@ -45,6 +47,7 @@ let {
 	onSplitDrop,
 	onAddItem,
 	onItemRename,
+	onItemChangeUrl,
 	onItemClose,
 }: Props = $props();
 
@@ -114,6 +117,7 @@ function handleItemClick(itemId: string) {
 					{onSplitDrop}
 					{onAddItem}
 					{onItemRename}
+					{onItemChangeUrl}
 					{onItemClose}
 				/>
 			{:else if child?.type === "item"}

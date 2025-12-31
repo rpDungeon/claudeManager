@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
@@ -12,8 +13,77 @@ import { type IPty, spawn } from "bun-pty";
 
 type Unsubscribe = () => void;
 
+const SHELL_PROCESSES = new Set([
+	"bash",
+	"zsh",
+	"fish",
+	"sh",
+	"dash",
+	"ksh",
+	"tcsh",
+	"csh",
+]);
+
+const WHITESPACE_REGEX = /\s+/;
+
+function foregroundProcessGetFromShellPid(shellPid: number): string | null {
+	try {
+		const statPath = `/proc/${shellPid}/stat`;
+		if (!existsSync(statPath)) return null;
+
+		const stat = readFileSync(statPath, "utf-8");
+		const parts = stat.split(" ");
+		const tpgid = Number.parseInt(parts[7], 10);
+
+		if (Number.isNaN(tpgid)) return null;
+
+		const fgCommPath = `/proc/${tpgid}/comm`;
+		if (existsSync(fgCommPath)) {
+			return readFileSync(fgCommPath, "utf-8").trim();
+		}
+
+		return null;
+	} catch {
+		return null;
+	}
+}
+
+function foregroundProcessGetBySocket(socketPath: string): string | null {
+	try {
+		if (!existsSync(socketPath)) return null;
+
+		const fuserOutput = execSync(`fuser "${socketPath}" 2>/dev/null`, {
+			encoding: "utf-8",
+		}).trim();
+		if (!fuserOutput) return null;
+
+		const dtachPid = Number.parseInt(fuserOutput.split(WHITESPACE_REGEX).pop() || "", 10);
+		if (Number.isNaN(dtachPid)) return null;
+
+		const childPidStr = execSync(`pgrep -P ${dtachPid}`, {
+			encoding: "utf-8",
+		}).trim();
+		if (!childPidStr) return null;
+
+		const shellPid = Number.parseInt(childPidStr.split("\n")[0], 10);
+		if (Number.isNaN(shellPid)) return null;
+
+		return foregroundProcessGetFromShellPid(shellPid);
+	} catch {
+		return null;
+	}
+}
+
+function isInShellContext(socketPath: string): boolean {
+	const fg = foregroundProcessGetBySocket(socketPath);
+	if (!fg) return true;
+	return SHELL_PROCESSES.has(fg);
+}
+
 type TerminalPtyInstance = {
+	foregroundProcessGet: () => string | null;
 	getScrollback: () => string;
+	isInShellContext: () => boolean;
 	kill: () => void;
 	onData: (callback: (message: TerminalPtyMessageServer) => void) => Unsubscribe;
 	resize: (cols: number, rows: number) => void;
@@ -100,7 +170,9 @@ class PtyService {
 
 	private instanceWrap(state: InternalPtyState): TerminalPtyInstance {
 		return {
+			foregroundProcessGet: () => foregroundProcessGetBySocket(state.socketPath),
 			getScrollback: () => state.serializeAddon.serialize(),
+			isInShellContext: () => isInShellContext(state.socketPath),
 			kill: () => this.instanceKill(state.terminalId),
 			onData: (callback) => {
 				state.callbacks.add(callback);

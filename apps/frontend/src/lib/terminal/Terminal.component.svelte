@@ -13,18 +13,25 @@ import type { Snippet } from "svelte";
 import { onMount, onDestroy } from "svelte";
 import TerminalBody from "./body/TerminalBody.component.svelte";
 import TerminalHeader from "./header/TerminalHeader.component.svelte";
+import TerminalSidebar from "./sidebar/TerminalSidebar.component.svelte";
 import {
 	terminalInstanceCreate,
+	terminalInstanceCopySelection,
 	terminalInstanceDestroy,
 	terminalInstanceFit,
 	terminalInstanceFocus,
 	terminalInstanceGet,
+	terminalInstanceGetSelection,
 	terminalInstanceMount,
 	terminalInstancePaste,
+	terminalInstanceSelectAll,
 	terminalWebsocketConnect,
 } from "./terminal.service.svelte";
-import { TerminalConnectionStatus } from "./terminal.lib";
+import { TerminalConnectionStatus, TerminalContextMenuAction } from "./terminal.lib";
 import { IndicatorDotColor } from "$lib/common/indicatorDot.lib";
+import ContextMenu from "$lib/common/contextMenu/ContextMenu.component.svelte";
+import { ContextMenuItemType } from "$lib/common/contextMenu/contextMenu.lib";
+import type { ContextMenuItem, ContextMenuPosition } from "$lib/common/contextMenu/contextMenu.lib";
 import VoiceRecorder from "$lib/common/input/VoiceRecorder.component.svelte";
 import { VoiceRecorderState } from "$lib/common/input/voiceRecorder.lib";
 import { api } from "$lib/api/api.client";
@@ -41,6 +48,7 @@ interface Props {
 	onclick?: (event: MouseEvent) => void;
 	onHeaderClick?: (event: MouseEvent) => void;
 	onBodyClick?: (event: MouseEvent) => void;
+	onClose?: () => void;
 	onDragStart?: (itemId: string, event: DragEvent) => void;
 	onDragEnd?: (itemId: string, event: DragEvent) => void;
 	onDrop?: (droppedItemId: string, targetItemId: string, event: DragEvent) => void;
@@ -58,6 +66,7 @@ let {
 	onclick,
 	onHeaderClick,
 	onBodyClick,
+	onClose,
 	onDragStart,
 	onDragEnd,
 	onDrop,
@@ -66,11 +75,68 @@ let {
 let resizeObserver: ResizeObserver | undefined;
 let mountCount = 0;
 let voiceRecorderState = $state(VoiceRecorderState.Idle);
+let isSidebarOpen = $state(false);
 let mediaRecorder: MediaRecorder | null = null;
 let audioChunks: Blob[] = [];
 
+let contextMenuPosition = $state<ContextMenuPosition | null>(null);
+let hasSelection = $state(false);
+
+const contextMenuItems = $derived.by((): ContextMenuItem<TerminalContextMenuAction>[] => {
+	const items: ContextMenuItem<TerminalContextMenuAction>[] = [];
+
+	if (hasSelection) {
+		items.push({
+			id: TerminalContextMenuAction.Copy,
+			label: "Copy",
+			shortcut: "Ctrl+C",
+			type: ContextMenuItemType.Action,
+		});
+	}
+
+	items.push(
+		{
+			id: TerminalContextMenuAction.Paste,
+			label: "Paste",
+			shortcut: "Ctrl+V",
+			type: ContextMenuItemType.Action,
+		},
+		{
+			id: TerminalContextMenuAction.SelectAll,
+			label: "Select All",
+			type: ContextMenuItemType.Action,
+		},
+		{
+			type: ContextMenuItemType.Divider,
+		},
+		{
+			danger: true,
+			id: TerminalContextMenuAction.Close,
+			label: "Close",
+			type: ContextMenuItemType.Action,
+		},
+	);
+
+	return items;
+});
+
 const instance = $derived(terminalId ? terminalInstanceGet(terminalId) : undefined);
 const connectionStatus = $derived(instance?.connectionStatus ?? TerminalConnectionStatus.Disconnected);
+const foregroundProcess = $derived(instance?.foregroundProcess ?? null);
+
+const displayTitle = $derived.by(() => {
+	const baseTitle = typeof title === "string" ? title : null;
+	if (!(baseTitle && foregroundProcess)) return title;
+	if (
+		foregroundProcess === "bash" ||
+		foregroundProcess === "zsh" ||
+		foregroundProcess === "fish" ||
+		foregroundProcess === "sh"
+	) {
+		return title;
+	}
+	return `${baseTitle} - ${foregroundProcess}`;
+});
 
 const statusColor = $derived.by(() => {
 	switch (connectionStatus) {
@@ -137,6 +203,48 @@ function handleBodyClick(event: MouseEvent) {
 	if (terminalId) {
 		terminalInstanceFocus(terminalId);
 	}
+}
+
+function handleContextMenu(event: MouseEvent) {
+	if (!terminalId) return;
+
+	const selection = terminalInstanceGetSelection(terminalId);
+	hasSelection = Boolean(selection);
+
+	contextMenuPosition = {
+		x: event.clientX,
+		y: event.clientY,
+	};
+}
+
+function handleContextMenuAction(actionId: TerminalContextMenuAction) {
+	if (!terminalId) return;
+
+	const id = terminalId;
+	switch (actionId) {
+		case TerminalContextMenuAction.Copy:
+			void terminalInstanceCopySelection(id);
+			break;
+		case TerminalContextMenuAction.Paste:
+			void navigator.clipboard.readText().then((text) => {
+				if (text) {
+					terminalInstancePaste(id, text);
+				}
+			});
+			break;
+		case TerminalContextMenuAction.SelectAll:
+			terminalInstanceSelectAll(terminalId);
+			break;
+		case TerminalContextMenuAction.Close:
+			onClose?.();
+			break;
+	}
+
+	contextMenuPosition = null;
+}
+
+function handleContextMenuClose() {
+	contextMenuPosition = null;
 }
 
 let audioStream: MediaStream | null = null;
@@ -233,7 +341,7 @@ onDestroy(() => {
 
 <div class="relative flex h-full flex-col">
 	<TerminalHeader
-		{title}
+		title={displayTitle}
 		{info}
 		{itemId}
 		{isActive}
@@ -248,15 +356,42 @@ onDestroy(() => {
 	<TerminalBody
 		{isActive}
 		onclick={handleBodyClick}
+		oncontextmenu={handleContextMenu}
 		onMount={handleBodyMount}
 	/>
 
 	{#if terminalId}
+		<button
+			type="button"
+			class="absolute top-0 right-0 z-10 flex h-5 w-5 items-center justify-center text-[8px] text-text-tertiary hover:text-terminal-green hover:bg-bg-elevated transition-colors"
+			class:text-terminal-green={isSidebarOpen}
+			class:bg-bg-elevated={isSidebarOpen}
+			onclick={() => (isSidebarOpen = !isSidebarOpen)}
+			title="Toggle activity panel"
+		>
+			◀
+		</button>
+
+		<TerminalSidebar
+			{terminalId}
+			isOpen={isSidebarOpen}
+			onclose={() => (isSidebarOpen = false)}
+		/>
+
 		<div class="absolute bottom-3 right-3 z-10">
 			<VoiceRecorder
 				state={voiceRecorderState}
 				onclick={handleVoiceToggle}
 			/>
 		</div>
+	{/if}
+
+	{#if contextMenuPosition}
+		<ContextMenu
+			items={contextMenuItems}
+			position={contextMenuPosition}
+			onAction={handleContextMenuAction}
+			onClose={handleContextMenuClose}
+		/>
 	{/if}
 </div>

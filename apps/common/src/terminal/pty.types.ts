@@ -21,6 +21,7 @@ export type TerminalPtyMessageClient = z.infer<typeof terminalPtyMessageClientSc
 export enum TerminalPtyMessageServerType {
 	Error = "error",
 	Exit = "exit",
+	ForegroundProcess = "foreground_process",
 	Output = "output",
 }
 
@@ -39,10 +40,16 @@ const terminalPtyMessageServerErrorSchema = z.object({
 	type: z.literal(TerminalPtyMessageServerType.Error),
 });
 
+const terminalPtyMessageServerForegroundProcessSchema = z.object({
+	process: z.string().nullable(),
+	type: z.literal(TerminalPtyMessageServerType.ForegroundProcess),
+});
+
 export const terminalPtyMessageServerSchema = z.discriminatedUnion("type", [
 	terminalPtyMessageServerOutputSchema,
 	terminalPtyMessageServerExitSchema,
 	terminalPtyMessageServerErrorSchema,
+	terminalPtyMessageServerForegroundProcessSchema,
 ]);
 
 export type TerminalPtyMessageServer = z.infer<typeof terminalPtyMessageServerSchema>;

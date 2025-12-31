@@ -7,6 +7,13 @@ export enum TerminalConnectionStatus {
 	Error = "error",
 }
 
+export enum TerminalContextMenuAction {
+	Copy = "copy",
+	Paste = "paste",
+	SelectAll = "select-all",
+	Close = "close",
+}
+
 export const terminalThemeCrt: ITheme = {
 	background: "#0a0a0a",
 	black: "#0a0a0a",

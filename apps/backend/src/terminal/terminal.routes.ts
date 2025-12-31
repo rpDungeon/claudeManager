@@ -1,7 +1,8 @@
 import { projectIdSchema } from "@claude-manager/common/src/project/project.id";
+import { terminalInputLogSchema } from "@claude-manager/common/src/terminal/terminal.inputlog.schema";
 import { terminalSchema } from "@claude-manager/common/src/terminal/terminal.schema";
 import { terminalCreate, terminalIdSchema, terminalPatch } from "@claude-manager/common/src/terminal/terminal.types";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { Elysia } from "elysia";
 import { z } from "zod";
 
@@ -127,6 +128,26 @@ export const terminalRoutes = new Elysia({
 		{
 			params: z.object({
 				id: terminalIdSchema,
+			}),
+		},
+	)
+	.get(
+		"/:id/input-logs",
+		async ({ params, query }) => {
+			const logs = await db
+				.select()
+				.from(terminalInputLogSchema)
+				.where(eq(terminalInputLogSchema.terminalId, params.id))
+				.orderBy(desc(terminalInputLogSchema.timestamp))
+				.limit(query.limit ?? 100);
+			return logs;
+		},
+		{
+			params: z.object({
+				id: terminalIdSchema,
+			}),
+			query: z.object({
+				limit: z.coerce.number().optional(),
 			}),
 		},
 	)

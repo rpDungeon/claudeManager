@@ -15,6 +15,8 @@ import type { ContextMenuPosition } from "$lib/common/contextMenu/contextMenu.li
 import LayoutItem_ from "../../item/_LayoutItem.svelte";
 import LayoutDropZone from "../../dropzone/LayoutDropZone.component.svelte";
 import LayoutContainerTabsContextMenu from "./LayoutContainerTabsContextMenu.component.svelte";
+import LayoutContainerTabsAddMenu from "./LayoutContainerTabsAddMenu.component.svelte";
+import { AddItemType } from "./layoutContainerTabsAddMenu.lib";
 
 interface Props {
 	container: LayoutContainerTabs;
@@ -25,8 +27,9 @@ interface Props {
 	onItemReorder?: (containerId: string, fromItemId: string, toItemId: string) => void;
 	onItemDrop?: (droppedItemId: string, targetContainerId: string) => void;
 	onSplitDrop?: (droppedItemId: string, targetContainerId: string, position: LayoutDropZonePosition) => void;
-	onAddItem?: (containerId: string) => void;
+	onAddItem?: (containerId: string, itemType: AddItemType) => void;
 	onItemRename?: (containerId: string, itemId: string) => void;
+	onItemChangeUrl?: (containerId: string, itemId: string) => void;
 	onItemClose?: (containerId: string, itemId: string) => void;
 }
 
@@ -41,6 +44,7 @@ let {
 	onSplitDrop,
 	onAddItem,
 	onItemRename,
+	onItemChangeUrl,
 	onItemClose,
 }: Props = $props();
 
@@ -50,6 +54,7 @@ let dragOverTabId = $state<string | null>(null);
 let isDragOverContent = $state(false);
 let contextMenuPosition = $state<ContextMenuPosition | null>(null);
 let contextMenuItemId = $state<string | null>(null);
+let addMenuPosition = $state<ContextMenuPosition | null>(null);
 
 let tabListEl = $state<HTMLElement | null>(null);
 let canScrollLeft = $state(false);
@@ -114,6 +119,31 @@ function handleContextMenuCloseItem() {
 		onItemClose?.(container.id, contextMenuItemId);
 	}
 	handleContextMenuClose();
+}
+
+function handleContextMenuChangeUrl() {
+	if (contextMenuItemId) {
+		onItemChangeUrl?.(container.id, contextMenuItemId);
+	}
+	handleContextMenuClose();
+}
+
+function handleAddButtonClick(event: MouseEvent) {
+	const button = event.currentTarget as HTMLButtonElement;
+	const rect = button.getBoundingClientRect();
+	addMenuPosition = {
+		x: rect.right,
+		y: rect.bottom + 2,
+	};
+}
+
+function handleAddMenuClose() {
+	addMenuPosition = null;
+}
+
+function handleAddItem(itemType: AddItemType) {
+	onAddItem?.(container.id, itemType);
+	handleAddMenuClose();
 }
 
 function handleTabDragStart(itemId: string, event: DragEvent) {
@@ -263,8 +293,8 @@ function handleDropZoneDrop(containerId: string, zone: LayoutDropZonePosition, e
 			<button
 				type="button"
 				class="shrink-0 flex size-5 items-center justify-center text-[10px] text-text-tertiary hover:text-terminal-green hover:bg-bg-elevated/50 transition-colors duration-100"
-				onclick={() => onAddItem(container.id)}
-				title="Add terminal"
+				onclick={handleAddButtonClick}
+				title="Add item"
 			>
 				+
 			</button>
@@ -308,11 +338,21 @@ function handleDropZoneDrop(containerId: string, zone: LayoutDropZonePosition, e
 	</div>
 </div>
 
-{#if contextMenuPosition}
+{#if contextMenuPosition && contextMenuItemId}
 	<LayoutContainerTabsContextMenu
 		position={contextMenuPosition}
+		itemType={items[contextMenuItemId]?.type}
 		onRename={handleContextMenuRename}
+		onChangeUrl={handleContextMenuChangeUrl}
 		onClose={handleContextMenuCloseItem}
 		onMenuClose={handleContextMenuClose}
+	/>
+{/if}
+
+{#if addMenuPosition}
+	<LayoutContainerTabsAddMenu
+		position={addMenuPosition}
+		onAddItem={handleAddItem}
+		onMenuClose={handleAddMenuClose}
 	/>
 {/if}

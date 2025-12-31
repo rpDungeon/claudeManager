@@ -17,34 +17,54 @@ import { TabActionId } from "./layoutContainerTabsContextMenu.lib";
 
 interface Props {
 	position: ContextMenuPosition;
+	itemType?: string;
 	onRename?: () => void;
+	onChangeUrl?: () => void;
 	onClose?: () => void;
 	onMenuClose?: () => void;
 }
 
-let { position, onRename, onClose, onMenuClose }: Props = $props();
+let { position, itemType, onRename, onChangeUrl, onClose, onMenuClose }: Props = $props();
 
-const menuItems: ContextMenuItem<TabActionId>[] = [
-	{
-		id: TabActionId.Rename,
-		label: "Rename",
-		type: ContextMenuItemType.Action,
-	},
-	{
-		type: ContextMenuItemType.Divider,
-	},
-	{
-		danger: true,
-		id: TabActionId.Close,
-		label: "Close",
-		type: ContextMenuItemType.Action,
-	},
-];
+const menuItems = $derived.by(() => {
+	const items: ContextMenuItem<TabActionId>[] = [
+		{
+			id: TabActionId.Rename,
+			label: "Rename",
+			type: ContextMenuItemType.Action,
+		},
+	];
+
+	if (itemType === "iframe") {
+		items.push({
+			id: TabActionId.ChangeUrl,
+			label: "Change URL",
+			type: ContextMenuItemType.Action,
+		});
+	}
+
+	items.push(
+		{
+			type: ContextMenuItemType.Divider,
+		},
+		{
+			danger: true,
+			id: TabActionId.Close,
+			label: "Close",
+			type: ContextMenuItemType.Action,
+		},
+	);
+
+	return items;
+});
 
 function handleAction(actionId: TabActionId) {
 	switch (actionId) {
 		case TabActionId.Rename:
 			onRename?.();
+			break;
+		case TabActionId.ChangeUrl:
+			onChangeUrl?.();
 			break;
 		case TabActionId.Close:
 			onClose?.();

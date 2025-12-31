@@ -10,10 +10,16 @@ usage: Display terminal content with visual feedback for active/inactive state
 interface Props {
 	isActive?: boolean;
 	onclick?: (event: MouseEvent) => void;
+	oncontextmenu?: (event: MouseEvent) => void;
 	onMount?: (container: HTMLDivElement) => void;
 }
 
-let { isActive = false, onclick, onMount: onMountCallback }: Props = $props();
+let { isActive = false, onclick, oncontextmenu, onMount: onMountCallback }: Props = $props();
+
+function handleContextMenu(event: MouseEvent) {
+	event.preventDefault();
+	oncontextmenu?.(event);
+}
 
 let containerRef: HTMLDivElement | undefined = $state();
 
@@ -35,6 +41,7 @@ $effect(() => {
 	role="button"
 	tabindex="0"
 	onclick={(e) => onclick?.(e)}
+	oncontextmenu={handleContextMenu}
 	onkeydown={(e) => e.key === "Enter" && onclick?.(new MouseEvent("click"))}
 >
 	<div class="scanlines pointer-events-none absolute inset-0 z-10 opacity-50"></div>
