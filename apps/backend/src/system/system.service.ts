@@ -1,6 +1,9 @@
+import * as fs from "node:fs";
 import * as os from "node:os";
 import type { SystemMemoryStats, SystemStats } from "@claude-manager/common/src/system/system.types";
 import { terminalPtyService } from "../terminal/pty/pty.service";
+
+const MEM_AVAILABLE_REGEX = /MemAvailable:\s+(\d+)\s+kB/;
 
 type CpuTimes = {
 	idle: number;
@@ -45,14 +48,29 @@ class SystemService {
 		return Math.round(usage * 10) / 10;
 	}
 
+	private memoryAvailableFromProcMeminfo(): number | null {
+		if (os.platform() !== "linux") return null;
+
+		try {
+			const meminfo = fs.readFileSync("/proc/meminfo", "utf8");
+			const match = meminfo.match(MEM_AVAILABLE_REGEX);
+			if (match) {
+				return Number.parseInt(match[1], 10) * 1024;
+			}
+		} catch {
+			return null;
+		}
+		return null;
+	}
+
 	memoryGet(): SystemMemoryStats {
 		const total = os.totalmem();
-		const free = os.freemem();
-		const used = total - free;
+		const available = this.memoryAvailableFromProcMeminfo() ?? os.freemem();
+		const used = total - available;
 		const usedPercentage = Math.round((used / total) * 1000) / 10;
 
 		return {
-			free,
+			free: available,
 			total,
 			used,
 			usedPercentage,
