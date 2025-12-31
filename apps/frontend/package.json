@@ -50,7 +50,7 @@
 		"build-storybook": "storybook build",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"dev": "bun --env-file=../../.env vite dev",
+		"dev": "bun --env-file=../../.env vite dev --host",
 		"prepare": "svelte-kit sync || echo ''",
 		"preview": "bun --env-file=../../.env vite preview",
 		"storybook": "storybook dev -p 4039",

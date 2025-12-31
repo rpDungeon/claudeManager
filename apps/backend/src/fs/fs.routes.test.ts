@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { FsEntryType } from "@claude-manager/common/src/fs/fs.types";
 import { treaty } from "@elysiajs/eden";
 import { Elysia } from "elysia";
 import { fsRoutes } from "./fs.routes";
@@ -43,8 +44,10 @@ describe("fs routes", () => {
 			if (error) throw error;
 
 			expect(status).toBe(200);
-			expect(data.content).toBe(TEST_CONTENT_BASE64);
-			expect(data.type).toBe("file");
+			expect(data.type).toBe(FsEntryType.File);
+			if (data.type === FsEntryType.File) {
+				expect(data.content).toBe(TEST_CONTENT_BASE64);
+			}
 		});
 
 		it("reads a directory successfully", async () => {
@@ -58,8 +61,10 @@ describe("fs routes", () => {
 			if (error) throw error;
 
 			expect(status).toBe(200);
-			expect(data.type).toBe("directory");
-			expect(Array.isArray(data.entries)).toBe(true);
+			expect(data.type).toBe(FsEntryType.Directory);
+			if (data.type === FsEntryType.Directory) {
+				expect(Array.isArray(data.entries)).toBe(true);
+			}
 		});
 
 		it("returns 404 for non-existent path", async () => {
@@ -171,7 +176,9 @@ describe("fs routes", () => {
 					path: updatePath,
 				},
 			});
-			expect(readResult.data?.content).toBe(updatedContentBase64);
+			if (readResult.data?.type === FsEntryType.File) {
+				expect(readResult.data.content).toBe(updatedContentBase64);
+			}
 		});
 
 		it("returns 404 for non-existent file", async () => {

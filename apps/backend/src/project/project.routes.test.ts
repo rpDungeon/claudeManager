@@ -14,10 +14,19 @@ const api = treaty(app);
 
 const TEST_PROJECT_IDS: ProjectId[] = [];
 const TEST_LAYOUT_ID = "layout:test-project-routes-123" as LayoutId;
+const TEST_LAYOUT_PROJECT_ID = "project:test-project-routes-layout-456" as ProjectId;
 const PROJECT_ID_PATTERN = /^project:/;
 
 describe("project routes", () => {
 	beforeAll(async () => {
+		await db.insert(projectSchema).values({
+			createdAt: new Date(),
+			id: TEST_LAYOUT_PROJECT_ID,
+			name: "Test Layout Owner Project",
+			path: "/tmp/test-layout-owner",
+			updatedAt: new Date(),
+		});
+
 		await db.insert(layoutSchema).values({
 			createdAt: new Date(),
 			data: {
@@ -33,6 +42,7 @@ describe("project routes", () => {
 			},
 			id: TEST_LAYOUT_ID,
 			name: "Test Layout",
+			projectId: TEST_LAYOUT_PROJECT_ID,
 			updatedAt: new Date(),
 		});
 	});
@@ -42,6 +52,7 @@ describe("project routes", () => {
 			await db.delete(projectSchema).where(eq(projectSchema.id, id));
 		}
 		await db.delete(layoutSchema).where(eq(layoutSchema.id, TEST_LAYOUT_ID));
+		await db.delete(projectSchema).where(eq(projectSchema.id, TEST_LAYOUT_PROJECT_ID));
 	});
 
 	describe("POST /projects", () => {

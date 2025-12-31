@@ -44,6 +44,9 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 *.db-journal
 data/
 
+# Terminal session data
+terminal-data/
+
 # Generated files
 .claude/composed-docs.md
 .playwright-mcp/

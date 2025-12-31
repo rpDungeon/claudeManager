@@ -1,5 +1,6 @@
 import { authEnvs } from "../auth/auth.env";
 import { dbEnvs } from "../db/db.env";
+import { terminalEnvs } from "../terminal/terminal.env";
 import { transcriptionEnvs } from "../transcription/transcription.env";
 
 const commonEnvs = [
@@ -11,6 +12,7 @@ const allEnvs = [
 	...commonEnvs,
 	...dbEnvs,
 	...authEnvs,
+	...terminalEnvs,
 	...transcriptionEnvs,
 ] as const;
 

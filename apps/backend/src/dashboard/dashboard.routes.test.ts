@@ -32,7 +32,6 @@ describe("dashboard routes", () => {
 			name: "Dashboard Test Terminal",
 			projectId: TEST_PROJECT_ID,
 			type: TerminalType.Shell,
-			updatedAt: new Date(),
 		});
 	});
 
