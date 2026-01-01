@@ -23,33 +23,65 @@ let ptyCount = $state(0);
 let isConnected = $state(false);
 let settingsOpen = $state(false);
 
+const RECONNECT_BASE_MS = 2000;
+const RECONNECT_MAX_MS = 30_000;
+
 onMount(() => {
-	const ws = api.ws.system.stats.subscribe();
+	let ws: ReturnType<typeof api.ws.system.stats.subscribe> | null = null;
+	let reconnectAttempt = 0;
+	let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+	let isDestroyed = false;
 
-	ws.on("open", () => {
-		isConnected = true;
-	});
+	function connect() {
+		if (isDestroyed) return;
 
-	ws.subscribe((message) => {
-		cpuPercent = message.data.cpuPercentage;
-		memoryPercent = message.data.memory.usedPercentage;
-		ptyCount = message.data.ptyCount;
-	});
+		ws = api.ws.system.stats.subscribe();
 
-	ws.on("error", (error) => {
-		console.error("[StatusBar] WebSocket error:", error);
-	});
+		ws.on("open", () => {
+			isConnected = true;
+			reconnectAttempt = 0;
+		});
 
-	ws.on("close", (_event) => {
-		isConnected = false;
-	});
+		ws.subscribe((message) => {
+			cpuPercent = message.data.cpuPercentage;
+			memoryPercent = message.data.memory.usedPercentage;
+			ptyCount = message.data.ptyCount;
+		});
+
+		ws.on("error", (error) => {
+			console.error("[StatusBar] WebSocket error:", error);
+		});
+
+		ws.on("close", () => {
+			isConnected = false;
+			ws = null;
+			scheduleReconnect();
+		});
+	}
+
+	function scheduleReconnect() {
+		if (isDestroyed || reconnectTimeout) return;
+
+		const delay = Math.min(RECONNECT_BASE_MS * 2 ** reconnectAttempt, RECONNECT_MAX_MS);
+		reconnectAttempt++;
+		console.log(`[StatusBar] Reconnecting in ${delay}ms (attempt ${reconnectAttempt})`);
+
+		reconnectTimeout = setTimeout(() => {
+			reconnectTimeout = null;
+			connect();
+		}, delay);
+	}
+
+	connect();
 
 	const timeInterval = setInterval(() => {
 		currentTime = new Date().toLocaleTimeString();
 	}, 1000);
 
 	return () => {
-		ws.close();
+		isDestroyed = true;
+		if (reconnectTimeout) clearTimeout(reconnectTimeout);
+		ws?.close();
 		clearInterval(timeInterval);
 	};
 });

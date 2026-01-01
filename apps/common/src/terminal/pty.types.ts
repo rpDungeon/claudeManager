@@ -11,9 +11,14 @@ const terminalPtyMessageResizeSchema = z.object({
 	type: z.literal("resize"),
 });
 
+const terminalPtyMessagePongSchema = z.object({
+	type: z.literal("pong"),
+});
+
 export const terminalPtyMessageClientSchema = z.discriminatedUnion("type", [
 	terminalPtyMessageInputSchema,
 	terminalPtyMessageResizeSchema,
+	terminalPtyMessagePongSchema,
 ]);
 
 export type TerminalPtyMessageClient = z.infer<typeof terminalPtyMessageClientSchema>;
@@ -23,6 +28,7 @@ export enum TerminalPtyMessageServerType {
 	Exit = "exit",
 	ForegroundProcess = "foreground_process",
 	Output = "output",
+	Ping = "ping",
 }
 
 const terminalPtyMessageServerOutputSchema = z.object({
@@ -45,11 +51,16 @@ const terminalPtyMessageServerForegroundProcessSchema = z.object({
 	type: z.literal(TerminalPtyMessageServerType.ForegroundProcess),
 });
 
+const terminalPtyMessageServerPingSchema = z.object({
+	type: z.literal(TerminalPtyMessageServerType.Ping),
+});
+
 export const terminalPtyMessageServerSchema = z.discriminatedUnion("type", [
 	terminalPtyMessageServerOutputSchema,
 	terminalPtyMessageServerExitSchema,
 	terminalPtyMessageServerErrorSchema,
 	terminalPtyMessageServerForegroundProcessSchema,
+	terminalPtyMessageServerPingSchema,
 ]);
 
 export type TerminalPtyMessageServer = z.infer<typeof terminalPtyMessageServerSchema>;

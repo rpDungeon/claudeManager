@@ -16,11 +16,19 @@ import { terminalInputlogService } from "../inputlog/inputlog.service";
 import { terminalPtyService } from "./pty.service";
 
 const unsubscribeMap = new Map<string, () => void>();
+const inputBufferMap = new Map<TerminalId, string>();
 const processPollingMap = new Map<string, ReturnType<typeof setInterval>>();
 const lastProcessMap = new Map<string, string | null>();
-const inputBufferMap = new Map<TerminalId, string>();
 
-const PROCESS_POLL_INTERVAL_MS = 500;
+const PROCESS_POLL_INTERVAL_MS = 1000;
+const PING_INTERVAL_MS = 5000;
+const MAX_MISSED_PINGS = 2;
+
+type KeepaliveState = {
+	interval: ReturnType<typeof setInterval>;
+	missedPings: number;
+};
+const keepaliveMap = new Map<string, KeepaliveState>();
 
 function inputBufferProcess(terminalId: TerminalId, data: string) {
 	let buffer = inputBufferMap.get(terminalId) ?? "";
@@ -72,9 +80,23 @@ export const terminalPtyWebsocket = new Elysia({
 			processPollingMap.delete(ws.id);
 		}
 		lastProcessMap.delete(ws.id);
+
+		const keepalive = keepaliveMap.get(ws.id);
+		if (keepalive) {
+			clearInterval(keepalive.interval);
+			keepaliveMap.delete(ws.id);
+		}
 	},
 
 	message(ws, message) {
+		if (message.type === "pong") {
+			const keepalive = keepaliveMap.get(ws.id);
+			if (keepalive) {
+				keepalive.missedPings = 0;
+			}
+			return;
+		}
+
 		const { terminalId } = ws.data.params;
 		const instance = terminalPtyService.instanceGet(terminalId);
 
@@ -96,6 +118,35 @@ export const terminalPtyWebsocket = new Elysia({
 
 	async open(ws) {
 		const { terminalId } = ws.data.params;
+
+		const setupKeepalive = () => {
+			const interval = setInterval(() => {
+				const keepalive = keepaliveMap.get(ws.id);
+				if (!keepalive) {
+					clearInterval(interval);
+					return;
+				}
+
+				keepalive.missedPings++;
+
+				if (keepalive.missedPings >= MAX_MISSED_PINGS) {
+					console.log(`[WS] Closing connection ${ws.id} - ${keepalive.missedPings} missed pings`);
+					clearInterval(interval);
+					keepaliveMap.delete(ws.id);
+					ws.close();
+					return;
+				}
+
+				ws.send({
+					type: TerminalPtyMessageServerType.Ping,
+				});
+			}, PING_INTERVAL_MS);
+
+			keepaliveMap.set(ws.id, {
+				interval,
+				missedPings: 0,
+			});
+		};
 
 		const setupProcessPolling = (ptyInstance: ReturnType<typeof terminalPtyService.instanceGet>) => {
 			if (!ptyInstance) return;
@@ -146,6 +197,7 @@ export const terminalPtyWebsocket = new Elysia({
 
 			unsubscribeMap.set(ws.id, unsubscribe);
 			setupProcessPolling(existingInstance);
+			setupKeepalive();
 			return;
 		}
 
@@ -173,6 +225,7 @@ export const terminalPtyWebsocket = new Elysia({
 
 		unsubscribeMap.set(ws.id, unsubscribe);
 		setupProcessPolling(instance);
+		setupKeepalive();
 	},
 	params: z.object({
 		terminalId: terminalIdSchema,

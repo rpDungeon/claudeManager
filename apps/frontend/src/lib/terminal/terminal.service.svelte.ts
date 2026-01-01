@@ -92,6 +92,15 @@ export function terminalInstanceDestroy(terminalId: TerminalId): void {
 	const instance = instances.get(terminalId);
 	if (!instance) return;
 
+	const state = reconnectStates.get(terminalId);
+	if (state) {
+		state.intentionalClose = true;
+		if (state.timeout) {
+			clearTimeout(state.timeout);
+		}
+		reconnectStates.delete(terminalId);
+	}
+
 	terminalWebsocketClose(terminalId);
 	instance.terminal.dispose();
 	instances.delete(terminalId);
@@ -255,34 +264,49 @@ export function terminalInstanceFit(terminalId: TerminalId): void {
 	}
 }
 
-const wsConnectAttempts = new Map<
-	TerminalId,
-	{
-		count: number;
-		lastAttempt: number;
+const RECONNECT_BASE_MS = 2000;
+const RECONNECT_MAX_MS = 30_000;
+
+type ReconnectState = {
+	attempt: number;
+	timeout: ReturnType<typeof setTimeout> | null;
+	intentionalClose: boolean;
+};
+
+const reconnectStates = new Map<TerminalId, ReconnectState>();
+
+function getReconnectState(terminalId: TerminalId): ReconnectState {
+	let state = reconnectStates.get(terminalId);
+	if (!state) {
+		state = {
+			attempt: 0,
+			intentionalClose: false,
+			timeout: null,
+		};
+		reconnectStates.set(terminalId, state);
 	}
->();
+	return state;
+}
+
+function scheduleReconnect(terminalId: TerminalId): void {
+	const instance = instances.get(terminalId);
+	if (!instance) return;
+
+	const state = getReconnectState(terminalId);
+	if (state.intentionalClose || state.timeout) return;
+
+	const delay = Math.min(RECONNECT_BASE_MS * 2 ** state.attempt, RECONNECT_MAX_MS);
+	state.attempt++;
+	console.log(`[WS] Reconnecting ${terminalId} in ${delay}ms (attempt ${state.attempt})`);
+
+	state.timeout = setTimeout(() => {
+		state.timeout = null;
+		terminalWebsocketConnect(terminalId);
+	}, delay);
+}
 
 export function terminalWebsocketConnect(terminalId: TerminalId): void {
 	console.log("[WS] terminalWebsocketConnect called for:", terminalId);
-
-	const now = Date.now();
-	const attempts = wsConnectAttempts.get(terminalId) ?? {
-		count: 0,
-		lastAttempt: 0,
-	};
-
-	if (now - attempts.lastAttempt < 1000) {
-		attempts.count++;
-		if (attempts.count > 3) {
-			console.error("[WS] LOOP DETECTED! Blocking rapid reconnection for:", terminalId);
-			return;
-		}
-	} else {
-		attempts.count = 1;
-	}
-	attempts.lastAttempt = now;
-	wsConnectAttempts.set(terminalId, attempts);
 
 	const instance = instances.get(terminalId);
 	if (!instance) {
@@ -290,9 +314,14 @@ export function terminalWebsocketConnect(terminalId: TerminalId): void {
 		return;
 	}
 
+	const reconnectState = getReconnectState(terminalId);
+	reconnectState.intentionalClose = false;
+
 	if (instance.websocket) {
 		console.log("[WS] Closing existing websocket");
+		reconnectState.intentionalClose = true;
 		terminalWebsocketClose(terminalId);
+		reconnectState.intentionalClose = false;
 	}
 
 	instance.connectionStatus = TerminalConnectionStatus.Connecting;
@@ -306,7 +335,7 @@ export function terminalWebsocketConnect(terminalId: TerminalId): void {
 		.subscribe();
 
 	ws.subscribe((event) => {
-		if (event.data.type !== "output") {
+		if (event.data.type !== "output" && event.data.type !== "ping") {
 			console.log("[WS] Message received:", event.data.type);
 		}
 		terminalDispatchServerMessage(terminalId, event.data);
@@ -315,6 +344,7 @@ export function terminalWebsocketConnect(terminalId: TerminalId): void {
 	ws.on("open", () => {
 		console.log("[WS] Connection opened for:", terminalId);
 		instance.connectionStatus = TerminalConnectionStatus.Connected;
+		reconnectState.attempt = 0;
 
 		const dims = instance.addons.fit.proposeDimensions();
 		if (dims) {
@@ -329,6 +359,8 @@ export function terminalWebsocketConnect(terminalId: TerminalId): void {
 	ws.on("close", () => {
 		console.log("[WS] Connection closed for:", terminalId);
 		instance.connectionStatus = TerminalConnectionStatus.Disconnected;
+		instance.websocket = null;
+		scheduleReconnect(terminalId);
 	});
 
 	ws.on("error", () => {
@@ -351,6 +383,12 @@ export function terminalWebsocketConnect(terminalId: TerminalId): void {
 export function terminalWebsocketClose(terminalId: TerminalId): void {
 	const instance = instances.get(terminalId);
 	if (!instance?.websocket) return;
+
+	const state = reconnectStates.get(terminalId);
+	if (state?.timeout) {
+		clearTimeout(state.timeout);
+		state.timeout = null;
+	}
 
 	instance.websocket.close();
 	instance.websocket = null;
@@ -375,6 +413,14 @@ function terminalDispatchServerMessage(terminalId: TerminalId, message: ServerMe
 
 		case "foreground_process":
 			instance.foregroundProcess = message.process;
+			break;
+
+		case "ping":
+			if (instance.websocket) {
+				instance.websocket.send({
+					type: "pong",
+				});
+			}
 			break;
 	}
 }

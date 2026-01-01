@@ -27,14 +27,6 @@ const menuItems = [
 		id: AddItemType.Iframe,
 		label: "Iframe",
 	},
-	{
-		id: AddItemType.Image,
-		label: "Image",
-	},
-	{
-		id: AddItemType.Markdown,
-		label: "Markdown",
-	},
 ];
 
 function handleAction(id: AddItemType) {
