@@ -1,17 +1,16 @@
-import { EditorView, basicSetup } from "codemirror";
+import { LSPClient, languageServerExtensions } from "@codemirror/lsp-client";
 import { EditorState, type Extension } from "@codemirror/state";
 import { oneDark } from "@codemirror/theme-one-dark";
-import { LSPClient, languageServerExtensions } from "@codemirror/lsp-client";
+import { basicSetup, EditorView } from "codemirror";
 import { SvelteMap } from "svelte/reactivity";
 import { api } from "$lib/api/api.client";
 import {
 	EditorConnectionStatus,
-	EditorLanguageId,
 	editorLanguageExtensionGet,
 	editorLanguageIdFromPath,
 	editorThemeCrt,
 } from "./editor.lib";
-import { editorLspTransportCreate, editorLanguageIdToLspLanguageId } from "./lsp/lspTransport";
+import { editorLanguageIdToLspLanguageId, editorLspTransportCreate } from "./lsp/lspTransport";
 
 type EditorId = string;
 
@@ -39,16 +38,16 @@ export function editorInstanceCreate(editorId: EditorId, filePath: string): Edit
 	if (existing) return existing;
 
 	const instance: EditorInstance = $state({
-		container: null,
 		connectionStatus: EditorConnectionStatus.Disconnected,
-		filePath,
+		container: null,
 		content: "",
+		error: null,
+		filePath,
 		isDirty: false,
 		isLoading: false,
-		error: null,
-		view: null,
 		lspClient: null,
 		lspConnected: false,
+		view: null,
 	});
 
 	instances.set(editorId, instance);
@@ -103,8 +102,8 @@ export function editorInstanceMount(editorId: EditorId, container: HTMLElement):
 	}
 
 	instance.view = new EditorView({
-		state,
 		parent: container,
+		state,
 	});
 }
 
@@ -123,13 +122,15 @@ export async function editorLspConnect(editorId: EditorId, rootUri: string): Pro
 	try {
 		const sessionId = `${editorId}-${Date.now()}`;
 		const transport = await editorLspTransportCreate({
-			rootUri,
 			languageId: lspLanguageId,
+			rootUri,
 			sessionId,
 		});
 
 		const client = new LSPClient({
 			extensions: languageServerExtensions(),
+			rootUri,
+			timeout: 10_000,
 		}).connect(transport);
 
 		instance.lspClient = client;
@@ -193,7 +194,8 @@ export async function editorFileLoad(editorId: EditorId): Promise<void> {
 			return;
 		}
 
-		const content = atob(data.content);
+		const bytes = Uint8Array.from(atob(data.content), (c) => c.charCodeAt(0));
+		const content = new TextDecoder().decode(bytes);
 		instance.content = content;
 		instance.isDirty = false;
 		instance.connectionStatus = EditorConnectionStatus.Connected;
@@ -202,8 +204,8 @@ export async function editorFileLoad(editorId: EditorId): Promise<void> {
 			instance.view.dispatch({
 				changes: {
 					from: 0,
-					to: instance.view.state.doc.length,
 					insert: content,
+					to: instance.view.state.doc.length,
 				},
 			});
 		}
@@ -220,10 +222,12 @@ export async function editorFileSave(editorId: EditorId): Promise<boolean> {
 	if (!instance?.view) return false;
 
 	const content = instance.view.state.doc.toString();
+	const bytes = new TextEncoder().encode(content);
+	const contentBase64 = btoa(String.fromCharCode(...bytes));
 
 	try {
 		const { error } = await api.fs.file.put({
-			content,
+			content: contentBase64,
 			path: instance.filePath,
 		});
 

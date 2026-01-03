@@ -1,0 +1,22 @@
+{
+	"dependencies": {
+		"@elysiajs/eden": "^1.4.5",
+		"elysia": "^1.4.19",
+		"zod": "^4.2.1"
+	},
+	"devDependencies": {
+		"@types/bun": "latest"
+	},
+	"module": "index.ts",
+	"name": "2025-12-19-eden-ws-zod",
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"private": true,
+	"scripts": {
+		"client": "bun run client.ts",
+		"demo": "bun run server.ts & sleep 2 && bun run client.ts; pkill -P $$",
+		"server": "bun run server.ts"
+	},
+	"type": "module"
+}
