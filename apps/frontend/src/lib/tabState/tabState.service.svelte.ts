@@ -7,12 +7,18 @@ const LOCAL_KEY = "claude-manager-default-state";
 interface TabState {
 	projectId: ProjectId | null;
 	layoutId: LayoutId | null;
+	sidebarWidth: number;
 }
+
+const DEFAULT_SIDEBAR_WIDTH = 256;
 
 const DEFAULT_STATE: TabState = {
 	layoutId: null,
 	projectId: null,
+	sidebarWidth: DEFAULT_SIDEBAR_WIDTH,
 };
+
+export { DEFAULT_SIDEBAR_WIDTH };
 
 function tabStateLoadFromSession(): TabState | null {
 	if (typeof sessionStorage === "undefined") return null;

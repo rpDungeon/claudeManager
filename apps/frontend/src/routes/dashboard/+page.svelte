@@ -3,7 +3,7 @@
 import { browser } from "$app/environment";
 import type { LayoutId } from "@claude-manager/common/src/layout/layout.id";
 import type { ProjectId } from "@claude-manager/common/src/project/project.id";
-import { tabStateLoad, tabStateSave } from "$lib/tabState/tabState.service.svelte";
+import { DEFAULT_SIDEBAR_WIDTH, tabStateLoad, tabStateSave } from "$lib/tabState/tabState.service.svelte";
 import DashboardLayout from "./DashboardLayout.component.svelte";
 import DashboardSidebar from "./DashboardSidebar.component.svelte";
 import DashboardStatusBar from "./DashboardStatusBar.component.svelte";
@@ -15,21 +15,51 @@ const initialState = browser
 	: {
 			layoutId: null,
 			projectId: null,
+			sidebarWidth: DEFAULT_SIDEBAR_WIDTH,
 		};
 let selectedProjectId = $state<ProjectId | null>(initialState.projectId);
 let selectedLayoutId = $state<LayoutId | null>(initialState.layoutId);
+let sidebarWidth = $state(initialState.sidebarWidth);
 
 $effect(() => {
 	if (browser) {
 		tabStateSave({
 			layoutId: selectedLayoutId,
 			projectId: selectedProjectId,
+			sidebarWidth,
 		});
 	}
 });
 let showProjectSettings = $state(false);
 let showLayoutSettings = $state(false);
 let isSidebarCollapsed = $state(false);
+let isResizing = $state(false);
+
+const MIN_SIDEBAR_WIDTH = 200;
+const MAX_SIDEBAR_WIDTH = 500;
+
+function handleResizeStart(event: MouseEvent) {
+	event.preventDefault();
+	isResizing = true;
+
+	const startX = event.clientX;
+	const startWidth = sidebarWidth;
+
+	function onMouseMove(e: MouseEvent) {
+		const delta = e.clientX - startX;
+		const newWidth = Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, startWidth + delta));
+		sidebarWidth = newWidth;
+	}
+
+	function onMouseUp() {
+		isResizing = false;
+		document.removeEventListener("mousemove", onMouseMove);
+		document.removeEventListener("mouseup", onMouseUp);
+	}
+
+	document.addEventListener("mousemove", onMouseMove);
+	document.addEventListener("mouseup", onMouseUp);
+}
 
 let sidebarRef:
 	| {
@@ -100,17 +130,19 @@ function handleFileOpen(filePath: string, openToSide?: boolean) {
 </svelte:head>
 
 <div class="flex h-screen w-screen flex-col bg-bg-void">
-	<div class="flex flex-1 overflow-hidden">
+	<div class="flex flex-1 overflow-hidden" class:select-none={isResizing}>
 		<div class="relative flex-shrink-0">
 			<div
 				class="h-full overflow-hidden transition-[width] duration-200 ease-out"
-				class:w-64={!isSidebarCollapsed}
+				class:!transition-none={isResizing}
 				class:w-0={isSidebarCollapsed}
+				style:width={isSidebarCollapsed ? undefined : `${sidebarWidth}px`}
 			>
 				<div
-					class="w-64 h-full border-r border-border-default transition-transform duration-200 ease-out"
+					class="h-full border-r border-border-default transition-transform duration-200 ease-out"
 					class:translate-x-0={!isSidebarCollapsed}
 					class:-translate-x-full={isSidebarCollapsed}
+					style:width="{sidebarWidth}px"
 				>
 					<DashboardSidebar
 						bind:this={sidebarRef}
@@ -124,6 +156,20 @@ function handleFileOpen(filePath: string, openToSide?: boolean) {
 					/>
 				</div>
 			</div>
+			<!-- Resize handle -->
+			{#if !isSidebarCollapsed}
+				<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+				<div
+					role="separator"
+					aria-orientation="vertical"
+					aria-valuenow={sidebarWidth}
+					aria-valuemin={MIN_SIDEBAR_WIDTH}
+					aria-valuemax={MAX_SIDEBAR_WIDTH}
+					tabindex="-1"
+					class="absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-terminal-green/30 transition-colors z-20 {isResizing ? 'bg-terminal-green/50' : ''}"
+					onmousedown={handleResizeStart}
+				></div>
+			{/if}
 			<button
 				type="button"
 				class="absolute top-2 left-full z-10 flex h-5 w-5 items-center justify-center text-[8px] text-text-tertiary hover:text-terminal-green hover:bg-bg-elevated transition-colors"
