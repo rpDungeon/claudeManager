@@ -32,7 +32,7 @@ interface Props {
 	onToggle?: (itemId: ItemId) => void;
 	onDragStart?: (itemId: ItemId, event: DragEvent) => void;
 	onDrop?: (targetId: ItemId, dragData: FileTreeDragData) => void;
-	onDoubleClick?: (itemId: ItemId) => void;
+	onDoubleClick?: (itemId: ItemId, event: MouseEvent) => void;
 	onContextMenu?: (itemId: ItemId, event: MouseEvent) => void;
 }
 
@@ -125,8 +125,8 @@ function handleDrop(event: DragEvent) {
 	}
 }
 
-function handleDoubleClick() {
-	onDoubleClick?.(itemId);
+function handleDoubleClick(event: MouseEvent) {
+	onDoubleClick?.(itemId, event);
 }
 
 function handleContextMenu(event: MouseEvent) {

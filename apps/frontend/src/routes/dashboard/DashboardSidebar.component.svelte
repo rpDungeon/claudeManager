@@ -50,7 +50,7 @@ interface Props {
 	onLayoutChange?: (layoutId: LayoutId | null) => void;
 	onProjectSettingsClick?: (projectId: ProjectId, name: string, path: string) => void;
 	onLayoutSettingsClick?: (layoutId: LayoutId, name: string) => void;
-	onFileOpen?: (filePath: string) => void;
+	onFileOpen?: (filePath: string, openToSide?: boolean) => void;
 }
 
 let {

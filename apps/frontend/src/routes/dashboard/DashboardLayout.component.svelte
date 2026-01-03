@@ -81,7 +81,7 @@ let isDirty = $state(false);
 let currentProjectId = $state<ProjectId | null>(null);
 let terminalCounter = $state(0);
 
-export function openFile(filePath: string) {
+export function openFile(filePath: string, openToSide = false) {
 	const itemId = crypto.randomUUID();
 	const fileName = filePath.split("/").pop() || "Editor";
 
@@ -118,11 +118,63 @@ export function openFile(filePath: string) {
 	}
 
 	if (targetContainerId) {
-		const container = data.desktop.containers[targetContainerId];
-		if (container?.type === "tabs") {
-			const tabsContainer = container as LayoutContainerTabs;
-			tabsContainer.childIds = [...tabsContainer.childIds, itemId];
-			tabsContainer.activeTabId = itemId;
+		if (openToSide) {
+			const newTabsId = `tabs-${++splitCounter}-${Date.now()}`;
+			const newSplitId = `split-${splitCounter}-${Date.now()}`;
+
+			const newTabsContainer: LayoutContainerTabs = {
+				activeTabId: itemId,
+				childIds: [itemId],
+				id: newTabsId,
+				type: "tabs",
+			};
+
+			const newSplitContainer: LayoutContainerSplit = {
+				childIds: [targetContainerId, newTabsId],
+				direction: "horizontal",
+				id: newSplitId,
+				sizes: [50, 50] as Percentage[],
+				type: "split",
+			};
+
+			const parentContainerId = findParentContainer(targetContainerId);
+
+			data.desktop.containers[newTabsId] = newTabsContainer;
+			data.desktop.containers[newSplitId] = newSplitContainer;
+
+			if (parentContainerId) {
+				const parentContainer = data.desktop.containers[parentContainerId];
+				if (parentContainer.type === "split") {
+					const splitParent = parentContainer as LayoutContainerSplit;
+					const idx = splitParent.childIds.indexOf(targetContainerId);
+					if (idx !== -1) {
+						splitParent.childIds[idx] = newSplitId;
+					}
+				}
+			} else if (data.desktop.rootId === targetContainerId) {
+				data.desktop.rootId = newSplitId;
+			}
+		} else {
+			const container = data.desktop.containers[targetContainerId];
+			if (container?.type === "tabs") {
+				const tabsContainer = container as LayoutContainerTabs;
+
+				if (activeItemId && tabsContainer.childIds.includes(activeItemId)) {
+					const activeItem = data.items[activeItemId];
+					if (activeItem?.type === "editor") {
+						delete data.items[activeItemId];
+						const idx = tabsContainer.childIds.indexOf(activeItemId);
+						tabsContainer.childIds[idx] = itemId;
+						tabsContainer.activeTabId = itemId;
+					} else {
+						tabsContainer.childIds = [...tabsContainer.childIds, itemId];
+						tabsContainer.activeTabId = itemId;
+					}
+				} else {
+					tabsContainer.childIds = [...tabsContainer.childIds, itemId];
+					tabsContainer.activeTabId = itemId;
+				}
+			}
 		}
 	}
 
@@ -208,6 +260,17 @@ function connectSSE(targetLayoutId: LayoutId, _isInitial: boolean) {
 					data: defaultData,
 				});
 		}
+
+		for (const container of Object.values(data.desktop.containers)) {
+			if (container.type === "tabs") {
+				const tabsContainer = container as LayoutContainerTabs;
+				if (tabsContainer.activeTabId) {
+					activeItemId = tabsContainer.activeTabId;
+					break;
+				}
+			}
+		}
+
 		isLoading = false;
 		isReconnecting = false;
 		error = null;
@@ -283,6 +346,28 @@ $effect(() => {
 	};
 });
 
+$effect(() => {
+	function handleKeyDown(event: KeyboardEvent) {
+		if ((event.ctrlKey || event.metaKey) && event.key === "w") {
+			event.preventDefault();
+			if (!activeItemId) return;
+
+			for (const [containerId, container] of Object.entries(data.desktop.containers)) {
+				if (container.type === "tabs") {
+					const tabsContainer = container as LayoutContainerTabs;
+					if (tabsContainer.childIds.includes(activeItemId)) {
+						void handleItemClose(containerId, activeItemId);
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	window.addEventListener("keydown", handleKeyDown);
+	return () => window.removeEventListener("keydown", handleKeyDown);
+});
+
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
 function markDirty() {
@@ -298,6 +383,7 @@ function handleTabSelect(containerId: string, itemId: string) {
 	const container = data.desktop.containers[containerId];
 	if (container?.type === "tabs") {
 		(container as LayoutContainerTabs).activeTabId = itemId;
+		activeItemId = itemId;
 		data = {
 			...data,
 		};
@@ -691,6 +777,10 @@ async function handleItemClose(containerId: string, itemId: string) {
 
 	if (tabsContainer.activeTabId === itemId) {
 		tabsContainer.activeTabId = tabsContainer.childIds[0] ?? null;
+	}
+
+	if (activeItemId === itemId) {
+		activeItemId = tabsContainer.activeTabId;
 	}
 
 	delete data.items[itemId];

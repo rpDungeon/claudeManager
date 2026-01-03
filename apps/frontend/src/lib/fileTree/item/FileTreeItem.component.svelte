@@ -27,6 +27,7 @@ interface Props {
 	hasChildren?: boolean;
 	draggable?: boolean;
 	onclick?: () => void;
+	ondblclick?: (event: MouseEvent) => void;
 	onToggle?: () => void;
 	ondragstart?: (event: DragEvent) => void;
 	ondragover?: (event: DragEvent) => void;
@@ -49,6 +50,7 @@ let {
 	hasChildren: _hasChildren = false,
 	draggable = false,
 	onclick,
+	ondblclick,
 	onToggle,
 	ondragstart,
 	ondragover,
@@ -67,6 +69,10 @@ const statusColor = $derived(status ? fileStatusColorMap[status] : IndicatorDotC
 
 function handleClick() {
 	onclick?.();
+}
+
+function handleDoubleClick(event: MouseEvent) {
+	ondblclick?.(event);
 }
 
 function handleToggleClick(event: Event) {
@@ -128,6 +134,7 @@ function handleContextMenu(event: MouseEvent) {
 	disabled={isError}
 	title={errorMessage}
 	onclick={handleClick}
+	ondblclick={handleDoubleClick}
 	onkeydown={handleKeyDown}
 	ondragstart={handleDragStart}
 	ondragover={handleDragOver}

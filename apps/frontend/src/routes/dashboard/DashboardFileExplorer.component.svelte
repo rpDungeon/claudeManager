@@ -29,7 +29,7 @@ import { gitStore } from "$lib/git/gitStore.svelte";
 interface Props {
 	rootPath?: string;
 	onFileSelect?: (path: string) => void;
-	onFileOpen?: (path: string) => void;
+	onFileOpen?: (path: string, openToSide?: boolean) => void;
 }
 
 let {
@@ -214,7 +214,7 @@ $effect(() => {
 	}
 
 	return () => {
-		if (wsConnection && currentWatchPath) {
+		if (wsConnection && currentWatchPath && wsConnection.ws.readyState === WebSocket.OPEN) {
 			console.log("[FileExplorer] Cleanup: sending unwatch for:", currentWatchPath);
 			wsConnection.send({
 				path: currentWatchPath,
@@ -266,10 +266,10 @@ function handleToggle(itemId: ItemId) {
 	}
 }
 
-function handleDoubleClick(itemId: ItemId) {
+function handleDoubleClick(itemId: ItemId, event: MouseEvent) {
 	const item = items.get(itemId);
 	if (item?.type === FileTreeItemType.File) {
-		onFileOpen?.(itemId);
+		onFileOpen?.(itemId, event.altKey);
 	}
 }
 

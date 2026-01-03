@@ -22,7 +22,7 @@ let sidebarRef:
 
 let layoutRef:
 	| {
-			openFile: (filePath: string) => void;
+			openFile: (filePath: string, openToSide?: boolean) => void;
 	  }
 	| undefined = $state();
 
@@ -73,8 +73,8 @@ async function handleLayoutDelete() {
 	await sidebarRef?.refresh();
 }
 
-function handleFileOpen(filePath: string) {
-	layoutRef?.openFile(filePath);
+function handleFileOpen(filePath: string, openToSide?: boolean) {
+	layoutRef?.openFile(filePath, openToSide);
 }
 </script>
 
