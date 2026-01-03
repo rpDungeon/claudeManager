@@ -250,6 +250,7 @@ function handleContextMenuClose() {
 }
 
 let audioStream: MediaStream | null = null;
+let recordingTerminalId: TerminalId | undefined;
 
 async function handleVoiceToggle() {
 	if (voiceRecorderState === VoiceRecorderState.Recording) {
@@ -309,24 +310,34 @@ async function handleVoiceToggle() {
 
 				if (error || !data) {
 					console.error("[VoiceRecorder] Transcription error:", error);
-				} else if (terminalId) {
+				} else if (recordingTerminalId) {
 					let text = data.transcription.trim();
 					let autoSend = false;
 
 					const words = text.split(WHITESPACE_REGEX);
 					const lastWord = words[words.length - 1]?.toLowerCase();
-					if (lastWord === "send" || lastWord === "send." || lastWord === "cent" || lastWord === "cent.") {
+
+					// Auto-send: saying "send" at the end triggers Enter. Variants handle common transcription errors.
+					if (
+						lastWord === "send" ||
+						lastWord === "send." ||
+						lastWord === "cent" ||
+						lastWord === "cent." ||
+						lastWord === "sent" ||
+						lastWord === "sent."
+					) {
 						words.pop();
 						text = words.join(" ");
 						autoSend = true;
 					}
 
-					terminalInstancePaste(terminalId, text);
-					terminalInstanceFocus(terminalId);
+					const targetId = recordingTerminalId;
+					terminalInstancePaste(targetId, text);
+					terminalInstanceFocus(targetId);
 
 					if (autoSend) {
 						setTimeout(() => {
-							terminalInstancePaste(terminalId, "\r");
+							terminalInstancePaste(targetId, "\r");
 						}, 500);
 					}
 				}
@@ -337,6 +348,7 @@ async function handleVoiceToggle() {
 			}
 		};
 
+		recordingTerminalId = terminalId;
 		mediaRecorder.start();
 		voiceRecorderState = VoiceRecorderState.Recording;
 	} catch (err) {
