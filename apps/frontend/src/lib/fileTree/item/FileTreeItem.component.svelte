@@ -11,6 +11,7 @@ usage: Used by FileTreeNode to render individual items in a tree structure
 import { ChevronDown, Loader2 } from "lucide-svelte";
 import IndicatorDot from "$lib/common/IndicatorDot.component.svelte";
 import { IndicatorDotColor } from "$lib/common/indicatorDot.lib";
+import FileIcon from "$lib/icons/FileIcon.component.svelte";
 import { FileTreeItemType, fileStatusColorMap, type FileStatus } from "../fileTree.lib";
 
 interface Props {
@@ -159,13 +160,11 @@ function handleContextMenu(event: MouseEvent) {
 		{/if}
 	</span>
 
-	<span class="flex size-[13px] shrink-0 items-center justify-center text-[11px] text-text-secondary">
+	<span class="flex size-[13px] shrink-0 items-center justify-center">
 		{#if isError}
-			<span class="text-terminal-red">🚫</span>
-		{:else if isFolder}
-			<span class:text-amber-500={isExpanded}>📁</span>
+			<span class="text-[11px] text-terminal-red">🚫</span>
 		{:else}
-			<span>📄</span>
+			<FileIcon filename={name} {isFolder} size={13} />
 		{/if}
 	</span>
 
