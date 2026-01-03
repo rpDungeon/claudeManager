@@ -99,9 +99,17 @@ async function loadProjects() {
 	const response = await api.projects.get();
 	if (!response.error && response.data) {
 		projects = response.data as Project[];
-		if (projects.length > 0 && !selectedProjectId) {
-			selectedProjectId = projects[0].id;
-			onProjectChange?.(projects[0].id, projects[0].path);
+		if (projects.length > 0) {
+			if (!selectedProjectId) {
+				selectedProjectId = projects[0].id;
+			}
+			const selectedProject = projects.find((p) => p.id === selectedProjectId);
+			if (selectedProject) {
+				onProjectChange?.(selectedProject.id, selectedProject.path);
+			} else {
+				selectedProjectId = projects[0].id;
+				onProjectChange?.(projects[0].id, projects[0].path);
+			}
 		}
 	}
 	isLoadingProjects = false;

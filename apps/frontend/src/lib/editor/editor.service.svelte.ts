@@ -1,3 +1,4 @@
+import { lintGutter } from "@codemirror/lint";
 import { LSPClient, languageServerExtensions } from "@codemirror/lsp-client";
 import { EditorState, type Extension } from "@codemirror/state";
 import { basicSetup, EditorView } from "codemirror";
@@ -81,6 +82,7 @@ export function editorInstanceMount(editorId: EditorId, container: HTMLElement):
 		basicSetup,
 		languageExtension,
 		editorThemeTomorrowNightBright,
+		lintGutter(),
 		EditorView.theme({
 			".cm-content": {
 				fontSize: `${fontSize}px`,
@@ -157,6 +159,7 @@ export async function editorLspConnect(editorId: EditorId, rootUri: string): Pro
 				basicSetup,
 				languageExtension,
 				editorThemeTomorrowNightBright,
+				lintGutter(),
 				EditorView.theme({
 					".cm-content": {
 						fontSize: `${fontSize}px`,

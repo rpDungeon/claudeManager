@@ -1,5 +1,7 @@
-import { spawn, type Subprocess } from "bun";
 import { EditorLspLanguageId } from "@claude-manager/common/src/editor/lsp.types";
+import { type Subprocess, spawn } from "bun";
+
+const CONTENT_LENGTH_REGEX = /Content-Length:\s*(\d+)/i;
 
 type Unsubscribe = () => void;
 
@@ -22,15 +24,35 @@ function languageServerCommandGet(languageId: EditorLspLanguageId): string[] {
 	switch (languageId) {
 		case EditorLspLanguageId.TypeScript:
 		case EditorLspLanguageId.JavaScript:
-			return ["npx", "typescript-language-server", "--stdio"];
+			return [
+				"bunx",
+				"typescript-language-server",
+				"--stdio",
+			];
 		case EditorLspLanguageId.Svelte:
-			return ["npx", "svelteserver", "--stdio"];
+			return [
+				"bunx",
+				"svelteserver",
+				"--stdio",
+			];
 		case EditorLspLanguageId.CSS:
-			return ["npx", "vscode-css-language-server", "--stdio"];
+			return [
+				"bunx",
+				"vscode-css-language-server",
+				"--stdio",
+			];
 		case EditorLspLanguageId.HTML:
-			return ["npx", "vscode-html-language-server", "--stdio"];
+			return [
+				"bunx",
+				"vscode-html-language-server",
+				"--stdio",
+			];
 		case EditorLspLanguageId.JSON:
-			return ["npx", "vscode-json-language-server", "--stdio"];
+			return [
+				"bunx",
+				"vscode-json-language-server",
+				"--stdio",
+			];
 		default:
 			throw new Error(`Unsupported language: ${languageId}`);
 	}
@@ -60,6 +82,8 @@ class LspService {
 				const stdin = state.process.stdin;
 				if (stdin && typeof stdin !== "number") {
 					stdin.write(header + jsonRpcContent);
+				} else {
+					console.error(`[LSP] stdin not available for ${state.languageId}`);
 				}
 			},
 		};
@@ -82,11 +106,17 @@ class LspService {
 		const command = languageServerCommandGet(languageId);
 		const [cmd, ...args] = command;
 
-		const process = spawn([cmd, ...args], {
-			stdin: "pipe",
-			stdout: "pipe",
-			stderr: "pipe",
-		});
+		const process = spawn(
+			[
+				cmd,
+				...args,
+			],
+			{
+				stderr: "pipe",
+				stdin: "pipe",
+				stdout: "pipe",
+			},
+		);
 
 		const callbacks = new Set<(jsonRpcContent: string) => void>();
 
@@ -117,7 +147,7 @@ class LspService {
 						if (headerEnd === -1) break;
 
 						const header = state.messageBuffer.slice(0, headerEnd);
-						const contentLengthMatch = header.match(/Content-Length:\s*(\d+)/i);
+						const contentLengthMatch = header.match(CONTENT_LENGTH_REGEX);
 						if (!contentLengthMatch) {
 							state.messageBuffer = state.messageBuffer.slice(headerEnd + 4);
 							continue;
@@ -156,11 +186,10 @@ class LspService {
 			}
 		};
 
-		processStdout();
-		processStderr();
+		void processStdout();
+		void processStderr();
 
-		process.exited.then(() => {
-			console.log(`[LSP] Language server ${languageId} exited`);
+		void process.exited.then(() => {
 			this.instances.delete(key);
 			callbacks.clear();
 		});
