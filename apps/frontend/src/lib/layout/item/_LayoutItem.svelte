@@ -9,6 +9,7 @@ usage: Pass a LayoutItem and it will render the appropriate specialized componen
 -->
 <script lang="ts">
 import type { LayoutItem } from "@claude-manager/common/src/layout/item/item.types";
+import LayoutItemEditor from "./LayoutItemEditor.component.svelte";
 import LayoutItemTerminal from "./LayoutItemTerminal.component.svelte";
 import LayoutItemIframe from "./LayoutItemIframe.component.svelte";
 import LayoutItemImage from "./LayoutItemImage.component.svelte";
@@ -17,6 +18,7 @@ import LayoutItemPlaceholder from "./LayoutItemPlaceholder.component.svelte";
 
 interface Props {
 	item: LayoutItem;
+	projectPath?: string;
 	isActive?: boolean;
 	draggable?: boolean;
 	isDropTarget?: boolean;
@@ -28,6 +30,7 @@ interface Props {
 
 let {
 	item,
+	projectPath,
 	isActive = false,
 	draggable = true,
 	isDropTarget = false,
@@ -46,6 +49,8 @@ let {
 	<LayoutItemImage {item} {isActive} {draggable} {isDropTarget} {onclick} {onDragStart} {onDragEnd} {onDrop} />
 {:else if item.type === "markdown"}
 	<LayoutItemMarkdown {item} {isActive} {draggable} {isDropTarget} {onclick} {onDragStart} {onDragEnd} {onDrop} />
+{:else if item.type === "editor"}
+	<LayoutItemEditor {item} {projectPath} {isActive} {draggable} {isDropTarget} {onclick} {onDragStart} {onDragEnd} {onDrop} />
 {:else}
 	<LayoutItemPlaceholder {item} {isActive} {draggable} {isDropTarget} {onclick} {onDragStart} {onDragEnd} {onDrop} />
 {/if}

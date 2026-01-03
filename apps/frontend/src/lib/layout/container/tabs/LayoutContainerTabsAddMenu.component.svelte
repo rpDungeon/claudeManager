@@ -24,6 +24,10 @@ const menuItems = [
 		label: "Terminal",
 	},
 	{
+		id: AddItemType.Editor,
+		label: "Editor",
+	},
+	{
 		id: AddItemType.Iframe,
 		label: "Iframe",
 	},

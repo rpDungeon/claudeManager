@@ -298,7 +298,8 @@ function handleContextMenuClose() {
 
 function handleOpenToSide() {
 	if (!contextMenuTargetPath) return;
-	console.log("[FileExplorer] Open to side:", contextMenuTargetPath);
+	onFileOpen?.(contextMenuTargetPath);
+	handleContextMenuClose();
 }
 
 function handleCopyPath() {

@@ -19,6 +19,7 @@ import { terminalInputlogWebsocket } from "./terminal/inputlog/inputlog.websocke
 import { terminalPtyWebsocket } from "./terminal/pty/pty.websocket";
 import { terminalRoutes } from "./terminal/terminal.routes";
 import { transcriptionRoutes } from "./transcription/transcription.routes";
+import { editorLspWebsocket } from "./editor/lsp/lsp.websocket";
 
 export const api = new Elysia()
 	.use(
@@ -56,6 +57,7 @@ export const api = new Elysia()
 	.use(terminalRoutes)
 	.use(terminalPtyWebsocket)
 	.use(terminalInputlogWebsocket)
-	.use(transcriptionRoutes);
+	.use(transcriptionRoutes)
+	.use(editorLspWebsocket);
 
 export type Api = typeof api;

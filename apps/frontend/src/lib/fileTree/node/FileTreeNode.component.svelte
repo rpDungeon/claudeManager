@@ -32,6 +32,7 @@ interface Props {
 	onToggle?: (itemId: ItemId) => void;
 	onDragStart?: (itemId: ItemId, event: DragEvent) => void;
 	onDrop?: (targetId: ItemId, dragData: FileTreeDragData) => void;
+	onDoubleClick?: (itemId: ItemId) => void;
 	onContextMenu?: (itemId: ItemId, event: MouseEvent) => void;
 }
 
@@ -47,6 +48,7 @@ let {
 	onToggle,
 	onDragStart,
 	onDrop,
+	onDoubleClick,
 	onContextMenu,
 }: Props = $props();
 
@@ -123,6 +125,10 @@ function handleDrop(event: DragEvent) {
 	}
 }
 
+function handleDoubleClick() {
+	onDoubleClick?.(itemId);
+}
+
 function handleContextMenu(event: MouseEvent) {
 	onContextMenu?.(itemId, event);
 }
@@ -142,6 +148,7 @@ function handleContextMenu(event: MouseEvent) {
 		{hasChildren}
 		{draggable}
 		onclick={handleClick}
+		ondblclick={handleDoubleClick}
 		onToggle={handleToggle}
 		ondragstart={handleDragStart}
 		ondrop={handleDrop}
@@ -163,6 +170,7 @@ function handleContextMenu(event: MouseEvent) {
 					{onToggle}
 					{onDragStart}
 					{onDrop}
+					{onDoubleClick}
 					{onContextMenu}
 				/>
 			{/each}

@@ -16,6 +16,7 @@ import type { LayoutItemTerminal } from "@claude-manager/common/src/layout/item/
 import type { LayoutItemIframe } from "@claude-manager/common/src/layout/item/item.iframe";
 import type { LayoutItemImage } from "@claude-manager/common/src/layout/item/item.image";
 import type { LayoutItemMarkdown } from "@claude-manager/common/src/layout/item/item.markdown";
+import type { LayoutItemEditor } from "@claude-manager/common/src/layout/item/item.editor";
 import type { LayoutId } from "@claude-manager/common/src/layout/layout.id";
 import type { ProjectId } from "@claude-manager/common/src/project/project.id";
 import type { Percentage } from "@claude-manager/common/src/types/common.types";
@@ -66,9 +67,10 @@ function localhostUrlConvert(inputUrl: string): LocalhostUrlResult {
 
 interface Props {
 	layoutId?: LayoutId | null;
+	projectPath?: string;
 }
 
-let { layoutId = null }: Props = $props();
+let { layoutId = null, projectPath }: Props = $props();
 
 let data = $state<LayoutData>(createDefaultLayout());
 let activeItemId = $state<string | null>(null);
@@ -78,6 +80,56 @@ let isReconnecting = $state(false);
 let isDirty = $state(false);
 let currentProjectId = $state<ProjectId | null>(null);
 let terminalCounter = $state(0);
+
+export function openFile(filePath: string) {
+	const itemId = crypto.randomUUID();
+	const fileName = filePath.split("/").pop() || "Editor";
+
+	const editorItem: LayoutItemEditor = {
+		id: itemId,
+		label: fileName,
+		type: "editor",
+		filePath,
+	};
+
+	data.items[itemId] = editorItem;
+
+	let targetContainerId: string | null = null;
+
+	if (activeItemId) {
+		for (const [containerId, container] of Object.entries(data.desktop.containers)) {
+			if (container.type === "tabs") {
+				const tabsContainer = container as LayoutContainerTabs;
+				if (tabsContainer.childIds.includes(activeItemId)) {
+					targetContainerId = containerId;
+					break;
+				}
+			}
+		}
+	}
+
+	if (!targetContainerId) {
+		for (const [containerId, container] of Object.entries(data.desktop.containers)) {
+			if (container.type === "tabs") {
+				targetContainerId = containerId;
+				break;
+			}
+		}
+	}
+
+	if (targetContainerId) {
+		const container = data.desktop.containers[targetContainerId];
+		if (container?.type === "tabs") {
+			const tabsContainer = container as LayoutContainerTabs;
+			tabsContainer.childIds = [...tabsContainer.childIds, itemId];
+			tabsContainer.activeTabId = itemId;
+		}
+	}
+
+	activeItemId = itemId;
+	data = { ...data };
+	markDirty();
+}
 
 function createDefaultLayout(): LayoutData {
 	return {
@@ -476,7 +528,7 @@ async function ensureProject(): Promise<ProjectId | null> {
 }
 
 async function handleAddItem(containerId: string, itemType: AddItemType) {
-	let newItem: LayoutItemTerminal | LayoutItemIframe | LayoutItemImage | LayoutItemMarkdown;
+	let newItem: LayoutItemTerminal | LayoutItemIframe | LayoutItemImage | LayoutItemMarkdown | LayoutItemEditor;
 	let itemId: string;
 
 	switch (itemType) {
@@ -551,6 +603,21 @@ async function handleAddItem(containerId: string, itemType: AddItemType) {
 				type: "markdown",
 			};
 			newItem = markdownItem;
+			break;
+		}
+
+		case AddItemType.Editor: {
+			const filePath = prompt("Enter file path:");
+			if (!filePath) return;
+
+			itemId = crypto.randomUUID();
+			const editorItem: LayoutItemEditor = {
+				id: itemId,
+				label: filePath.split("/").pop() || "Editor",
+				type: "editor",
+				filePath,
+			};
+			newItem = editorItem;
 			break;
 		}
 
@@ -635,7 +702,7 @@ async function handleItemClose(containerId: string, itemId: string) {
 }
 
 async function handleAddItemToEmptyLayout(itemType: AddItemType) {
-	let newItem: LayoutItemTerminal | LayoutItemIframe | LayoutItemImage | LayoutItemMarkdown;
+	let newItem: LayoutItemTerminal | LayoutItemIframe | LayoutItemImage | LayoutItemMarkdown | LayoutItemEditor;
 	let itemId: string;
 
 	switch (itemType) {
@@ -713,6 +780,21 @@ async function handleAddItemToEmptyLayout(itemType: AddItemType) {
 			break;
 		}
 
+		case AddItemType.Editor: {
+			const filePath = prompt("Enter file path:");
+			if (!filePath) return;
+
+			itemId = crypto.randomUUID();
+			const editorItem: LayoutItemEditor = {
+				id: itemId,
+				label: filePath.split("/").pop() || "Editor",
+				type: "editor",
+				filePath,
+			};
+			newItem = editorItem;
+			break;
+		}
+
 		default:
 			return;
 	}
@@ -756,6 +838,7 @@ async function handleAddItemToEmptyLayout(itemType: AddItemType) {
 		{/if}
 		<Layout
 			{data}
+			{projectPath}
 			{activeItemId}
 			onTabSelect={handleTabSelect}
 			onItemSelect={handleItemSelect}

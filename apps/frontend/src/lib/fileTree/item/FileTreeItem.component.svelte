@@ -113,6 +113,7 @@ function handleDrop(event: DragEvent) {
 
 function handleContextMenu(event: MouseEvent) {
 	event.preventDefault();
+	event.stopPropagation();
 	oncontextmenu?.(event);
 }
 </script>

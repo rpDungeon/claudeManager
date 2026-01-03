@@ -46,10 +46,11 @@ interface Layout {
 interface Props {
 	selectedProjectId?: ProjectId | null;
 	selectedLayoutId?: LayoutId | null;
-	onProjectChange?: (projectId: ProjectId | null) => void;
+	onProjectChange?: (projectId: ProjectId | null, projectPath: string | null) => void;
 	onLayoutChange?: (layoutId: LayoutId | null) => void;
 	onProjectSettingsClick?: (projectId: ProjectId, name: string, path: string) => void;
 	onLayoutSettingsClick?: (layoutId: LayoutId, name: string) => void;
+	onFileOpen?: (filePath: string) => void;
 }
 
 let {
@@ -59,6 +60,7 @@ let {
 	onLayoutChange,
 	onProjectSettingsClick,
 	onLayoutSettingsClick,
+	onFileOpen,
 }: Props = $props();
 
 export async function refresh() {
@@ -99,7 +101,7 @@ async function loadProjects() {
 		projects = response.data as Project[];
 		if (projects.length > 0 && !selectedProjectId) {
 			selectedProjectId = projects[0].id;
-			onProjectChange?.(projects[0].id);
+			onProjectChange?.(projects[0].id, projects[0].path);
 		}
 	}
 	isLoadingProjects = false;
@@ -131,7 +133,7 @@ async function handleAddProject() {
 			newProject,
 		];
 		selectedProjectId = newProject.id;
-		onProjectChange?.(newProject.id);
+		onProjectChange?.(newProject.id, newProject.path);
 	}
 }
 
@@ -157,7 +159,8 @@ async function handleAddLayout() {
 
 function handleProjectChange(projectId: ProjectId) {
 	selectedProjectId = projectId;
-	onProjectChange?.(projectId);
+	const project = projects.find((p) => p.id === projectId);
+	onProjectChange?.(projectId, project?.path ?? null);
 
 	const projectLayouts = layouts.filter((l) => l.projectId === projectId);
 	if (projectLayouts.length > 0) {
@@ -245,7 +248,7 @@ onMount(() => {
 				Select a project
 			</div>
 		{:else if activeTab === "files"}
-			<DashboardFileExplorer rootPath={selectedProject.path} />
+			<DashboardFileExplorer rootPath={selectedProject.path} {onFileOpen} />
 		{:else}
 			<DashboardGitPanel rootPath={selectedProject.path} />
 		{/if}

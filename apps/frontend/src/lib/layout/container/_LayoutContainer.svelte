@@ -19,6 +19,7 @@ interface Props {
 	container: LayoutContainer;
 	containers: Record<string, LayoutContainer>;
 	items: Record<string, LayoutItem>;
+	projectPath?: string;
 	activeItemId?: string | null;
 	onSplitResize?: (containerId: string, sizes: number[]) => void;
 	onTabSelect?: (containerId: string, itemId: string) => void;
@@ -36,6 +37,7 @@ let {
 	container,
 	containers,
 	items,
+	projectPath,
 	activeItemId = null,
 	onSplitResize,
 	onTabSelect,
@@ -54,6 +56,7 @@ let {
 	<LayoutContainerTabs
 		{container}
 		{items}
+		{projectPath}
 		{activeItemId}
 		{onTabSelect}
 		{onItemSelect}
@@ -70,6 +73,7 @@ let {
 		{container}
 		{containers}
 		{items}
+		{projectPath}
 		{activeItemId}
 		{onSplitResize}
 		{onTabSelect}

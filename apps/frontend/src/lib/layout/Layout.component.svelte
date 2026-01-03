@@ -31,6 +31,7 @@ type ResolvedRoot =
 
 interface Props {
 	data: LayoutData;
+	projectPath?: string;
 	mode?: "desktop" | "mobile";
 	activeItemId?: string | null;
 	onSplitResize?: (containerId: string, sizes: number[]) => void;
@@ -48,6 +49,7 @@ interface Props {
 
 let {
 	data,
+	projectPath,
 	mode = "desktop",
 	activeItemId = null,
 	onSplitResize,
@@ -123,6 +125,7 @@ function handleItemClick(itemId: string) {
 			container={root.data}
 			containers={arrangement.containers}
 			items={data.items}
+			{projectPath}
 			{activeItemId}
 			{onSplitResize}
 			{onTabSelect}
@@ -138,6 +141,7 @@ function handleItemClick(itemId: string) {
 	{:else if root?.type === "item"}
 		<LayoutItem_
 			item={root.data}
+			{projectPath}
 			isActive={activeItemId === rootId}
 			draggable={true}
 			onclick={handleItemClick(rootId!)}

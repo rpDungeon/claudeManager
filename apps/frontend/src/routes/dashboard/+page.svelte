@@ -20,12 +20,19 @@ let sidebarRef:
 	  }
 	| undefined = $state();
 
+let layoutRef:
+	| {
+			openFile: (filePath: string) => void;
+	  }
+	| undefined = $state();
+
 let projectName = $state("");
 let projectPath = $state("");
 let layoutName = $state("");
 
-function handleProjectChange(projectId: ProjectId | null) {
+function handleProjectChange(projectId: ProjectId | null, path: string | null) {
 	selectedProjectId = projectId;
+	projectPath = path ?? "";
 }
 
 function handleLayoutChange(layoutId: LayoutId | null) {
@@ -65,6 +72,10 @@ async function handleLayoutDelete() {
 	selectedLayoutId = null;
 	await sidebarRef?.refresh();
 }
+
+function handleFileOpen(filePath: string) {
+	layoutRef?.openFile(filePath);
+}
 </script>
 
 <svelte:head>
@@ -92,6 +103,7 @@ async function handleLayoutDelete() {
 						onLayoutChange={handleLayoutChange}
 						onProjectSettingsClick={handleProjectSettingsClick}
 						onLayoutSettingsClick={handleLayoutSettingsClick}
+						onFileOpen={handleFileOpen}
 					/>
 				</div>
 			</div>
@@ -107,7 +119,7 @@ async function handleLayoutDelete() {
 			</button>
 		</div>
 		<div class="flex-1 min-w-0 overflow-hidden">
-			<DashboardLayout layoutId={selectedLayoutId} />
+			<DashboardLayout bind:this={layoutRef} layoutId={selectedLayoutId} {projectPath} />
 		</div>
 	</div>
 

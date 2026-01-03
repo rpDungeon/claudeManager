@@ -21,6 +21,7 @@ interface Props {
 	container: LayoutContainerSplit;
 	containers: Record<string, LayoutContainer>;
 	items: Record<string, LayoutItem>;
+	projectPath?: string;
 	activeItemId?: string | null;
 	onSplitResize?: (containerId: string, sizes: number[]) => void;
 	onTabSelect?: (containerId: string, itemId: string) => void;
@@ -38,6 +39,7 @@ let {
 	container,
 	containers,
 	items,
+	projectPath,
 	activeItemId = null,
 	onSplitResize,
 	onTabSelect,
@@ -108,6 +110,7 @@ function handleItemClick(itemId: string) {
 					container={child.data}
 					{containers}
 					{items}
+					{projectPath}
 					{activeItemId}
 					{onSplitResize}
 					{onTabSelect}
@@ -123,6 +126,7 @@ function handleItemClick(itemId: string) {
 			{:else if child?.type === "item"}
 				<LayoutItem_
 					item={child.data}
+					{projectPath}
 					isActive={activeItemId === childId}
 					draggable={true}
 					isDropTarget={true}

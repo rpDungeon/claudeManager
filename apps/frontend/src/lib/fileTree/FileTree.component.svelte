@@ -106,6 +106,7 @@ function handleKeyDown(event: KeyboardEvent) {
 		onToggle={handleToggle}
 		onDragStart={handleDragStart}
 		onDrop={handleDrop}
+		{onDoubleClick}
 		{onContextMenu}
 	/>
 </div>

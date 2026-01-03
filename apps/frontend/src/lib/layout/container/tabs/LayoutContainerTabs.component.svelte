@@ -21,6 +21,7 @@ import { AddItemType } from "./layoutContainerTabsAddMenu.lib";
 interface Props {
 	container: LayoutContainerTabs;
 	items: Record<string, LayoutItem>;
+	projectPath?: string;
 	activeItemId?: string | null;
 	onTabSelect?: (containerId: string, itemId: string) => void;
 	onItemSelect?: (itemId: string) => void;
@@ -36,6 +37,7 @@ interface Props {
 let {
 	container,
 	items,
+	projectPath,
 	activeItemId = null,
 	onTabSelect,
 	onItemSelect,
@@ -319,6 +321,7 @@ function handleDropZoneDrop(containerId: string, zone: LayoutDropZonePosition, e
 				>
 					<LayoutItem_
 						{item}
+						{projectPath}
 						isActive={activeItemId === childId}
 						draggable={true}
 						isDropTarget={true}
