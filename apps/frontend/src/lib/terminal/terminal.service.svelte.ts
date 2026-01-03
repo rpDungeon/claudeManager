@@ -31,6 +31,9 @@ type TerminalInstance = {
 	exitCode: number | null;
 	foregroundProcess: string | null;
 	lastError: string | null;
+	onDataDisposable: {
+		dispose: () => void;
+	} | null;
 	terminal: Terminal;
 	websocket: EdenWebSocket | null;
 };
@@ -80,6 +83,7 @@ export function terminalInstanceCreate(terminalId: TerminalId): TerminalInstance
 		exitCode: null,
 		foregroundProcess: null,
 		lastError: null,
+		onDataDisposable: null,
 		terminal,
 		websocket: null,
 	});
@@ -102,6 +106,9 @@ export function terminalInstanceDestroy(terminalId: TerminalId): void {
 	}
 
 	terminalWebsocketClose(terminalId);
+	if (instance.onDataDisposable) {
+		instance.onDataDisposable.dispose();
+	}
 	instance.terminal.dispose();
 	instances.delete(terminalId);
 }
@@ -372,7 +379,10 @@ export function terminalWebsocketConnect(terminalId: TerminalId): void {
 
 	instance.websocket = ws;
 
-	instance.terminal.onData((data) => {
+	if (instance.onDataDisposable) {
+		instance.onDataDisposable.dispose();
+	}
+	instance.onDataDisposable = instance.terminal.onData((data) => {
 		ws.send({
 			data,
 			type: "input",

@@ -36,6 +36,8 @@ import VoiceRecorder from "$lib/common/input/VoiceRecorder.component.svelte";
 import { VoiceRecorderState } from "$lib/common/input/voiceRecorder.lib";
 import { api } from "$lib/api/api.client";
 
+const WHITESPACE_REGEX = /\s+/;
+
 interface Props {
 	terminalId?: TerminalId;
 	title?: string | Snippet;
@@ -308,8 +310,25 @@ async function handleVoiceToggle() {
 				if (error || !data) {
 					console.error("[VoiceRecorder] Transcription error:", error);
 				} else if (terminalId) {
-					terminalInstancePaste(terminalId, data.transcription);
+					let text = data.transcription.trim();
+					let autoSend = false;
+
+					const words = text.split(WHITESPACE_REGEX);
+					const lastWord = words[words.length - 1]?.toLowerCase();
+					if (lastWord === "send" || lastWord === "send." || lastWord === "cent" || lastWord === "cent.") {
+						words.pop();
+						text = words.join(" ");
+						autoSend = true;
+					}
+
+					terminalInstancePaste(terminalId, text);
 					terminalInstanceFocus(terminalId);
+
+					if (autoSend) {
+						setTimeout(() => {
+							terminalInstancePaste(terminalId, "\r");
+						}, 500);
+					}
 				}
 			} catch (err) {
 				console.error("[VoiceRecorder] Transcription failed:", err);

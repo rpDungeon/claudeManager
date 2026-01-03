@@ -11,7 +11,7 @@ export default defineConfig({
 		devtoolsJson(),
 	],
 	server: {
-		port: 4035,
+		port: 4036,
 	},
 	test: {
 		expect: {
