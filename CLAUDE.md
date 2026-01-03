@@ -232,14 +232,6 @@ Use `termux` for interactive terminal commands:
 - `termux vim file.txt` - Edit files interactively
 - `termux bun run dev` - If you need to interact with dev server output
 
-## Port Allocation
-
-| Service   | Port  | Range       |
-|-----------|-------|-------------|
-| Backend   | 4030  | 4030 - 4034 |
-| Frontend  | 4035  | 4035 - 4038 |
-| Storybook | 4039  | 4039        |
-
 ## Development Commands
 
 ```bash
@@ -250,11 +242,11 @@ bun install
 bun run dev
 
 # Run specific app
-bun run dev:backend   # Backend at http://localhost:4030
-bun run dev:frontend  # Frontend at http://localhost:4035
+bun run dev:backend
+bun run dev:frontend
 
 # Storybook (from apps/frontend)
-cd apps/frontend && bun run storybook  # Storybook at http://localhost:4039
+cd apps/frontend && bun run storybook
 
 # Database (from apps/backend)
 bun run db:push      # Push schema to SQLite
@@ -264,9 +256,13 @@ bun run db:studio    # Open Drizzle Studio
 
 ## Environment Variables
 
+All ports and configuration are defined in `.env` at the project root. Check `.env` for current values.
+
 ```env
-# Server
-PORT=4030
+# Ports
+PORT=4030              # Backend API port
+PUBLIC_PORT=4035       # Frontend dev server port
+STORYBOOK_PORT=4039    # Storybook port
 HOST=0.0.0.0
 
 # Database
