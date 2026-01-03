@@ -1,10 +1,12 @@
-import type { Extension } from "@codemirror/state";
-import { javascript } from "@codemirror/lang-javascript";
 import { css } from "@codemirror/lang-css";
 import { html } from "@codemirror/lang-html";
+import { javascript } from "@codemirror/lang-javascript";
 import { json } from "@codemirror/lang-json";
 import { markdown } from "@codemirror/lang-markdown";
+import type { Extension } from "@codemirror/state";
+import { tags as t } from "@lezer/highlight";
 import { svelte } from "@replit/codemirror-lang-svelte";
+import { createTheme } from "@uiw/codemirror-themes";
 
 export enum EditorConnectionStatus {
 	Disconnected = "disconnected",
@@ -57,9 +59,14 @@ export function editorLanguageIdFromPath(filePath: string): EditorLanguageId {
 export function editorLanguageExtensionGet(languageId: EditorLanguageId): Extension {
 	switch (languageId) {
 		case EditorLanguageId.TypeScript:
-			return javascript({ typescript: true, jsx: true });
+			return javascript({
+				jsx: true,
+				typescript: true,
+			});
 		case EditorLanguageId.JavaScript:
-			return javascript({ jsx: true });
+			return javascript({
+				jsx: true,
+			});
 		case EditorLanguageId.Svelte:
 			return svelte();
 		case EditorLanguageId.CSS:
@@ -75,50 +82,207 @@ export function editorLanguageExtensionGet(languageId: EditorLanguageId): Extens
 	}
 }
 
-export const editorThemeCrt = {
-	"&": {
-		backgroundColor: "#0a0a0a",
-		color: "#e0e0e0",
-	},
-	".cm-content": {
+export const editorThemeTomorrowNightBright = createTheme({
+	settings: {
+		background: "#0a0a0a",
+		caret: "#00ff41",
 		fontFamily: "'IBM Plex Mono', monospace",
-		fontSize: "13px",
-		lineHeight: "1.5",
-		caretColor: "#00ff41",
+		foreground: "#eaeaea",
+		gutterBackground: "#0a0a0a",
+		gutterBorder: "#222222",
+		gutterForeground: "#6A6A6A",
+		lineHighlight: "#1a1a1a",
+		selection: "#424242",
+		selectionMatch: "#424242",
 	},
-	".cm-cursor": {
-		borderLeftColor: "#00ff41",
-		borderLeftWidth: "2px",
-	},
-	".cm-activeLine": {
-		backgroundColor: "rgba(0, 255, 65, 0.05)",
-	},
-	".cm-activeLineGutter": {
-		backgroundColor: "rgba(0, 255, 65, 0.05)",
-	},
-	".cm-gutters": {
-		backgroundColor: "#0a0a0a",
-		color: "#555555",
-		border: "none",
-		borderRight: "1px solid #222222",
-	},
-	".cm-lineNumbers .cm-gutterElement": {
-		padding: "0 8px 0 4px",
-	},
-	".cm-selectionBackground, .cm-content ::selection": {
-		backgroundColor: "rgba(0, 255, 65, 0.2) !important",
-	},
-	".cm-focused .cm-selectionBackground": {
-		backgroundColor: "rgba(0, 255, 65, 0.3) !important",
-	},
-	".cm-matchingBracket": {
-		backgroundColor: "rgba(0, 255, 65, 0.3)",
-		color: "#00ff41 !important",
-	},
-	".cm-searchMatch": {
-		backgroundColor: "rgba(255, 176, 0, 0.3)",
-	},
-	".cm-searchMatch.cm-searchMatch-selected": {
-		backgroundColor: "rgba(255, 176, 0, 0.5)",
-	},
-};
+	styles: [
+		{
+			color: "#d27b53",
+			tag: t.comment,
+		},
+		{
+			color: "#d27b53",
+			tag: t.lineComment,
+		},
+		{
+			color: "#d27b53",
+			tag: t.blockComment,
+		},
+		{
+			color: "#d27b53",
+			tag: t.docComment,
+		},
+		{
+			color: "#eaeaea",
+			tag: t.name,
+		},
+		{
+			color: "#b9ca4a",
+			tag: t.variableName,
+		},
+		{
+			color: "#e78c45",
+			tag: t.definition(t.variableName),
+		},
+		{
+			color: "#99cc99",
+			tag: t.propertyName,
+		},
+		{
+			color: "#99cc99",
+			tag: t.definition(t.propertyName),
+		},
+		{
+			color: "#7aa6da",
+			tag: t.function(t.variableName),
+		},
+		{
+			color: "#7aa6da",
+			tag: t.function(t.propertyName),
+		},
+		{
+			color: "#b9ca4a",
+			tag: t.labelName,
+		},
+		{
+			color: "#d54e53",
+			tag: t.keyword,
+		},
+		{
+			color: "#eaeaea",
+			tag: t.operator,
+		},
+		{
+			color: "#eaeaea",
+			tag: t.punctuation,
+		},
+		{
+			color: "#eaeaea",
+			tag: t.bracket,
+		},
+		{
+			color: "#eaeaea",
+			tag: t.angleBracket,
+		},
+		{
+			color: "#eaeaea",
+			tag: t.squareBracket,
+		},
+		{
+			color: "#eaeaea",
+			tag: t.paren,
+		},
+		{
+			color: "#eaeaea",
+			tag: t.brace,
+		},
+		{
+			color: "#eaeaea",
+			tag: t.separator,
+		},
+		{
+			color: "#e7c547",
+			tag: t.string,
+		},
+		{
+			color: "#e7c547",
+			tag: t.special(t.string),
+		},
+		{
+			color: "#a16a94",
+			tag: t.number,
+		},
+		{
+			color: "#a16a94",
+			tag: t.integer,
+		},
+		{
+			color: "#a16a94",
+			tag: t.float,
+		},
+		{
+			color: "#a16a94",
+			tag: t.bool,
+		},
+		{
+			color: "#a16a94",
+			tag: t.null,
+		},
+		{
+			color: "#a16a94",
+			tag: t.atom,
+		},
+		{
+			color: "#e7c547",
+			tag: t.regexp,
+		},
+		{
+			color: "#e7c547",
+			tag: t.escape,
+		},
+		{
+			color: "#7aa6da",
+			tag: t.typeName,
+		},
+		{
+			color: "#7aa6da",
+			tag: t.className,
+		},
+		{
+			color: "#7aa6da",
+			tag: t.namespace,
+		},
+		{
+			color: "#d54e53",
+			tag: t.macroName,
+		},
+		{
+			color: "#a16a94",
+			tag: t.literal,
+		},
+		{
+			color: "#d54e53",
+			tag: t.self,
+		},
+		{
+			color: "#99cc99",
+			tag: t.attributeName,
+		},
+		{
+			color: "#e7c547",
+			tag: t.attributeValue,
+		},
+		{
+			color: "#d54e53",
+			tag: t.tagName,
+		},
+		{
+			color: "#d54e53",
+			fontWeight: "bold",
+			tag: t.heading,
+		},
+		{
+			color: "#a16a94",
+			tag: t.link,
+			textDecoration: "underline",
+		},
+		{
+			color: "#a16a94",
+			tag: t.url,
+			textDecoration: "underline",
+		},
+		{
+			fontStyle: "italic",
+			tag: t.emphasis,
+		},
+		{
+			fontWeight: "bold",
+			tag: t.strong,
+		},
+		{
+			color: "#d54e53",
+			tag: t.invalid,
+		},
+	],
+	theme: "dark",
+});

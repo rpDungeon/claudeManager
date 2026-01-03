@@ -1,14 +1,14 @@
 import { LSPClient, languageServerExtensions } from "@codemirror/lsp-client";
 import { EditorState, type Extension } from "@codemirror/state";
-import { oneDark } from "@codemirror/theme-one-dark";
 import { basicSetup, EditorView } from "codemirror";
 import { SvelteMap } from "svelte/reactivity";
 import { api } from "$lib/api/api.client";
+import { settingsEditorFontSizeGet } from "$lib/settings/settings.service.svelte";
 import {
 	EditorConnectionStatus,
 	editorLanguageExtensionGet,
 	editorLanguageIdFromPath,
-	editorThemeCrt,
+	editorThemeTomorrowNightBright,
 } from "./editor.lib";
 import { editorLanguageIdToLspLanguageId, editorLspTransportCreate } from "./lsp/lspTransport";
 
@@ -76,11 +76,19 @@ export function editorInstanceMount(editorId: EditorId, container: HTMLElement):
 	const languageId = editorLanguageIdFromPath(instance.filePath);
 	const languageExtension = editorLanguageExtensionGet(languageId);
 
+	const fontSize = settingsEditorFontSizeGet();
 	const extensions: Extension[] = [
 		basicSetup,
 		languageExtension,
-		oneDark,
-		EditorView.theme(editorThemeCrt),
+		editorThemeTomorrowNightBright,
+		EditorView.theme({
+			".cm-content": {
+				fontSize: `${fontSize}px`,
+			},
+			".cm-gutters": {
+				fontSize: `${fontSize}px`,
+			},
+		}),
 		EditorView.updateListener.of((update) => {
 			if (update.docChanged) {
 				const newContent = update.state.doc.toString();
@@ -141,14 +149,22 @@ export async function editorLspConnect(editorId: EditorId, rootUri: string): Pro
 
 		const currentDoc = instance.view.state.doc.toString();
 		const languageExtension = editorLanguageExtensionGet(languageId);
+		const fontSize = settingsEditorFontSizeGet();
 
 		const newState = EditorState.create({
 			doc: currentDoc,
 			extensions: [
 				basicSetup,
 				languageExtension,
-				oneDark,
-				EditorView.theme(editorThemeCrt),
+				editorThemeTomorrowNightBright,
+				EditorView.theme({
+					".cm-content": {
+						fontSize: `${fontSize}px`,
+					},
+					".cm-gutters": {
+						fontSize: `${fontSize}px`,
+					},
+				}),
 				EditorView.updateListener.of((update) => {
 					if (update.docChanged) {
 						const newContent = update.state.doc.toString();

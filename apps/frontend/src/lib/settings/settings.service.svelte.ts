@@ -1,6 +1,7 @@
 const STORAGE_KEY = "claude-manager-settings";
 
 const DEFAULT_SETTINGS = {
+	editorFontSize: 12,
 	terminalFontSize: 12,
 };
 
@@ -54,5 +55,14 @@ export function settingsTerminalFontSizeGet(): number {
 
 export function settingsTerminalFontSizeSet(value: number): void {
 	state.terminalFontSize = value;
+	settingsSave(state);
+}
+
+export function settingsEditorFontSizeGet(): number {
+	return state.editorFontSize;
+}
+
+export function settingsEditorFontSizeSet(value: number): void {
+	state.editorFontSize = value;
 	settingsSave(state);
 }
