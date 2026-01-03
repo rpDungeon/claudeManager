@@ -1,15 +1,32 @@
 <!-- Review pending by Autumnlight -->
 <script lang="ts">
+import { browser } from "$app/environment";
 import type { LayoutId } from "@claude-manager/common/src/layout/layout.id";
 import type { ProjectId } from "@claude-manager/common/src/project/project.id";
+import { tabStateLoad, tabStateSave } from "$lib/tabState/tabState.service.svelte";
 import DashboardLayout from "./DashboardLayout.component.svelte";
 import DashboardSidebar from "./DashboardSidebar.component.svelte";
 import DashboardStatusBar from "./DashboardStatusBar.component.svelte";
 import LayoutSettingsModal from "./LayoutSettingsModal.component.svelte";
 import ProjectSettingsModal from "./ProjectSettingsModal.component.svelte";
 
-let selectedProjectId = $state<ProjectId | null>(null);
-let selectedLayoutId = $state<LayoutId | null>(null);
+const initialState = browser
+	? tabStateLoad()
+	: {
+			layoutId: null,
+			projectId: null,
+		};
+let selectedProjectId = $state<ProjectId | null>(initialState.projectId);
+let selectedLayoutId = $state<LayoutId | null>(initialState.layoutId);
+
+$effect(() => {
+	if (browser) {
+		tabStateSave({
+			layoutId: selectedLayoutId,
+			projectId: selectedProjectId,
+		});
+	}
+});
 let showProjectSettings = $state(false);
 let showLayoutSettings = $state(false);
 let isSidebarCollapsed = $state(false);
