@@ -113,6 +113,13 @@ export function terminalInstanceDestroy(terminalId: TerminalId): void {
 	instances.delete(terminalId);
 }
 
+export function terminalInstanceReset(terminalId: TerminalId, container: HTMLElement): void {
+	terminalInstanceDestroy(terminalId);
+	terminalInstanceCreate(terminalId);
+	terminalInstanceMount(terminalId, container);
+	terminalWebsocketConnect(terminalId);
+}
+
 export function terminalInstanceMount(terminalId: TerminalId, container: HTMLElement): void {
 	const instance = instances.get(terminalId);
 	if (!instance) return;

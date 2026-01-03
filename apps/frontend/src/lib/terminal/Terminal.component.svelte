@@ -24,6 +24,7 @@ import {
 	terminalInstanceGetSelection,
 	terminalInstanceMount,
 	terminalInstancePaste,
+	terminalInstanceReset,
 	terminalInstanceSelectAll,
 	terminalWebsocketConnect,
 } from "./terminal.service.svelte";
@@ -153,26 +154,25 @@ const statusColor = $derived.by(() => {
 	}
 });
 
-let hasConnected = false;
-
 function handleBodyMount(container: HTMLDivElement) {
 	mountCount++;
-	console.log("[Terminal] handleBodyMount:", terminalId, "count:", mountCount, "hasConnected:", hasConnected);
+	console.log("[Terminal] handleBodyMount:", terminalId, "count:", mountCount);
 
 	if (!terminalId) return;
 
-	if (hasConnected) {
-		console.log("[Terminal] Already connected, skipping");
-		return;
-	}
-
 	const inst = terminalInstanceGet(terminalId);
-	if (!inst) {
+
+	if (inst && inst.container !== container) {
+		console.log("[Terminal] Container changed, resetting instance");
+		terminalInstanceReset(terminalId, container);
+	} else if (!inst) {
 		console.log("[Terminal] No instance yet, creating...");
 		terminalInstanceCreate(terminalId);
+		terminalInstanceMount(terminalId, container);
+		if (autoConnect) {
+			terminalWebsocketConnect(terminalId);
+		}
 	}
-
-	terminalInstanceMount(terminalId, container);
 
 	if (!resizeObserver) {
 		resizeObserver = new ResizeObserver(() => {
@@ -181,12 +181,6 @@ function handleBodyMount(container: HTMLDivElement) {
 			}
 		});
 		resizeObserver.observe(container);
-	}
-
-	if (autoConnect && !hasConnected) {
-		console.log("[Terminal] autoConnect, calling websocketConnect");
-		hasConnected = true;
-		terminalWebsocketConnect(terminalId);
 	}
 }
 
