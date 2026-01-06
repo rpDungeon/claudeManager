@@ -59,6 +59,7 @@
         "zod": "^4.2.1",
       },
       "devDependencies": {
+        "expect-type": "^1.3.0",
         "typescript": "^5.7.2",
       },
     },

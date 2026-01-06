@@ -11,6 +11,7 @@ export default defineConfig({
 		devtoolsJson(),
 	],
 	server: {
+		allowedHosts: true,
 		port: Number(process.env.PUBLIC_PORT) || 4035,
 	},
 	test: {

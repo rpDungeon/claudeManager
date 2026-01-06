@@ -258,20 +258,13 @@ bun run db:studio    # Open Drizzle Studio
 
 All ports and configuration are defined in `.env` at the project root. Check `.env` for current values.
 
-```env
-# Ports
-PORT=4030              # Backend API port
-PUBLIC_PORT=4035       # Frontend dev server port
-STORYBOOK_PORT=4039    # Storybook port
-HOST=0.0.0.0
-
-# Database
-DATABASE_PATH=./data/claude-manager.db
-
-# Authentication
-MASTER_PASSWORD=your-long-secure-password
-JWT_SECRET=your-jwt-secret
-```
+Key variables:
+- `PORT` - Backend API port
+- `PUBLIC_PORT` - Frontend dev server port
+- `STORYBOOK_PORT` - Storybook port
+- `DATABASE_PATH` - SQLite database location
+- `MASTER_PASSWORD` - Authentication password
+- `JWT_SECRET` - JWT signing secret
 
 ## Environment Validation Pattern
 
