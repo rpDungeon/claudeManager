@@ -256,7 +256,7 @@ $effect(() => {
 				</button>
 			{/each}
 		</div>
-	{:else if isOpen && !isLoading && value && filteredSuggestions.length === 0}
+	{:else if isOpen && !isLoading && value && filteredSuggestions.length === 0 && isValid !== true}
 		<div
 			class="path-input-dropdown absolute z-50 mt-1 w-full rounded border border-border-default bg-bg-surface p-3 shadow-lg"
 		>

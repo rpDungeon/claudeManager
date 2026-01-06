@@ -10,8 +10,9 @@ usage: Use when user clicks settings button on project selector
 <script lang="ts">
 import type { ProjectId } from "@claude-manager/common/src/project/project.id";
 import { Dialog } from "bits-ui";
-import { X, Trash2, Folder } from "lucide-svelte";
+import { X, Trash2 } from "lucide-svelte";
 import { api } from "$lib/api/api.client";
+import PathInput from "$lib/pathInput/PathInput.component.svelte";
 
 interface Props {
 	open?: boolean;
@@ -38,17 +39,19 @@ let path = $state("");
 let isSaving = $state(false);
 let isDeleting = $state(false);
 let showDeleteConfirm = $state(false);
+let isPathValid = $state(true);
 
 $effect(() => {
 	if (open) {
 		name = projectName ?? "";
 		path = projectPath ?? "";
 		showDeleteConfirm = false;
+		isPathValid = true;
 	}
 });
 
 async function handleSave() {
-	if (!(projectId && name.trim())) return;
+	if (!(projectId && name.trim() && isPathValid)) return;
 
 	isSaving = true;
 	const response = await api
@@ -137,18 +140,11 @@ function handleClose() {
 					<label for="project-path" class="text-[10px] uppercase tracking-wider text-text-tertiary">
 						Root Path
 					</label>
-					<div class="flex gap-2">
-						<div class="relative flex-1">
-							<Folder class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-text-tertiary" />
-							<input
-								id="project-path"
-								type="text"
-								bind:value={path}
-								class="w-full rounded border border-border-default bg-bg-void py-2 pl-10 pr-3 text-sm text-text-primary placeholder:text-text-tertiary focus:border-terminal-green focus:outline-none"
-								placeholder="/path/to/project"
-							/>
-						</div>
-					</div>
+					<PathInput
+						bind:value={path}
+						placeholder="/path/to/project"
+						onvalidchange={(valid) => (isPathValid = valid)}
+					/>
 				</div>
 
 				<div class="flex items-center justify-between pt-2 border-t border-border-default">
@@ -194,7 +190,7 @@ function handleClose() {
 							<button
 								type="button"
 								onclick={handleSave}
-								disabled={isSaving || !name.trim()}
+								disabled={isSaving || !name.trim() || !isPathValid}
 								class="rounded bg-terminal-green/20 px-4 py-1.5 text-xs font-medium text-terminal-green hover:bg-terminal-green/30 disabled:opacity-50 transition-colors"
 							>
 								{isSaving ? "Saving..." : "Save"}
