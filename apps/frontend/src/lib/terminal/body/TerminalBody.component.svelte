@@ -7,6 +7,8 @@ description: Terminal body container with CRT scanline effect and xterm.js mount
 usage: Display terminal content with visual feedback for active/inactive state
 -->
 <script lang="ts">
+import { untrack } from "svelte";
+
 interface Props {
 	isActive?: boolean;
 	onclick?: (event: MouseEvent) => void;
@@ -24,8 +26,8 @@ function handleContextMenu(event: MouseEvent) {
 let containerRef: HTMLDivElement | undefined = $state();
 
 $effect(() => {
-	if (containerRef && onMountCallback) {
-		onMountCallback(containerRef);
+	if (containerRef) {
+		untrack(() => onMountCallback?.(containerRef));
 	}
 });
 </script>

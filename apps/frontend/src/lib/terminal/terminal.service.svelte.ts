@@ -311,7 +311,6 @@ function scheduleReconnect(terminalId: TerminalId): void {
 
 	const delay = Math.min(RECONNECT_BASE_MS * 2 ** state.attempt, RECONNECT_MAX_MS);
 	state.attempt++;
-	console.log(`[WS] Reconnecting ${terminalId} in ${delay}ms (attempt ${state.attempt})`);
 
 	state.timeout = setTimeout(() => {
 		state.timeout = null;
@@ -320,19 +319,22 @@ function scheduleReconnect(terminalId: TerminalId): void {
 }
 
 export function terminalWebsocketConnect(terminalId: TerminalId): void {
-	console.log("[WS] terminalWebsocketConnect called for:", terminalId);
-
 	const instance = instances.get(terminalId);
-	if (!instance) {
-		console.log("[WS] No instance found, returning");
-		return;
-	}
+	if (!instance) return;
 
 	const reconnectState = getReconnectState(terminalId);
 	reconnectState.intentionalClose = false;
 
+	if (reconnectState.timeout) {
+		clearTimeout(reconnectState.timeout);
+		reconnectState.timeout = null;
+	}
+
+	if (reconnectState.attempt > 0) {
+		instance.terminal.reset();
+	}
+
 	if (instance.websocket) {
-		console.log("[WS] Closing existing websocket");
 		reconnectState.intentionalClose = true;
 		terminalWebsocketClose(terminalId);
 		reconnectState.intentionalClose = false;
@@ -340,8 +342,6 @@ export function terminalWebsocketConnect(terminalId: TerminalId): void {
 
 	instance.connectionStatus = TerminalConnectionStatus.Connecting;
 	instance.lastError = null;
-
-	console.log("[WS] Creating new websocket connection");
 	const ws = api.ws
 		.terminal({
 			terminalId,
@@ -349,14 +349,10 @@ export function terminalWebsocketConnect(terminalId: TerminalId): void {
 		.subscribe();
 
 	ws.subscribe((event) => {
-		if (event.data.type !== "output" && event.data.type !== "ping") {
-			console.log("[WS] Message received:", event.data.type);
-		}
 		terminalDispatchServerMessage(terminalId, event.data);
 	});
 
 	ws.on("open", () => {
-		console.log("[WS] Connection opened for:", terminalId);
 		instance.connectionStatus = TerminalConnectionStatus.Connected;
 		reconnectState.attempt = 0;
 
@@ -371,14 +367,12 @@ export function terminalWebsocketConnect(terminalId: TerminalId): void {
 	});
 
 	ws.on("close", () => {
-		console.log("[WS] Connection closed for:", terminalId);
 		instance.connectionStatus = TerminalConnectionStatus.Disconnected;
 		instance.websocket = null;
 		scheduleReconnect(terminalId);
 	});
 
 	ws.on("error", () => {
-		console.log("[WS] Connection error for:", terminalId);
 		instance.connectionStatus = TerminalConnectionStatus.Error;
 		instance.lastError = "WebSocket connection error";
 		instance.websocket = null;
