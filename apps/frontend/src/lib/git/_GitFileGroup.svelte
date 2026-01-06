@@ -58,12 +58,13 @@ function fileNameGet(path: string): string {
 							type="button"
 							onclick={() => onFileClick?.(file.path)}
 							class="flex flex-1 items-center gap-1.5 min-w-0"
+							title={file.path}
 						>
 							<File class="size-3 shrink-0 text-text-tertiary" />
-							<span class="text-[11px] text-text-primary truncate">
+							<span class="text-[11px] text-text-primary shrink-0">
 								{fileNameGet(file.path)}
 							</span>
-							<span class="text-[10px] text-text-tertiary truncate">
+							<span class="text-[10px] text-text-tertiary truncate direction-rtl text-left">
 								{file.path}
 							</span>
 						</button>

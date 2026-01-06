@@ -87,4 +87,8 @@
 	.scrollbar-none::-webkit-scrollbar {
 		display: none;
 	}
+	.direction-rtl {
+		direction: rtl;
+		unicode-bidi: plaintext;
+	}
 }
