@@ -1,3 +1,4 @@
+import { layoutSchema } from "@claude-manager/common/src/layout/layout.schema";
 import { projectIdSchema } from "@claude-manager/common/src/project/project.id";
 import { projectSchema } from "@claude-manager/common/src/project/project.schema";
 import { projectCreate, projectPatch } from "@claude-manager/common/src/project/project.types";
@@ -50,8 +51,48 @@ export const projectRoutes = new Elysia({
 	.post(
 		"/",
 		async ({ body, status }) => {
-			const [project] = await db.insert(projectSchema).values(body).returning();
-			return status(201, project);
+			if (body.layoutId) {
+				const [project] = await db.insert(projectSchema).values(body).returning();
+				return status(201, project);
+			}
+
+			const result = await db.transaction(async (tx) => {
+				const [project] = await tx.insert(projectSchema).values(body).returning();
+
+				const [layout] = await tx
+					.insert(layoutSchema)
+					.values({
+						data: {
+							desktop: {
+								containers: {},
+								rootId: null,
+							},
+							items: {},
+							mobile: {
+								containers: {},
+								rootId: null,
+							},
+						},
+						name: "Default",
+						projectId: project.id,
+					})
+					.returning();
+
+				const [updatedProject] = await tx
+					.update(projectSchema)
+					.set({
+						layoutId: layout.id,
+					})
+					.where(eq(projectSchema.id, project.id))
+					.returning();
+
+				return {
+					...updatedProject,
+					layout,
+				};
+			});
+
+			return status(201, result);
 		},
 		{
 			body: projectCreate,

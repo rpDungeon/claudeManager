@@ -135,13 +135,24 @@ async function handleAddProject() {
 		path: "/home/claude",
 	});
 	if (!response.error && response.data) {
-		const newProject = response.data as Project;
+		const newProject = response.data as Project & {
+			layout?: Layout;
+		};
 		projects = [
 			...projects,
 			newProject,
 		];
 		selectedProjectId = newProject.id;
 		onProjectChange?.(newProject.id, newProject.path);
+
+		if (newProject.layout) {
+			layouts = [
+				...layouts,
+				newProject.layout,
+			];
+			selectedLayoutId = newProject.layout.id;
+			onLayoutChange?.(newProject.layout.id);
+		}
 	}
 }
 

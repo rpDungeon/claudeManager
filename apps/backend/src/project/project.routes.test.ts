@@ -16,6 +16,7 @@ const TEST_PROJECT_IDS: ProjectId[] = [];
 const TEST_LAYOUT_PROJECT_ID = "project:test-layout-owner-123" as ProjectId;
 const TEST_LAYOUT_ID = "layout:test-project-routes-123" as LayoutId;
 const PROJECT_ID_PATTERN = /^project:/;
+const LAYOUT_ID_PATTERN = /^layout:/;
 
 describe("project routes", () => {
 	beforeAll(async () => {
@@ -54,7 +55,7 @@ describe("project routes", () => {
 	});
 
 	describe("POST /projects", () => {
-		it("creates a new project", async () => {
+		it("creates a new project with auto-created layout", async () => {
 			const { data, error, status } = await api.projects.post({
 				name: "Test Project",
 				path: "/tmp/test-project",
@@ -67,6 +68,9 @@ describe("project routes", () => {
 			expect(data.id).toMatch(PROJECT_ID_PATTERN);
 			expect(data.name).toBe("Test Project");
 			expect(data.path).toBe("/tmp/test-project");
+			expect(data.layoutId).toMatch(LAYOUT_ID_PATTERN);
+			expect(data.layout).toBeDefined();
+			expect(data.layout?.name).toBe("Default");
 
 			TEST_PROJECT_IDS.push(data.id);
 		});

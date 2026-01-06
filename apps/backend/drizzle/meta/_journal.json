@@ -7,6 +7,13 @@
 			"tag": "0000_futuristic_switch",
 			"version": "6",
 			"when": 1766070389345
+		},
+		{
+			"breakpoints": true,
+			"idx": 1,
+			"tag": "0001_smooth_king_bedlam",
+			"version": "6",
+			"when": 1767694197127
 		}
 	],
 	"version": "7"
