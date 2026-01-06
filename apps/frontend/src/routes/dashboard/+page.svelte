@@ -3,6 +3,8 @@
 import { browser } from "$app/environment";
 import type { LayoutId } from "@claude-manager/common/src/layout/layout.id";
 import type { ProjectId } from "@claude-manager/common/src/project/project.id";
+import QuickOpen from "$lib/quickOpen/QuickOpen.component.svelte";
+import { QuickOpenMode } from "$lib/quickOpen/quickOpen.lib";
 import { DEFAULT_SIDEBAR_WIDTH, tabStateLoad, tabStateSave } from "$lib/tabState/tabState.service.svelte";
 import DashboardLayout from "./DashboardLayout.component.svelte";
 import DashboardSidebar from "./DashboardSidebar.component.svelte";
@@ -36,8 +38,28 @@ let showProjectCreate = $state(false);
 let showProjectSettings = $state(false);
 let showLayoutCreate = $state(false);
 let showLayoutSettings = $state(false);
+let showQuickOpen = $state(false);
+let quickOpenInitialMode = $state(QuickOpenMode.File);
 let isSidebarCollapsed = $state(false);
 let isResizing = $state(false);
+
+$effect(() => {
+	function handleGlobalKeyDown(event: KeyboardEvent) {
+		if ((event.ctrlKey || event.metaKey) && event.key === "p") {
+			event.preventDefault();
+			quickOpenInitialMode = QuickOpenMode.File;
+			showQuickOpen = true;
+		}
+		if ((event.ctrlKey || event.metaKey) && event.key === "g") {
+			event.preventDefault();
+			quickOpenInitialMode = QuickOpenMode.Line;
+			showQuickOpen = true;
+		}
+	}
+
+	window.addEventListener("keydown", handleGlobalKeyDown);
+	return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+});
 
 const MIN_SIDEBAR_WIDTH = 200;
 const MAX_SIDEBAR_WIDTH = 500;
@@ -89,6 +111,8 @@ let sidebarRef:
 let layoutRef:
 	| {
 			openFile: (filePath: string, openToSide?: boolean) => void;
+			goToLine: (lineNumber: number) => void;
+			getActiveItemId: () => string | null;
 	  }
 	| undefined = $state();
 
@@ -253,4 +277,23 @@ function handleFileOpen(filePath: string, openToSide?: boolean) {
 	onSave={handleLayoutSave}
 	onDuplicate={handleLayoutDuplicate}
 	onDelete={handleLayoutDelete}
+/>
+
+<QuickOpen
+	bind:open={showQuickOpen}
+	projectPath={projectPath}
+	initialMode={quickOpenInitialMode}
+	activeEditorId={layoutRef?.getActiveItemId()}
+	onFileSelect={(filePath, line) => {
+		layoutRef?.openFile(filePath);
+		if (line) {
+			setTimeout(() => layoutRef?.goToLine(line), 100);
+		}
+	}}
+	onLineSelect={(line) => layoutRef?.goToLine(line)}
+	onProjectSelect={async (projectId, layoutId) => {
+		selectedProjectId = projectId as ProjectId;
+		selectedLayoutId = layoutId as LayoutId | null;
+		await sidebarRef?.refresh();
+	}}
 />

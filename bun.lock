@@ -94,12 +94,14 @@
         "bits-ui": "^1.1.4",
         "clsx": "^2.1.1",
         "codemirror": "^6.0.2",
+        "fuzzysort": "^3.1.0",
         "lucide-svelte": "^0.511.0",
         "marked": "^17.0.1",
         "mode-watcher": "^0.5.1",
         "paneforge": "^1.0.0-next.4",
         "tailwind-merge": "^3.3.0",
         "tailwind-variants": "^1.0.0",
+        "vscode-languageserver-protocol": "^3.17.5",
         "zod": "^4.2.1",
       },
       "devDependencies": {
@@ -768,6 +770,8 @@
     "fsevents": ["fsevents@2.3.2", "", { "os": "darwin" }, "sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA=="],
 
     "function-bind": ["function-bind@1.1.2", "", {}, "sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA=="],
+
+    "fuzzysort": ["fuzzysort@3.1.0", "", {}, "sha512-sR9BNCjBg6LNgwvxlBd0sBABvQitkLzoVY9MYYROQVX/FvfJ4Mai9LsGhDgd8qYdds0bY77VzYd5iuB+v5rwQQ=="],
 
     "gel": ["gel@2.2.0", "", { "dependencies": { "@petamoriken/float16": "^3.8.7", "debug": "^4.3.4", "env-paths": "^3.0.0", "semver": "^7.6.2", "shell-quote": "^1.8.1", "which": "^4.0.0" }, "bin": { "gel": "dist/cli.mjs" } }, "sha512-q0ma7z2swmoamHQusey8ayo8+ilVdzDt4WTxSPzq/yRqvucWRfymRVMvNgmSC0XK7eNjjEZEcplxpgaNojKdmQ=="],
 

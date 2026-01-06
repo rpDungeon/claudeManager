@@ -271,6 +271,28 @@ export function editorInstanceFocus(editorId: EditorId): void {
 	instance.view.focus();
 }
 
+export function editorGoToLine(editorId: EditorId, lineNumber: number): void {
+	const instance = instances.get(editorId);
+	if (!instance?.view) return;
+
+	const doc = instance.view.state.doc;
+	const maxLine = doc.lines;
+	const targetLine = Math.min(Math.max(1, lineNumber), maxLine);
+
+	const lineInfo = doc.line(targetLine);
+
+	instance.view.dispatch({
+		effects: EditorView.scrollIntoView(lineInfo.from, {
+			y: "center",
+		}),
+		selection: {
+			anchor: lineInfo.from,
+		},
+	});
+
+	instance.view.focus();
+}
+
 export function editorInstanceGetContent(editorId: EditorId): string | null {
 	const instance = instances.get(editorId);
 	if (!instance?.view) return null;

@@ -27,12 +27,14 @@
 		"bits-ui": "^1.1.4",
 		"clsx": "^2.1.1",
 		"codemirror": "^6.0.2",
+		"fuzzysort": "^3.1.0",
 		"lucide-svelte": "^0.511.0",
 		"marked": "^17.0.1",
 		"mode-watcher": "^0.5.1",
 		"paneforge": "^1.0.0-next.4",
 		"tailwind-merge": "^3.3.0",
 		"tailwind-variants": "^1.0.0",
+		"vscode-languageserver-protocol": "^3.17.5",
 		"zod": "^4.2.1"
 	},
 	"devDependencies": {

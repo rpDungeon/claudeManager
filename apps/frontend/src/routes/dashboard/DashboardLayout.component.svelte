@@ -17,6 +17,7 @@ import type { LayoutItemIframe } from "@claude-manager/common/src/layout/item/it
 import type { LayoutItemImage } from "@claude-manager/common/src/layout/item/item.image";
 import type { LayoutItemMarkdown } from "@claude-manager/common/src/layout/item/item.markdown";
 import type { LayoutItemEditor } from "@claude-manager/common/src/layout/item/item.editor";
+import { editorGoToLine } from "$lib/editor/editor.service.svelte";
 import type { LayoutId } from "@claude-manager/common/src/layout/layout.id";
 import type { ProjectId } from "@claude-manager/common/src/project/project.id";
 import type { Percentage } from "@claude-manager/common/src/types/common.types";
@@ -81,15 +82,26 @@ let isDirty = $state(false);
 let currentProjectId = $state<ProjectId | null>(null);
 let terminalCounter = $state(0);
 
+export function getActiveItemId(): string | null {
+	return activeItemId;
+}
+
+export function goToLine(lineNumber: number): void {
+	if (!activeItemId) return;
+	const item = data.items[activeItemId];
+	if (item?.type !== "editor") return;
+	editorGoToLine(activeItemId, lineNumber);
+}
+
 export function openFile(filePath: string, openToSide = false) {
 	const itemId = crypto.randomUUID();
 	const fileName = filePath.split("/").pop() || "Editor";
 
 	const editorItem: LayoutItemEditor = {
+		filePath,
 		id: itemId,
 		label: fileName,
 		type: "editor",
-		filePath,
 	};
 
 	data.items[itemId] = editorItem;
@@ -124,16 +136,24 @@ export function openFile(filePath: string, openToSide = false) {
 
 			const newTabsContainer: LayoutContainerTabs = {
 				activeTabId: itemId,
-				childIds: [itemId],
+				childIds: [
+					itemId,
+				],
 				id: newTabsId,
 				type: "tabs",
 			};
 
 			const newSplitContainer: LayoutContainerSplit = {
-				childIds: [targetContainerId, newTabsId],
+				childIds: [
+					targetContainerId,
+					newTabsId,
+				],
 				direction: "horizontal",
 				id: newSplitId,
-				sizes: [50, 50] as Percentage[],
+				sizes: [
+					50,
+					50,
+				] as Percentage[],
 				type: "split",
 			};
 
@@ -167,11 +187,17 @@ export function openFile(filePath: string, openToSide = false) {
 						tabsContainer.childIds[idx] = itemId;
 						tabsContainer.activeTabId = itemId;
 					} else {
-						tabsContainer.childIds = [...tabsContainer.childIds, itemId];
+						tabsContainer.childIds = [
+							...tabsContainer.childIds,
+							itemId,
+						];
 						tabsContainer.activeTabId = itemId;
 					}
 				} else {
-					tabsContainer.childIds = [...tabsContainer.childIds, itemId];
+					tabsContainer.childIds = [
+						...tabsContainer.childIds,
+						itemId,
+					];
 					tabsContainer.activeTabId = itemId;
 				}
 			}
@@ -179,7 +205,9 @@ export function openFile(filePath: string, openToSide = false) {
 	}
 
 	activeItemId = itemId;
-	data = { ...data };
+	data = {
+		...data,
+	};
 	markDirty();
 }
 
@@ -698,10 +726,10 @@ async function handleAddItem(containerId: string, itemType: AddItemType) {
 
 			itemId = crypto.randomUUID();
 			const editorItem: LayoutItemEditor = {
+				filePath,
 				id: itemId,
 				label: filePath.split("/").pop() || "Editor",
 				type: "editor",
-				filePath,
 			};
 			newItem = editorItem;
 			break;
@@ -876,10 +904,10 @@ async function handleAddItemToEmptyLayout(itemType: AddItemType) {
 
 			itemId = crypto.randomUUID();
 			const editorItem: LayoutItemEditor = {
+				filePath,
 				id: itemId,
 				label: filePath.split("/").pop() || "Editor",
 				type: "editor",
-				filePath,
 			};
 			newItem = editorItem;
 			break;
