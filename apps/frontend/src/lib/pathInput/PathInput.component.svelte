@@ -148,13 +148,14 @@ function handleBlur(event: FocusEvent) {
 	}, 150);
 }
 
-function selectSuggestion(suggestion: FsEntry) {
+async function selectSuggestion(suggestion: FsEntry) {
 	const newPath = suggestion.path.endsWith("/") ? suggestion.path : `${suggestion.path}/`;
 	value = newPath;
 	onchange?.(newPath);
-	isOpen = false;
 	selectedIndex = -1;
 	void validatePath(newPath);
+	await loadSuggestions(newPath);
+	isOpen = true;
 	inputRef?.focus();
 }
 
