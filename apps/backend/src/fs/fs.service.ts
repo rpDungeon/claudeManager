@@ -7,6 +7,7 @@ import {
 	type FsEntry,
 	FsEntryErrorCode,
 	FsEntryType,
+	type FsFileListItem,
 	type FsReadResponse,
 	FsWatchEventType,
 	type FsWatchMessageServer,
@@ -633,6 +634,70 @@ class FsService {
 			}
 			throw err;
 		}
+	}
+
+	async listRecursive(
+		rootPath: string,
+		options: {
+			excludePatterns?: string[];
+			maxDepth?: number;
+		} = {},
+	): Promise<FsFileListItem[]> {
+		const {
+			excludePatterns = [
+				"node_modules",
+				".git",
+				"dist",
+				".svelte-kit",
+				"__pycache__",
+				".next",
+				".cache",
+				"coverage",
+				".turbo",
+			],
+			maxDepth = 10,
+		} = options;
+		const files: FsFileListItem[] = [];
+
+		const walk = async (dirPath: string, depth: number): Promise<void> => {
+			if (depth > maxDepth) return;
+
+			let entries: nodefs.Dirent[];
+			try {
+				entries = await nodefsPromises.readdir(dirPath, {
+					withFileTypes: true,
+				});
+			} catch {
+				return;
+			}
+
+			const subDirPromises: Promise<void>[] = [];
+
+			for (const entry of entries) {
+				if (excludePatterns.includes(entry.name)) {
+					continue;
+				}
+
+				const fullPath = path.join(dirPath, entry.name);
+				const relativePath = path.relative(rootPath, fullPath);
+
+				if (entry.isDirectory()) {
+					subDirPromises.push(walk(fullPath, depth + 1));
+				} else if (entry.isFile()) {
+					files.push({
+						modifiedAt: 0,
+						name: entry.name,
+						path: fullPath,
+						relativePath,
+					});
+				}
+			}
+
+			await Promise.all(subDirPromises);
+		};
+
+		await walk(rootPath, 0);
+		return files;
 	}
 }
 

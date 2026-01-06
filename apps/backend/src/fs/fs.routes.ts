@@ -124,4 +124,18 @@ export const fsRoutes = new Elysia({
 				path: z.string().min(1),
 			}),
 		},
+	)
+	.get(
+		"/list-recursive",
+		async ({ query }) => {
+			return fsService.listRecursive(query.path, {
+				maxDepth: query.maxDepth,
+			});
+		},
+		{
+			query: z.object({
+				maxDepth: z.coerce.number().optional(),
+				path: z.string().min(1),
+			}),
+		},
 	);

@@ -119,3 +119,12 @@ export const fsWatchMessageServerSchema = z.discriminatedUnion("type", [
 ]);
 
 export type FsWatchMessageServer = z.infer<typeof fsWatchMessageServerSchema>;
+
+export const fsFileListItemSchema = z.object({
+	modifiedAt: z.number(),
+	name: z.string(),
+	path: z.string(),
+	relativePath: z.string(),
+});
+
+export type FsFileListItem = z.infer<typeof fsFileListItemSchema>;
