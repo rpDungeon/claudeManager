@@ -7,7 +7,9 @@ import { DEFAULT_SIDEBAR_WIDTH, tabStateLoad, tabStateSave } from "$lib/tabState
 import DashboardLayout from "./DashboardLayout.component.svelte";
 import DashboardSidebar from "./DashboardSidebar.component.svelte";
 import DashboardStatusBar from "./DashboardStatusBar.component.svelte";
+import LayoutCreateModal from "./LayoutCreateModal.component.svelte";
 import LayoutSettingsModal from "./LayoutSettingsModal.component.svelte";
+import ProjectCreateModal from "./ProjectCreateModal.component.svelte";
 import ProjectSettingsModal from "./ProjectSettingsModal.component.svelte";
 
 const initialState = browser
@@ -30,7 +32,9 @@ $effect(() => {
 		});
 	}
 });
+let showProjectCreate = $state(false);
 let showProjectSettings = $state(false);
+let showLayoutCreate = $state(false);
 let showLayoutSettings = $state(false);
 let isSidebarCollapsed = $state(false);
 let isResizing = $state(false);
@@ -61,9 +65,24 @@ function handleResizeStart(event: MouseEvent) {
 	document.addEventListener("mouseup", onMouseUp);
 }
 
+interface Layout {
+	id: LayoutId;
+	name: string;
+	projectId: ProjectId;
+}
+
+interface Project {
+	id: ProjectId;
+	name: string;
+	path: string;
+	layoutId: LayoutId | null;
+}
+
 let sidebarRef:
 	| {
 			refresh: () => Promise<void>;
+			addProject: (project: Project, layout: Layout | null) => void;
+			addLayout: (layout: Layout) => void;
 	  }
 	| undefined = $state();
 
@@ -86,15 +105,31 @@ function handleLayoutChange(layoutId: LayoutId | null) {
 	selectedLayoutId = layoutId;
 }
 
+function handleProjectAddClick() {
+	showProjectCreate = true;
+}
+
 function handleProjectSettingsClick(_projectId: ProjectId, name: string, path: string) {
 	projectName = name;
 	projectPath = path;
 	showProjectSettings = true;
 }
 
+function handleLayoutAddClick() {
+	showLayoutCreate = true;
+}
+
 function handleLayoutSettingsClick(_layoutId: LayoutId, name: string) {
 	layoutName = name;
 	showLayoutSettings = true;
+}
+
+function handleProjectCreate(project: Project, layout: Layout | null) {
+	sidebarRef?.addProject(project, layout);
+}
+
+function handleLayoutCreate(layout: Layout) {
+	sidebarRef?.addLayout(layout);
 }
 
 async function handleProjectSave() {
@@ -150,7 +185,9 @@ function handleFileOpen(filePath: string, openToSide?: boolean) {
 						bind:selectedLayoutId
 						onProjectChange={handleProjectChange}
 						onLayoutChange={handleLayoutChange}
+						onProjectAddClick={handleProjectAddClick}
 						onProjectSettingsClick={handleProjectSettingsClick}
+						onLayoutAddClick={handleLayoutAddClick}
 						onLayoutSettingsClick={handleLayoutSettingsClick}
 						onFileOpen={handleFileOpen}
 					/>
@@ -196,6 +233,17 @@ function handleFileOpen(filePath: string, openToSide?: boolean) {
 	{projectPath}
 	onSave={handleProjectSave}
 	onDelete={handleProjectDelete}
+/>
+
+<ProjectCreateModal
+	bind:open={showProjectCreate}
+	onCreate={handleProjectCreate}
+/>
+
+<LayoutCreateModal
+	bind:open={showLayoutCreate}
+	projectId={selectedProjectId}
+	onCreate={handleLayoutCreate}
 />
 
 <LayoutSettingsModal

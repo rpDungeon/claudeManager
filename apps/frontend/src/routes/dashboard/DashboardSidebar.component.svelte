@@ -9,7 +9,6 @@ usage: Use as the left sidebar in the dashboard containing all navigation contro
 -->
 <script lang="ts">
 import type { LayoutId } from "@claude-manager/common/src/layout/layout.id";
-import type { LayoutData } from "@claude-manager/common/src/layout/layout.types";
 import type { ProjectId } from "@claude-manager/common/src/project/project.id";
 import { onMount } from "svelte";
 import { api } from "$lib/api/api.client";
@@ -18,18 +17,6 @@ import DashboardGitPanel from "./DashboardGitPanel.component.svelte";
 import DashboardSelector from "./DashboardSelector.component.svelte";
 
 type SidebarTab = "files" | "git";
-
-const defaultLayoutData: LayoutData = {
-	desktop: {
-		containers: {},
-		rootId: null,
-	},
-	items: {},
-	mobile: {
-		containers: {},
-		rootId: null,
-	},
-};
 
 interface Project {
 	id: ProjectId;
@@ -48,7 +35,9 @@ interface Props {
 	selectedLayoutId?: LayoutId | null;
 	onProjectChange?: (projectId: ProjectId | null, projectPath: string | null) => void;
 	onLayoutChange?: (layoutId: LayoutId | null) => void;
+	onProjectAddClick?: () => void;
 	onProjectSettingsClick?: (projectId: ProjectId, name: string, path: string) => void;
+	onLayoutAddClick?: () => void;
 	onLayoutSettingsClick?: (layoutId: LayoutId, name: string) => void;
 	onFileOpen?: (filePath: string, openToSide?: boolean) => void;
 }
@@ -58,7 +47,9 @@ let {
 	selectedLayoutId = $bindable(null),
 	onProjectChange,
 	onLayoutChange,
+	onProjectAddClick,
 	onProjectSettingsClick,
+	onLayoutAddClick,
 	onLayoutSettingsClick,
 	onFileOpen,
 }: Props = $props();
@@ -68,6 +59,33 @@ export async function refresh() {
 		loadProjects(),
 		loadLayouts(),
 	]);
+}
+
+export function addProject(project: Project, layout: Layout | null) {
+	projects = [
+		...projects,
+		project,
+	];
+	selectedProjectId = project.id;
+	onProjectChange?.(project.id, project.path);
+
+	if (layout) {
+		layouts = [
+			...layouts,
+			layout,
+		];
+		selectedLayoutId = layout.id;
+		onLayoutChange?.(layout.id);
+	}
+}
+
+export function addLayout(layout: Layout) {
+	layouts = [
+		...layouts,
+		layout,
+	];
+	selectedLayoutId = layout.id;
+	onLayoutChange?.(layout.id);
 }
 
 let projects = $state<Project[]>([]);
@@ -129,51 +147,12 @@ async function loadLayouts() {
 	isLoadingLayouts = false;
 }
 
-async function handleAddProject() {
-	const response = await api.projects.post({
-		name: `Project ${projects.length + 1}`,
-		path: "/home/claude",
-	});
-	if (!response.error && response.data) {
-		const newProject = response.data as Project & {
-			layout?: Layout;
-		};
-		projects = [
-			...projects,
-			newProject,
-		];
-		selectedProjectId = newProject.id;
-		onProjectChange?.(newProject.id, newProject.path);
-
-		if (newProject.layout) {
-			layouts = [
-				...layouts,
-				newProject.layout,
-			];
-			selectedLayoutId = newProject.layout.id;
-			onLayoutChange?.(newProject.layout.id);
-		}
-	}
+function handleAddProject() {
+	onProjectAddClick?.();
 }
 
-async function handleAddLayout() {
-	if (!selectedProjectId) return;
-
-	const projectLayouts = layouts.filter((l) => l.projectId === selectedProjectId);
-	const response = await api.layouts.post({
-		data: defaultLayoutData,
-		name: `Layout ${projectLayouts.length + 1}`,
-		projectId: selectedProjectId,
-	});
-	if (!response.error && response.data) {
-		const newLayout = response.data as Layout;
-		layouts = [
-			...layouts,
-			newLayout,
-		];
-		selectedLayoutId = newLayout.id;
-		onLayoutChange?.(newLayout.id);
-	}
+function handleAddLayout() {
+	onLayoutAddClick?.();
 }
 
 function handleProjectChange(projectId: ProjectId) {
