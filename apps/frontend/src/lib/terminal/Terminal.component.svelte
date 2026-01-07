@@ -328,6 +328,7 @@ async function handleVoiceToggle() {
 					const targetId = recordingTerminalId;
 					terminalInstancePaste(targetId, text);
 					terminalInstanceFocus(targetId);
+					navigator.clipboard.writeText(text).catch(() => {});
 
 					if (autoSend) {
 						setTimeout(() => {
