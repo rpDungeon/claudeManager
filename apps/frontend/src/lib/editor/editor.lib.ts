@@ -3,6 +3,7 @@ import { html } from "@codemirror/lang-html";
 import { javascript } from "@codemirror/lang-javascript";
 import { json } from "@codemirror/lang-json";
 import { markdown } from "@codemirror/lang-markdown";
+import { python } from "@codemirror/lang-python";
 import type { Extension } from "@codemirror/state";
 import { tags as t } from "@lezer/highlight";
 import { svelte } from "@replit/codemirror-lang-svelte";
@@ -18,6 +19,7 @@ export enum EditorConnectionStatus {
 export enum EditorLanguageId {
 	TypeScript = "typescript",
 	JavaScript = "javascript",
+	Python = "python",
 	Svelte = "svelte",
 	CSS = "css",
 	HTML = "html",
@@ -37,6 +39,10 @@ export function editorLanguageIdFromPath(filePath: string): EditorLanguageId {
 		case "mjs":
 		case "cjs":
 			return EditorLanguageId.JavaScript;
+		case "py":
+		case "pyw":
+		case "pyi":
+			return EditorLanguageId.Python;
 		case "svelte":
 			return EditorLanguageId.Svelte;
 		case "css":
@@ -67,6 +73,8 @@ export function editorLanguageExtensionGet(languageId: EditorLanguageId): Extens
 			return javascript({
 				jsx: true,
 			});
+		case EditorLanguageId.Python:
+			return python();
 		case EditorLanguageId.Svelte:
 			return svelte();
 		case EditorLanguageId.CSS:

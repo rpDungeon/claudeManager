@@ -3,6 +3,7 @@ import { z } from "zod";
 export enum EditorLspLanguageId {
 	TypeScript = "typescript",
 	JavaScript = "javascript",
+	Python = "python",
 	Svelte = "svelte",
 	CSS = "css",
 	HTML = "html",
@@ -10,14 +11,14 @@ export enum EditorLspLanguageId {
 }
 
 const editorLspMessageInitializeSchema = z.object({
-	type: z.literal("initialize"),
-	rootUri: z.string(),
 	languageId: z.nativeEnum(EditorLspLanguageId),
+	rootUri: z.string(),
+	type: z.literal("initialize"),
 });
 
 const editorLspMessageJsonRpcSchema = z.object({
-	type: z.literal("jsonrpc"),
 	content: z.string(),
+	type: z.literal("jsonrpc"),
 });
 
 const editorLspMessagePongSchema = z.object({
@@ -44,13 +45,13 @@ const editorLspMessageServerReadySchema = z.object({
 });
 
 const editorLspMessageServerJsonRpcSchema = z.object({
-	type: z.literal(EditorLspMessageServerType.JsonRpc),
 	content: z.string(),
+	type: z.literal(EditorLspMessageServerType.JsonRpc),
 });
 
 const editorLspMessageServerErrorSchema = z.object({
-	type: z.literal(EditorLspMessageServerType.Error),
 	message: z.string(),
+	type: z.literal(EditorLspMessageServerType.Error),
 });
 
 const editorLspMessageServerPingSchema = z.object({

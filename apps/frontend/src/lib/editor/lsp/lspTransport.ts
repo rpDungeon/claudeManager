@@ -1,5 +1,5 @@
-import type { Transport } from "@codemirror/lsp-client";
 import { EditorLspLanguageId } from "@claude-manager/common/src/editor/lsp.types";
+import type { Transport } from "@codemirror/lsp-client";
 import { PUBLIC_API_URL } from "$env/static/public";
 
 type LspSessionConfig = {
@@ -23,14 +23,14 @@ export function editorLspTransportCreate(config: LspSessionConfig): Promise<Tran
 		const timeout = setTimeout(() => {
 			socket.close();
 			reject(new Error("LSP connection timeout"));
-		}, 10000);
+		}, 10_000);
 
 		socket.onopen = () => {
 			socket.send(
 				JSON.stringify({
-					type: "initialize",
-					rootUri: config.rootUri,
 					languageId: config.languageId,
+					rootUri: config.rootUri,
+					type: "initialize",
 				}),
 			);
 		};
@@ -45,8 +45,8 @@ export function editorLspTransportCreate(config: LspSessionConfig): Promise<Tran
 						send(jsonRpcMessage: string) {
 							socket.send(
 								JSON.stringify({
-									type: "jsonrpc",
 									content: jsonRpcMessage,
+									type: "jsonrpc",
 								}),
 							);
 						},
@@ -69,7 +69,11 @@ export function editorLspTransportCreate(config: LspSessionConfig): Promise<Tran
 				}
 
 				if (message.type === "ping") {
-					socket.send(JSON.stringify({ type: "pong" }));
+					socket.send(
+						JSON.stringify({
+							type: "pong",
+						}),
+					);
 					return;
 				}
 
@@ -94,14 +98,14 @@ export function editorLspTransportCreate(config: LspSessionConfig): Promise<Tran
 	});
 }
 
-export function editorLanguageIdToLspLanguageId(
-	languageId: string,
-): EditorLspLanguageId | null {
+export function editorLanguageIdToLspLanguageId(languageId: string): EditorLspLanguageId | null {
 	switch (languageId) {
 		case "typescript":
 			return EditorLspLanguageId.TypeScript;
 		case "javascript":
 			return EditorLspLanguageId.JavaScript;
+		case "python":
+			return EditorLspLanguageId.Python;
 		case "svelte":
 			return EditorLspLanguageId.Svelte;
 		case "css":
