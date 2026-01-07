@@ -7,10 +7,10 @@ description: Code editor pane with CodeMirror 6 and CRT aesthetic
 usage: Pass filePath to load and edit a file from the project directory
 -->
 <script lang="ts">
-import type { Snippet } from "svelte";
-import { onMount, onDestroy } from "svelte";
+import { onDestroy } from "svelte";
 import IndicatorDot from "$lib/common/IndicatorDot.component.svelte";
 import { IndicatorDotColor } from "$lib/common/indicatorDot.lib";
+import Breadcrumbs from "$lib/breadcrumbs/Breadcrumbs.component.svelte";
 import {
 	editorInstanceCreate,
 	editorInstanceDestroy,
@@ -27,7 +27,6 @@ interface Props {
 	editorId: string;
 	filePath: string;
 	projectPath?: string;
-	title?: string | Snippet;
 	itemId?: string;
 	isActive?: boolean;
 	draggable?: boolean;
@@ -45,7 +44,6 @@ let {
 	editorId,
 	filePath,
 	projectPath,
-	title,
 	itemId,
 	isActive = false,
 	draggable = false,
@@ -71,9 +69,6 @@ const isLoading = $derived(instance?.isLoading ?? false);
 const error = $derived(instance?.error ?? null);
 
 const languageId = $derived(editorLanguageIdFromPath(filePath));
-const fileName = $derived(filePath.split("/").pop() ?? "untitled");
-const displayTitle = $derived(title ?? fileName);
-const titleIsSnippet = $derived(typeof displayTitle === "function");
 
 const statusColor = $derived.by(() => {
 	if (error) return IndicatorDotColor.Red;
@@ -208,13 +203,9 @@ onDestroy(() => {
 		{#if isDirty}
 			<span class="text-terminal-amber">●</span>
 		{/if}
-		<span class="font-normal text-text-tertiary">
-			{#if titleIsSnippet}
-				{@render (displayTitle as Snippet)()}
-			{:else}
-				{displayTitle}
-			{/if}
-		</span>
+		{#if projectPath}
+			<Breadcrumbs {filePath} {projectPath} />
+		{/if}
 		<span class="ml-auto text-[9px] text-text-tertiary uppercase">{languageId}</span>
 	</button>
 

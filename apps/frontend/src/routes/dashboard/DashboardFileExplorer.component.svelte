@@ -25,6 +25,7 @@ import DashboardFileExplorerContextMenu from "./DashboardFileExplorerContextMenu
 import { TargetType } from "./dashboardFileExplorerContextMenu.lib";
 import type { ContextMenuPosition } from "$lib/common/contextMenu/contextMenu.lib";
 import { gitStore } from "$lib/git/gitStore.svelte";
+import { breadcrumbsStore } from "$lib/breadcrumbs/breadcrumbs.store.svelte";
 
 interface Props {
 	rootPath?: string;
@@ -77,6 +78,51 @@ $effect(() => {
 		}
 	}
 });
+
+$effect(() => {
+	for (const targetPath of breadcrumbsStore.expandRequests) {
+		if (!targetPath.startsWith(normalizedRootPath)) {
+			breadcrumbsStore.clearRequest(targetPath);
+			continue;
+		}
+
+		const pathsToExpand = breadcrumbPathsToExpand(targetPath, normalizedRootPath);
+
+		for (const folderPath of pathsToExpand) {
+			if (!expandedIds.has(folderPath) && wsConnection) {
+				const item = items.get(folderPath);
+				if (item?.type === FileTreeItemType.Folder) {
+					item.isLoading = true;
+					items.set(folderPath, {
+						...item,
+					});
+					wsConnection.send({
+						path: folderPath,
+						recursive: false,
+						type: FsWatchMessageClientType.Watch,
+					});
+				}
+			}
+		}
+
+		selectedId = targetPath;
+		breadcrumbsStore.clearRequest(targetPath);
+	}
+});
+
+function breadcrumbPathsToExpand(targetPath: string, rootPath: string): string[] {
+	const paths: string[] = [];
+	let current = targetPath;
+
+	while (current !== rootPath && current.length > rootPath.length) {
+		paths.unshift(current);
+		const parentPath = fsPathParent(current);
+		if (parentPath === current) break;
+		current = parentPath;
+	}
+
+	return paths;
+}
 
 function fsEntryToTreeItem(entry: FsEntry): FileTreeItemData {
 	const hasError = Boolean(entry.error);
@@ -434,17 +480,24 @@ async function voiceInputToggle() {
 }
 
 async function voiceInputTranscribe(audioBlob: Blob) {
-	const formData = new FormData();
-	formData.append("audio", audioBlob, "recording.webm");
-
 	try {
-		const response = await fetch("http://localhost:4030/transcription", {
-			body: formData,
-			method: "POST",
+		const { data, error } = await api.transcription.post({
+			audio: new File(
+				[
+					audioBlob,
+				],
+				"recording.webm",
+				{
+					type: "audio/webm",
+				},
+			),
 		});
-		if (response.ok) {
-			const result = await response.json();
-			voiceInputText = result.transcription || "";
+
+		if (error || !data) {
+			console.error("[FileExplorer] Transcription error:", error);
+		} else {
+			voiceInputText = data.transcription || "";
+			navigator.clipboard.writeText(voiceInputText).catch(() => {});
 		}
 	} catch (err) {
 		console.error("[FileExplorer] Transcription failed:", err);
@@ -500,16 +553,16 @@ function voiceInputSubmit() {
 			bind:value={voiceInputText}
 			onkeydown={(e) => e.key === "Enter" && voiceInputSubmit()}
 			placeholder="Voice input..."
-			class="flex-1 bg-bg-elevated border border-border-default rounded px-2 py-1 text-[11px] text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-terminal-green"
+			class="flex-1 h-6 bg-bg-elevated border border-border-default rounded px-2 text-[11px] text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-terminal-green"
 		/>
 		<button
 			onclick={voiceInputToggle}
-			class="flex items-center justify-center size-7 rounded border transition-colors {isRecording
+			class="flex items-center justify-center size-6 rounded border transition-colors {isRecording
 				? 'bg-terminal-red/20 border-terminal-red text-terminal-red'
 				: 'bg-bg-elevated border-border-default text-text-secondary hover:border-border-active hover:text-text-primary'}"
 			title={isRecording ? "Stop recording" : "Start recording"}
 		>
-			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-4">
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-3.5">
 				<path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z" />
 				<path d="M19 11a1 1 0 1 0-2 0 5 5 0 0 1-10 0 1 1 0 1 0-2 0 7 7 0 0 0 6 6.92V21h-2a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-3.08A7 7 0 0 0 19 11Z" />
 			</svg>
