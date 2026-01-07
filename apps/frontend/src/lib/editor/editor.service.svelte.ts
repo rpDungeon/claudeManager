@@ -86,6 +86,7 @@ export function editorInstanceMount(editorId: EditorId, container: HTMLElement):
 		EditorView.theme({
 			".cm-content": {
 				fontSize: `${fontSize}px`,
+				paddingTop: "0",
 			},
 			".cm-gutters": {
 				fontSize: `${fontSize}px`,
@@ -163,6 +164,7 @@ export async function editorLspConnect(editorId: EditorId, rootUri: string): Pro
 				EditorView.theme({
 					".cm-content": {
 						fontSize: `${fontSize}px`,
+						paddingTop: "0",
 					},
 					".cm-gutters": {
 						fontSize: `${fontSize}px`,
