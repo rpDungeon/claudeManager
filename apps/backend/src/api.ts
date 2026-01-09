@@ -5,6 +5,7 @@ import { Elysia } from "elysia";
 import { authRoutes } from "./auth/auth.routes";
 import { claudeSessionRoutes } from "./claude/session/session.routes";
 import { dashboardRoutes } from "./dashboard/dashboard.routes";
+import { editorLspWebsocket } from "./editor/lsp/lsp.websocket";
 import { fsRoutes } from "./fs/fs.routes";
 import { fsWatchWebsocket } from "./fs/fs.websocket";
 import { gitRoutes } from "./git/git.routes";
@@ -13,13 +14,13 @@ import { layoutRoutes } from "./layout/layout.routes";
 import { layoutSse } from "./layout/layout.sse";
 import { projectRoutes } from "./project/project.routes";
 import { proxyRoutes } from "./proxy/proxy.routes";
+import { searchRoutes } from "./search/search.routes";
 import { systemRoutes } from "./system/system.routes";
 import { systemWebsocket } from "./system/system.websocket";
 import { terminalInputlogWebsocket } from "./terminal/inputlog/inputlog.websocket";
 import { terminalPtyWebsocket } from "./terminal/pty/pty.websocket";
 import { terminalRoutes } from "./terminal/terminal.routes";
 import { transcriptionRoutes } from "./transcription/transcription.routes";
-import { editorLspWebsocket } from "./editor/lsp/lsp.websocket";
 
 export const api = new Elysia()
 	.use(
@@ -51,6 +52,7 @@ export const api = new Elysia()
 	.use(layoutSse)
 	.use(projectRoutes)
 	.use(proxyRoutes)
+	.use(searchRoutes)
 	.use(claudeSessionRoutes)
 	.use(systemRoutes)
 	.use(systemWebsocket)

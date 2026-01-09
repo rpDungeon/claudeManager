@@ -245,10 +245,19 @@ function handleContextMenuClose() {
 
 let audioStream: MediaStream | null = null;
 let recordingTerminalId: TerminalId | undefined;
+let shouldAutoSendOnStop = false;
+
+function handleVoiceStopAndSend() {
+	if (voiceRecorderState === VoiceRecorderState.Recording && mediaRecorder) {
+		shouldAutoSendOnStop = true;
+		mediaRecorder.stop();
+	}
+}
 
 async function handleVoiceToggle() {
 	if (voiceRecorderState === VoiceRecorderState.Recording) {
 		if (mediaRecorder) {
+			shouldAutoSendOnStop = false;
 			mediaRecorder.stop();
 		}
 		return;
@@ -306,23 +315,25 @@ async function handleVoiceToggle() {
 					console.error("[VoiceRecorder] Transcription error:", error);
 				} else if (recordingTerminalId) {
 					let text = data.transcription.trim();
-					let autoSend = false;
+					let autoSend = shouldAutoSendOnStop;
 
-					const words = text.split(WHITESPACE_REGEX);
-					const lastWord = words[words.length - 1]?.toLowerCase();
+					if (!autoSend) {
+						const words = text.split(WHITESPACE_REGEX);
+						const lastWord = words[words.length - 1]?.toLowerCase();
 
-					// Auto-send: saying "send" at the end triggers Enter. Variants handle common transcription errors.
-					if (
-						lastWord === "send" ||
-						lastWord === "send." ||
-						lastWord === "cent" ||
-						lastWord === "cent." ||
-						lastWord === "sent" ||
-						lastWord === "sent."
-					) {
-						words.pop();
-						text = words.join(" ");
-						autoSend = true;
+						// Auto-send: saying "send" at the end triggers Enter. Variants handle common transcription errors.
+						if (
+							lastWord === "send" ||
+							lastWord === "send." ||
+							lastWord === "cent" ||
+							lastWord === "cent." ||
+							lastWord === "sent" ||
+							lastWord === "sent."
+						) {
+							words.pop();
+							text = words.join(" ");
+							autoSend = true;
+						}
 					}
 
 					const targetId = recordingTerminalId;
@@ -336,6 +347,7 @@ async function handleVoiceToggle() {
 						}, 500);
 					}
 				}
+				shouldAutoSendOnStop = false;
 			} catch (err) {
 				console.error("[VoiceRecorder] Transcription failed:", err);
 			} finally {
@@ -408,6 +420,7 @@ onDestroy(() => {
 			<VoiceRecorder
 				state={voiceRecorderState}
 				onclick={handleVoiceToggle}
+				onStopAndSend={handleVoiceStopAndSend}
 			/>
 		</div>
 	{/if}
