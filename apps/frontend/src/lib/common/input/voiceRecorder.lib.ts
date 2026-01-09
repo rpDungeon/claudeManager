@@ -7,7 +7,7 @@ export enum VoiceRecorderState {
 
 export const voiceRecorderStateClasses: Record<VoiceRecorderState, string> = {
 	[VoiceRecorderState.Idle]:
-		"bg-bg-elevated text-text-secondary border border-border-default hover:border-terminal-green hover:text-terminal-green",
+		"bg-bg-elevated text-text-secondary border border-border-default hover:border-terminal-green hover:text-terminal-green opacity-50 hover:opacity-100",
 	[VoiceRecorderState.Recording]:
 		"bg-terminal-red/20 text-terminal-red border border-terminal-red shadow-[0_0_12px_var(--color-terminal-red)/40] animate-pulse",
 	[VoiceRecorderState.Processing]:
