@@ -17,6 +17,7 @@ import { terminalPtyService } from "./pty.service";
 
 const unsubscribeMap = new Map<string, () => void>();
 const inputBufferMap = new Map<TerminalId, string>();
+const escapeStateMap = new Map<TerminalId, boolean>();
 const processPollingMap = new Map<string, ReturnType<typeof setInterval>>();
 const lastProcessMap = new Map<string, string | null>();
 
@@ -32,8 +33,23 @@ const keepaliveMap = new Map<string, KeepaliveState>();
 
 function inputBufferProcess(terminalId: TerminalId, data: string) {
 	let buffer = inputBufferMap.get(terminalId) ?? "";
+	let inEscape = escapeStateMap.get(terminalId) ?? false;
 
 	for (const char of data) {
+		const code = char.charCodeAt(0);
+
+		if (char === "\x1b") {
+			inEscape = true;
+			continue;
+		}
+
+		if (inEscape) {
+			if ((code >= 0x40 && code <= 0x5a) || (code >= 0x61 && code <= 0x7a)) {
+				inEscape = false;
+			}
+			continue;
+		}
+
 		if (char === "\r" || char === "\n") {
 			if (buffer.trim().length > 0) {
 				const inserted = db
@@ -60,6 +76,7 @@ function inputBufferProcess(terminalId: TerminalId, data: string) {
 	}
 
 	inputBufferMap.set(terminalId, buffer);
+	escapeStateMap.set(terminalId, inEscape);
 }
 
 export const terminalPtyWebsocket = new Elysia({
@@ -118,6 +135,7 @@ export const terminalPtyWebsocket = new Elysia({
 
 	async open(ws) {
 		const { terminalId } = ws.data.params;
+		console.log(`[WS] Terminal connection opened: ${terminalId}`);
 
 		const setupKeepalive = () => {
 			const interval = setInterval(() => {
@@ -182,6 +200,7 @@ export const terminalPtyWebsocket = new Elysia({
 		};
 
 		const existingInstance = terminalPtyService.instanceGet(terminalId);
+		console.log(`[WS] Existing instance for ${terminalId}:`, !!existingInstance);
 		if (existingInstance) {
 			const scrollback = existingInstance.getScrollback();
 			if (scrollback) {
@@ -209,6 +228,7 @@ export const terminalPtyWebsocket = new Elysia({
 		});
 
 		if (!terminal) {
+			console.log(`[WS] Terminal not found in DB: ${terminalId}`);
 			ws.send({
 				message: "Terminal not found",
 				type: TerminalPtyMessageServerType.Error,
@@ -217,6 +237,7 @@ export const terminalPtyWebsocket = new Elysia({
 			return;
 		}
 
+		console.log(`[WS] Terminal found, project path: ${terminal.project.path}`);
 		const instance = terminalPtyService.instanceSpawn(terminalId, terminal.project.path);
 
 		const unsubscribe = instance.onData((message) => {
