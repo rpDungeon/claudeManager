@@ -12,6 +12,7 @@ import { Dialog } from "bits-ui";
 import fuzzysort from "fuzzysort";
 import { Search } from "lucide-svelte";
 import { untrack } from "svelte";
+import { commandRegistry } from "$lib/command/command.lib";
 import {
 	QuickOpenMode,
 	quickOpenFuzzySearchFiles,
@@ -95,6 +96,16 @@ const results = $derived.by((): QuickOpenResult[] => {
 		});
 		return filtered.map((r) => r.obj);
 	}
+	if (mode === QuickOpenMode.Command) {
+		const commands = commandRegistry.search(cleanQuery);
+		return commands.map((cmd) => ({
+			id: cmd.id,
+			keybinding: cmd.keybinding,
+			primary: cmd.title,
+			secondary: cmd.category,
+			type: QuickOpenMode.Command,
+		}));
+	}
 	return [];
 });
 
@@ -136,7 +147,12 @@ $effect(() => {
 
 $effect(() => {
 	if (open) {
-		query = initialMode === QuickOpenMode.File ? "" : quickOpenModeConfig[initialMode].prefix;
+		const prefillModes = [
+			QuickOpenMode.Line,
+			QuickOpenMode.Symbol,
+			QuickOpenMode.Project,
+		];
+		query = prefillModes.includes(initialMode) ? quickOpenModeConfig[initialMode].prefix : "";
 		selectedIndex = 0;
 		documentSymbols = [];
 		projects = [];
@@ -194,6 +210,9 @@ function selectResult(result: QuickOpenResult | undefined) {
 			break;
 		case QuickOpenMode.Project:
 			onProjectSelect?.(result.id, result.layoutId ?? null);
+			break;
+		case QuickOpenMode.Command:
+			commandRegistry.execute(result.id);
 			break;
 	}
 
@@ -255,6 +274,7 @@ function selectResult(result: QuickOpenResult | undefined) {
 					<span><kbd class="rounded bg-bg-elevated px-1">esc</kbd> close</span>
 				</div>
 				<div class="flex items-center gap-3">
+					<span><kbd class="rounded bg-bg-elevated px-1">&gt;</kbd> command</span>
 					<span><kbd class="rounded bg-bg-elevated px-1">:</kbd> line</span>
 					<span><kbd class="rounded bg-bg-elevated px-1">@</kbd> symbol</span>
 					<span><kbd class="rounded bg-bg-elevated px-1">#</kbd> project</span>

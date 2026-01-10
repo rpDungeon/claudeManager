@@ -6,12 +6,14 @@ export enum QuickOpenMode {
 	Line = "line",
 	Symbol = "symbol",
 	Project = "project",
+	Command = "command",
 }
 
 export type QuickOpenResult = {
 	filePath?: string;
 	icon?: string;
 	id: string;
+	keybinding?: string;
 	layoutId?: string | null;
 	line?: number;
 	primary: string;
@@ -24,6 +26,12 @@ export function quickOpenModeDetect(query: string): {
 	cleanQuery: string;
 	mode: QuickOpenMode;
 } {
+	if (query.startsWith(">")) {
+		return {
+			cleanQuery: query.slice(1),
+			mode: QuickOpenMode.Command,
+		};
+	}
 	if (query.startsWith(":")) {
 		return {
 			cleanQuery: query.slice(1),
@@ -110,5 +118,10 @@ export const quickOpenModeConfig: Record<
 		emptyMessage: "No projects found",
 		placeholder: "Switch to project...",
 		prefix: "#",
+	},
+	[QuickOpenMode.Command]: {
+		emptyMessage: "No commands found",
+		placeholder: "Type a command...",
+		prefix: ">",
 	},
 };
