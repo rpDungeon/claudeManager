@@ -509,6 +509,97 @@ function voiceInputSubmit() {
 	console.log("[FileExplorer] Voice input submitted:", voiceInputText);
 	voiceInputText = "";
 }
+
+function handleReconnect() {
+	if (wsConnection) {
+		wsConnection.close();
+		wsConnection = null;
+	}
+	gitStore.disconnect();
+
+	items.clear();
+	parentMap.clear();
+	expandedIds.clear();
+	error = null;
+	isLoading = true;
+	currentWatchPath = null;
+
+	const pathToWatch = normalizedRootPath;
+	currentWatchPath = pathToWatch;
+
+	const repoPath = pathToWatch.endsWith("/") ? pathToWatch.slice(0, -1) : pathToWatch;
+	gitStore.connect(repoPath);
+
+	const ws = api.ws.fs.watch.subscribe();
+	wsConnection = ws;
+
+	ws.on("open", () => {
+		console.log("[FileExplorer] Reconnected, sending watch for:", currentWatchPath);
+		if (currentWatchPath) {
+			ws.send({
+				path: currentWatchPath,
+				recursive: false,
+				type: FsWatchMessageClientType.Watch,
+			});
+		}
+	});
+
+	ws.subscribe((message) => {
+		const msg = message.data;
+
+		if (msg.type === FsWatchMessageServerType.Initial) {
+			const isRoot = msg.path === currentWatchPath;
+
+			if (isRoot) {
+				items.clear();
+				parentMap.clear();
+
+				const rootName = msg.path.slice(0, -1).split("/").pop() || msg.path;
+				const rootItem: FileTreeItemData = {
+					id: msg.path,
+					name: rootName,
+					type: FileTreeItemType.Folder,
+				};
+				items.set(msg.path, rootItem);
+				isLoading = false;
+			}
+
+			addEntries(msg.entries, msg.path);
+			expandedIds.add(msg.path);
+
+			const folderItem = items.get(msg.path);
+			if (folderItem) {
+				folderItem.isLoading = false;
+				items.set(msg.path, {
+					...folderItem,
+				});
+			}
+		} else if (msg.type === FsWatchMessageServerType.Change) {
+			if (msg.event === FsWatchEventType.Delete) {
+				items.delete(msg.path);
+				parentMap.delete(msg.path);
+			} else if (msg.entry) {
+				items.set(msg.path, fsEntryToTreeItem(msg.entry));
+				const parentPath = fsPathParent(msg.path);
+				if (parentPath && items.has(parentPath)) {
+					parentMap.set(msg.path, parentPath);
+				}
+			}
+		} else if (msg.type === FsWatchMessageServerType.Error) {
+			error = msg.message;
+			isLoading = false;
+		}
+	});
+
+	ws.on("error", (err) => {
+		console.error("[FileExplorer] WebSocket error:", err);
+		error = "Connection error";
+	});
+
+	ws.on("close", () => {
+		wsConnection = null;
+	});
+}
 </script>
 
 <div class="flex h-full flex-col bg-bg-surface">
@@ -516,7 +607,14 @@ function voiceInputSubmit() {
 		<span class="text-[10px] font-medium uppercase tracking-wider text-text-tertiary">
 			Explorer
 		</span>
-		<span class="size-1.5 rounded-full {wsConnection !== null ? 'bg-terminal-green' : 'bg-terminal-red'}"></span>
+		<button
+			type="button"
+			onclick={handleReconnect}
+			class="flex items-center justify-center p-1 -m-1 rounded transition-colors hover:bg-bg-elevated cursor-pointer"
+			title="Click to reconnect"
+		>
+			<span class="size-1.5 rounded-full {wsConnection !== null ? 'bg-terminal-green' : 'bg-terminal-red'}"></span>
+		</button>
 	</div>
 
 	<div class="flex-1 overflow-hidden">

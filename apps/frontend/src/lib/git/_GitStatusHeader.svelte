@@ -11,9 +11,9 @@ interface Props {
 let { branch, ahead = 0, behind = 0, isConnected = false }: Props = $props();
 </script>
 
-<div class="flex items-center gap-2 border-b border-border-default px-3 py-2">
-	<GitBranch class="size-3.5 text-text-tertiary" />
-	<span class="text-[11px] font-medium text-text-primary">
+<div class="flex h-5 items-center gap-2 border-b border-border-default px-2">
+	<GitBranch class="size-3 text-text-tertiary" />
+	<span class="text-[10px] font-medium text-text-primary">
 		{branch ?? "Not a git repository"}
 	</span>
 	{#if ahead > 0}
