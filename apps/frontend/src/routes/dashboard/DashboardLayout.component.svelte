@@ -26,8 +26,7 @@ import type { LayoutDropZonePosition } from "$lib/layout/dropzone/dropzone.lib";
 import { AddItemType } from "$lib/layout/container/tabs/layoutContainerTabsAddMenu.lib";
 import { TerminalType } from "@claude-manager/common/src/terminal/terminal.types";
 import Layout from "$lib/layout/Layout.component.svelte";
-import { api } from "$lib/api/api.client";
-import { PUBLIC_API_URL } from "$env/static/public";
+import { api, backendHost, backendUrl } from "$lib/api/api.client";
 
 type LocalhostUrlResult = {
 	converted: boolean;
@@ -57,8 +56,8 @@ function localhostUrlConvert(inputUrl: string): LocalhostUrlResult {
 	const port = match[2];
 	const path = match[3] || "/";
 	const protocol = window.location.protocol;
-	const backendHost = PUBLIC_API_URL ? new URL(PUBLIC_API_URL).host : window.location.host;
-	const proxyUrl = `${protocol}//${backendHost}/proxy/${port}${path}`;
+	const host = backendHost || window.location.host;
+	const proxyUrl = `${protocol}//${host}/proxy/${port}${path}`;
 
 	return {
 		converted: true,
@@ -324,7 +323,7 @@ const BASE_RECONNECT_DELAY = 1000;
 
 function connectSSE(targetLayoutId: LayoutId, _isInitial: boolean) {
 	const token = localStorage.getItem("auth_token");
-	const url = `${PUBLIC_API_URL}/layouts/${targetLayoutId}/stream${token ? `?token=${encodeURIComponent(token)}` : ""}`;
+	const url = `${backendUrl}/layouts/${targetLayoutId}/stream${token ? `?token=${encodeURIComponent(token)}` : ""}`;
 
 	const eventSource = new EventSource(url);
 	currentEventSource = eventSource;
@@ -347,12 +346,15 @@ function connectSSE(targetLayoutId: LayoutId, _isInitial: boolean) {
 				});
 		}
 
-		for (const container of Object.values(data.desktop.containers)) {
-			if (container.type === "tabs") {
-				const tabsContainer = container as LayoutContainerTabs;
-				if (tabsContainer.activeTabId) {
-					activeItemId = tabsContainer.activeTabId;
-					break;
+		const currentItemStillExists = activeItemId && data.items[activeItemId];
+		if (!currentItemStillExists) {
+			for (const container of Object.values(data.desktop.containers)) {
+				if (container.type === "tabs") {
+					const tabsContainer = container as LayoutContainerTabs;
+					if (tabsContainer.activeTabId) {
+						activeItemId = tabsContainer.activeTabId;
+						break;
+					}
 				}
 			}
 		}
@@ -365,11 +367,14 @@ function connectSSE(targetLayoutId: LayoutId, _isInitial: boolean) {
 	});
 
 	eventSource.addEventListener("update", (e: MessageEvent) => {
+		if (isDirty) {
+			isDirty = false;
+			return;
+		}
 		const layout: LayoutType = JSON.parse(e.data);
 		if (layout.data) {
 			data = layout.data;
 		}
-		isDirty = false;
 	});
 
 	eventSource.addEventListener("heartbeat", () => {});
@@ -473,6 +478,20 @@ function handleTabSelect(containerId: string, itemId: string) {
 
 function handleItemSelect(itemId: string) {
 	activeItemId = itemId;
+
+	for (const container of Object.values(data.desktop.containers)) {
+		if (container.type === "tabs") {
+			const tabsContainer = container as LayoutContainerTabs;
+			if (tabsContainer.childIds.includes(itemId)) {
+				tabsContainer.activeTabId = itemId;
+				data = {
+					...data,
+				};
+				markDirty();
+				break;
+			}
+		}
+	}
 }
 
 function handleItemReorder(containerId: string, fromItemId: string, toItemId: string) {

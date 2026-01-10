@@ -53,8 +53,23 @@ let {
 	onItemClose,
 }: Props = $props();
 
+let isDragging = $state(false);
+let pendingSizes = $state<number[] | null>(null);
+
 function handleLayoutChange(sizes: number[]) {
-	onSplitResize?.(container.id, sizes);
+	if (isDragging) {
+		pendingSizes = sizes;
+	} else {
+		onSplitResize?.(container.id, sizes);
+	}
+}
+
+function handleDraggingChange(dragging: boolean) {
+	isDragging = dragging;
+	if (!dragging && pendingSizes) {
+		onSplitResize?.(container.id, pendingSizes);
+		pendingSizes = null;
+	}
 }
 
 function resolveChild(childId: string):
@@ -101,7 +116,7 @@ function handleItemClick(itemId: string) {
 		{@const size = container.sizes[index] ?? 50}
 
 		{#if index > 0}
-			<PaneResizer class="pane-resizer" />
+			<PaneResizer class="pane-resizer" onDraggingChange={handleDraggingChange} />
 		{/if}
 
 		<Pane defaultSize={size}>
@@ -145,22 +160,51 @@ function handleItemClick(itemId: string) {
 
 <style>
 	:global(.pane-resizer) {
+		position: relative;
+		background: transparent;
+		z-index: 10;
+	}
+
+	:global(.pane-resizer::after) {
+		content: "";
+		position: absolute;
 		background: var(--color-border-default);
 		transition: background-color 150ms;
 	}
 
-	:global(.pane-resizer:hover),
-	:global(.pane-resizer:focus) {
+	:global(.pane-resizer:hover::after),
+	:global(.pane-resizer:focus::after),
+	:global(.pane-resizer[data-state="dragging"]::after) {
 		background: var(--color-terminal-green);
 	}
 
 	:global(.pane-resizer[data-direction="horizontal"]) {
-		width: 1px;
+		width: 8px;
+		margin-left: -4px;
+		margin-right: -4px;
 		cursor: col-resize;
 	}
 
+	:global(.pane-resizer[data-direction="horizontal"]::after) {
+		top: 0;
+		bottom: 0;
+		left: 50%;
+		width: 1px;
+		transform: translateX(-50%);
+	}
+
 	:global(.pane-resizer[data-direction="vertical"]) {
-		height: 1px;
+		height: 8px;
+		margin-top: -4px;
+		margin-bottom: -4px;
 		cursor: row-resize;
+	}
+
+	:global(.pane-resizer[data-direction="vertical"]::after) {
+		left: 0;
+		right: 0;
+		top: 50%;
+		height: 1px;
+		transform: translateY(-50%);
 	}
 </style>
