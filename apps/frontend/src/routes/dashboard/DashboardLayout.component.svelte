@@ -563,7 +563,6 @@ function handleSplitDrop(droppedItemId: string, targetContainerId: string, posit
 	}
 
 	const newTabsId = `tabs-${++splitCounter}-${Date.now()}`;
-	const newSplitId = `split-${splitCounter}-${Date.now()}`;
 
 	const newTabsContainer: LayoutContainerTabs = {
 		activeTabId: droppedItemId,
@@ -576,43 +575,67 @@ function handleSplitDrop(droppedItemId: string, targetContainerId: string, posit
 
 	const direction: "horizontal" | "vertical" = position === "left" || position === "right" ? "horizontal" : "vertical";
 	const isFirstPosition = position === "left" || position === "top";
-	const childIds = isFirstPosition
-		? [
-				newTabsId,
-				targetContainerId,
-			]
-		: [
-				targetContainerId,
-				newTabsId,
-			];
-
-	const newSplitContainer: LayoutContainerSplit = {
-		childIds,
-		direction,
-		id: newSplitId,
-		sizes: [
-			50,
-			50,
-		] as Percentage[],
-		type: "split",
-	};
 
 	const parentContainerId = findParentContainer(targetContainerId);
+	const parentContainer = parentContainerId ? data.desktop.containers[parentContainerId] : null;
 
 	data.desktop.containers[newTabsId] = newTabsContainer;
-	data.desktop.containers[newSplitId] = newSplitContainer;
 
-	if (parentContainerId) {
-		const parentContainer = data.desktop.containers[parentContainerId];
-		if (parentContainer.type === "split") {
-			const splitParent = parentContainer as LayoutContainerSplit;
-			const idx = splitParent.childIds.indexOf(targetContainerId);
-			if (idx !== -1) {
-				splitParent.childIds[idx] = newSplitId;
-			}
+	if (parentContainer?.type === "split" && (parentContainer as LayoutContainerSplit).direction === direction) {
+		const splitParent = parentContainer as LayoutContainerSplit;
+		const targetIdx = splitParent.childIds.indexOf(targetContainerId);
+
+		if (targetIdx !== -1) {
+			const insertIdx = isFirstPosition ? targetIdx : targetIdx + 1;
+			splitParent.childIds = [
+				...splitParent.childIds.slice(0, insertIdx),
+				newTabsId,
+				...splitParent.childIds.slice(insertIdx),
+			];
+
+			const equalSize = Math.floor(100 / splitParent.childIds.length);
+			const remainder = 100 - equalSize * splitParent.childIds.length;
+			splitParent.sizes = splitParent.childIds.map(
+				(_, i) => (i === splitParent.childIds.length - 1 ? equalSize + remainder : equalSize) as Percentage,
+			);
 		}
-	} else if (data.desktop.rootId === targetContainerId) {
-		data.desktop.rootId = newSplitId;
+	} else {
+		const newSplitId = `split-${splitCounter}-${Date.now()}`;
+		const childIds = isFirstPosition
+			? [
+					newTabsId,
+					targetContainerId,
+				]
+			: [
+					targetContainerId,
+					newTabsId,
+				];
+
+		const newSplitContainer: LayoutContainerSplit = {
+			childIds,
+			direction,
+			id: newSplitId,
+			sizes: [
+				50,
+				50,
+			] as Percentage[],
+			type: "split",
+		};
+
+		data.desktop.containers[newSplitId] = newSplitContainer;
+
+		if (parentContainerId) {
+			const parent = data.desktop.containers[parentContainerId];
+			if (parent.type === "split") {
+				const splitParent = parent as LayoutContainerSplit;
+				const idx = splitParent.childIds.indexOf(targetContainerId);
+				if (idx !== -1) {
+					splitParent.childIds[idx] = newSplitId;
+				}
+			}
+		} else if (data.desktop.rootId === targetContainerId) {
+			data.desktop.rootId = newSplitId;
+		}
 	}
 
 	cleanupEmptyContainers();
