@@ -200,7 +200,7 @@ export const terminalPtyWebsocket = new Elysia({
 		};
 
 		const existingInstance = terminalPtyService.instanceGet(terminalId);
-		console.log(`[WS] Existing instance for ${terminalId}:`, !!existingInstance);
+		console.log(`[WS] Existing instance for ${terminalId}:`, Boolean(existingInstance));
 		if (existingInstance) {
 			const scrollback = existingInstance.getScrollback();
 			if (scrollback) {
