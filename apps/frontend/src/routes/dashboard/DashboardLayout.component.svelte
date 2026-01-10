@@ -16,6 +16,7 @@ import type { LayoutItemTerminal } from "@claude-manager/common/src/layout/item/
 import type { LayoutItemIframe } from "@claude-manager/common/src/layout/item/item.iframe";
 import type { LayoutItemImage } from "@claude-manager/common/src/layout/item/item.image";
 import type { LayoutItemMarkdown } from "@claude-manager/common/src/layout/item/item.markdown";
+import type { LayoutItemDiff } from "@claude-manager/common/src/layout/item/item.diff";
 import type { LayoutItemEditor } from "@claude-manager/common/src/layout/item/item.editor";
 import { editorGoToLine } from "$lib/editor/editor.service.svelte";
 import type { LayoutId } from "@claude-manager/common/src/layout/layout.id";
@@ -91,6 +92,63 @@ export function goToLine(lineNumber: number): void {
 	const item = data.items[activeItemId];
 	if (item?.type !== "editor") return;
 	editorGoToLine(activeItemId, lineNumber);
+}
+
+export function openDiff(filePath: string, repoPath: string, staged: boolean) {
+	const itemId = crypto.randomUUID();
+	const fileName = filePath.split("/").pop() || "Diff";
+
+	const diffItem: LayoutItemDiff = {
+		filePath,
+		id: itemId,
+		label: `${fileName} (${staged ? "staged" : "unstaged"})`,
+		repoPath,
+		staged,
+		type: "diff",
+	};
+
+	data.items[itemId] = diffItem;
+
+	let targetContainerId: string | null = null;
+
+	if (activeItemId) {
+		for (const [containerId, container] of Object.entries(data.desktop.containers)) {
+			if (container.type === "tabs") {
+				const tabsContainer = container as LayoutContainerTabs;
+				if (tabsContainer.childIds.includes(activeItemId)) {
+					targetContainerId = containerId;
+					break;
+				}
+			}
+		}
+	}
+
+	if (!targetContainerId) {
+		for (const [containerId, container] of Object.entries(data.desktop.containers)) {
+			if (container.type === "tabs") {
+				targetContainerId = containerId;
+				break;
+			}
+		}
+	}
+
+	if (targetContainerId) {
+		const container = data.desktop.containers[targetContainerId];
+		if (container?.type === "tabs") {
+			const tabsContainer = container as LayoutContainerTabs;
+			tabsContainer.childIds = [
+				...tabsContainer.childIds,
+				itemId,
+			];
+			tabsContainer.activeTabId = itemId;
+		}
+	}
+
+	activeItemId = itemId;
+	data = {
+		...data,
+	};
+	markDirty();
 }
 
 export function openFile(filePath: string, openToSide = false) {
@@ -396,15 +454,9 @@ $effect(() => {
 	return () => window.removeEventListener("keydown", handleKeyDown);
 });
 
-let saveTimeout: ReturnType<typeof setTimeout> | null = null;
-
 function markDirty() {
 	isDirty = true;
-
-	if (saveTimeout) clearTimeout(saveTimeout);
-	saveTimeout = setTimeout(() => {
-		void saveLayout();
-	}, 2000);
+	void saveLayout();
 }
 
 function handleTabSelect(containerId: string, itemId: string) {
