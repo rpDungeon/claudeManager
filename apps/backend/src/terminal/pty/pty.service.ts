@@ -1,5 +1,13 @@
-import { execSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import {
+	existsSync,
+	mkdirSync,
+	readdirSync,
+	readFileSync,
+	readlinkSync,
+	statSync,
+	unlinkSync,
+	writeFileSync,
+} from "node:fs";
 import { resolve } from "node:path";
 import {
 	type TerminalPtyMessageServer,
@@ -24,6 +32,13 @@ const SHELL_PROCESSES = new Set([
 	"csh",
 ]);
 
+// Cache dtach PIDs - they don't change for a given socket
+const dtachPidCache = new Map<string, number>();
+
+// Debounce delay for foreground process checks (ms)
+const FOREGROUND_PROCESS_DEBOUNCE_MS = 300;
+
+const PID_REGEX = /^\d+$/;
 const WHITESPACE_REGEX = /\s+/;
 
 function foregroundProcessGetFromShellPid(shellPid: number): string | null {
@@ -48,26 +63,87 @@ function foregroundProcessGetFromShellPid(shellPid: number): string | null {
 	}
 }
 
+// Find which PID has a socket open by scanning /proc - replaces `fuser`
+function findSocketOwnerPid(socketPath: string): number | null {
+	try {
+		const socketStat = statSync(socketPath);
+		const socketInode = socketStat.ino;
+
+		const procDirs = readdirSync("/proc").filter((name) => PID_REGEX.test(name));
+
+		for (const pid of procDirs) {
+			const fdDir = `/proc/${pid}/fd`;
+			try {
+				const fds = readdirSync(fdDir);
+				for (const fd of fds) {
+					try {
+						const link = readlinkSync(`${fdDir}/${fd}`);
+						// Socket links look like "socket:[12345]" where 12345 is the inode
+						if (link.includes(`socket:[${socketInode}]`)) {
+							return Number.parseInt(pid, 10);
+						}
+					} catch {
+						// Can't read this fd, skip
+					}
+				}
+			} catch {
+				// Can't read this process's fds, skip
+			}
+		}
+
+		return null;
+	} catch {
+		return null;
+	}
+}
+
+// Find child PIDs of a process by reading /proc - replaces `pgrep -P`
+function findChildPids(parentPid: number): number[] {
+	try {
+		const childrenPath = `/proc/${parentPid}/task/${parentPid}/children`;
+		if (existsSync(childrenPath)) {
+			const children = readFileSync(childrenPath, "utf-8").trim();
+			if (children) {
+				return children
+					.split(WHITESPACE_REGEX)
+					.map((pid) => Number.parseInt(pid, 10))
+					.filter((pid) => !Number.isNaN(pid));
+			}
+		}
+		return [];
+	} catch {
+		return [];
+	}
+}
+
 function foregroundProcessGetBySocket(socketPath: string): string | null {
 	try {
 		if (!existsSync(socketPath)) return null;
 
-		const fuserOutput = execSync(`fuser "${socketPath}" 2>/dev/null`, {
-			encoding: "utf-8",
-		}).trim();
-		if (!fuserOutput) return null;
+		// Check cache for dtach PID
+		let dtachPid = dtachPidCache.get(socketPath);
 
-		const dtachPid = Number.parseInt(fuserOutput.split(WHITESPACE_REGEX).pop() || "", 10);
-		if (Number.isNaN(dtachPid)) return null;
+		if (dtachPid === undefined) {
+			// Find dtach PID via /proc (no process spawn!)
+			dtachPid = findSocketOwnerPid(socketPath) ?? undefined;
+			if (dtachPid !== undefined) {
+				dtachPidCache.set(socketPath, dtachPid);
+			}
+		}
 
-		const childPidStr = execSync(`pgrep -P ${dtachPid}`, {
-			encoding: "utf-8",
-		}).trim();
-		if (!childPidStr) return null;
+		if (dtachPid === undefined) return null;
 
-		const shellPid = Number.parseInt(childPidStr.split("\n")[0], 10);
-		if (Number.isNaN(shellPid)) return null;
+		// Verify dtach is still running
+		if (!existsSync(`/proc/${dtachPid}`)) {
+			dtachPidCache.delete(socketPath);
+			return null;
+		}
 
+		// Find shell child of dtach via /proc (no process spawn!)
+		const children = findChildPids(dtachPid);
+		if (children.length === 0) return null;
+
+		const shellPid = children[0];
 		return foregroundProcessGetFromShellPid(shellPid);
 	} catch {
 		return null;
@@ -80,12 +156,20 @@ function isInShellContext(socketPath: string): boolean {
 	return SHELL_PROCESSES.has(fg);
 }
 
+// Clear cached dtach PID when socket is removed
+function clearDtachPidCache(socketPath: string): void {
+	dtachPidCache.delete(socketPath);
+}
+
+type ForegroundProcessCallback = (process: string | null) => void;
+
 type TerminalPtyInstance = {
 	foregroundProcessGet: () => string | null;
 	getScrollback: () => string;
 	isInShellContext: () => boolean;
 	kill: () => void;
 	onData: (callback: (message: TerminalPtyMessageServer) => void) => Unsubscribe;
+	onForegroundProcessChange: (callback: ForegroundProcessCallback) => Unsubscribe;
 	resize: (cols: number, rows: number) => void;
 	write: (data: string) => void;
 };
@@ -94,7 +178,10 @@ type InternalPtyState = {
 	callbacks: Set<(message: TerminalPtyMessageServer) => void>;
 	cols: number;
 	createdAt: Date;
+	debounceTimer: ReturnType<typeof setTimeout> | null;
+	foregroundProcessCallbacks: Set<ForegroundProcessCallback>;
 	headlessTerminal: Terminal;
+	lastForegroundProcess: string | null;
 	process: IPty;
 	rows: number;
 	serializeAddon: SerializeAddon;
@@ -180,6 +267,14 @@ class PtyService {
 					state.callbacks.delete(callback);
 				};
 			},
+			onForegroundProcessChange: (callback) => {
+				state.foregroundProcessCallbacks.add(callback);
+				// Immediately call with current value
+				callback(state.lastForegroundProcess);
+				return () => {
+					state.foregroundProcessCallbacks.delete(callback);
+				};
+			},
 			resize: (cols, rows) => {
 				state.cols = cols;
 				state.rows = rows;
@@ -232,8 +327,6 @@ class PtyService {
 			}
 		}
 
-		console.log(`[PTY] Spawning terminal ${terminalId} with cwd: ${cwd}, isReattach: ${isReattach}`);
-
 		const process = spawn(
 			"dtach",
 			[
@@ -259,17 +352,32 @@ class PtyService {
 		);
 
 		const callbacks = new Set<(message: TerminalPtyMessageServer) => void>();
+		const foregroundProcessCallbacks = new Set<ForegroundProcessCallback>();
 
 		const state: InternalPtyState = {
 			callbacks,
 			cols,
 			createdAt: new Date(),
+			debounceTimer: null,
+			foregroundProcessCallbacks,
 			headlessTerminal,
+			lastForegroundProcess: null,
 			process,
 			rows,
 			serializeAddon,
 			socketPath,
 			terminalId,
+		};
+
+		// Helper to check and notify foreground process changes
+		const checkForegroundProcess = () => {
+			const newProcess = foregroundProcessGetBySocket(socketPath);
+			if (newProcess !== state.lastForegroundProcess) {
+				state.lastForegroundProcess = newProcess;
+				for (const cb of foregroundProcessCallbacks) {
+					cb(newProcess);
+				}
+			}
 		};
 
 		process.onData((data) => {
@@ -282,6 +390,12 @@ class PtyService {
 			for (const cb of callbacks) {
 				cb(message);
 			}
+
+			// Debounced foreground process check - only when there's activity
+			if (state.debounceTimer) {
+				clearTimeout(state.debounceTimer);
+			}
+			state.debounceTimer = setTimeout(checkForegroundProcess, FOREGROUND_PROCESS_DEBOUNCE_MS);
 		});
 
 		process.onExit(({ exitCode }) => {
@@ -293,8 +407,18 @@ class PtyService {
 				cb(message);
 			}
 			callbacks.clear();
+			foregroundProcessCallbacks.clear();
 			headlessTerminal.dispose();
 			this.instances.delete(terminalId);
+
+			// Clean up debounce timer
+			if (state.debounceTimer) {
+				clearTimeout(state.debounceTimer);
+				state.debounceTimer = null;
+			}
+
+			// Clear dtach PID cache
+			clearDtachPidCache(socketPath);
 
 			const interval = this.saveIntervals.get(terminalId);
 			if (interval) {
@@ -325,6 +449,9 @@ class PtyService {
 			console.error(`[Terminal] Failed to delete socket for ${terminalId}:`, error);
 		}
 
+		// Clear dtach PID cache
+		clearDtachPidCache(socketPath);
+
 		scrollbackDelete(terminalId);
 
 		const interval = this.saveIntervals.get(terminalId);
@@ -337,7 +464,13 @@ class PtyService {
 			return false;
 		}
 
+		// Clean up debounce timer
+		if (state.debounceTimer) {
+			clearTimeout(state.debounceTimer);
+		}
+
 		state.callbacks.clear();
+		state.foregroundProcessCallbacks.clear();
 		state.headlessTerminal.dispose();
 		state.process.kill();
 		this.instances.delete(terminalId);

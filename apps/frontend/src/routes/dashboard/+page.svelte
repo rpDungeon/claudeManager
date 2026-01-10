@@ -277,7 +277,7 @@ function handleDiffOpen(filePath: string, repoPath: string, staged: boolean) {
 			</button>
 		</div>
 		<div class="flex-1 min-w-0 overflow-hidden">
-			<DashboardLayout bind:this={layoutRef} layoutId={selectedLayoutId} {projectPath} />
+			<DashboardLayout bind:this={layoutRef} layoutId={selectedLayoutId} projectId={selectedProjectId} {projectPath} />
 		</div>
 	</div>
 

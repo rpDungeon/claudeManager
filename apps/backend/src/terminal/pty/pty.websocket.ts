@@ -16,12 +16,10 @@ import { terminalInputlogService } from "../inputlog/inputlog.service";
 import { terminalPtyService } from "./pty.service";
 
 const unsubscribeMap = new Map<string, () => void>();
+const foregroundProcessUnsubscribeMap = new Map<string, () => void>();
 const inputBufferMap = new Map<TerminalId, string>();
 const escapeStateMap = new Map<TerminalId, boolean>();
-const processPollingMap = new Map<string, ReturnType<typeof setInterval>>();
-const lastProcessMap = new Map<string, string | null>();
 
-const PROCESS_POLL_INTERVAL_MS = 1000;
 const PING_INTERVAL_MS = 5000;
 const MAX_MISSED_PINGS = 2;
 
@@ -93,12 +91,11 @@ export const terminalPtyWebsocket = new Elysia({
 			unsubscribeMap.delete(ws.id);
 		}
 
-		const processPolling = processPollingMap.get(ws.id);
-		if (processPolling) {
-			clearInterval(processPolling);
-			processPollingMap.delete(ws.id);
+		const fgUnsubscribe = foregroundProcessUnsubscribeMap.get(ws.id);
+		if (fgUnsubscribe) {
+			fgUnsubscribe();
+			foregroundProcessUnsubscribeMap.delete(ws.id);
 		}
-		lastProcessMap.delete(ws.id);
 
 		const keepalive = keepaliveMap.get(ws.id);
 		if (keepalive) {
@@ -140,7 +137,6 @@ export const terminalPtyWebsocket = new Elysia({
 
 	async open(ws) {
 		const { terminalId } = ws.data.params;
-		console.log(`[WS] Terminal connection opened: ${terminalId}`);
 
 		const setupKeepalive = () => {
 			const interval = setInterval(() => {
@@ -171,41 +167,21 @@ export const terminalPtyWebsocket = new Elysia({
 			});
 		};
 
-		const setupProcessPolling = (ptyInstance: ReturnType<typeof terminalPtyService.instanceGet>) => {
+		const setupForegroundProcessSubscription = (ptyInstance: ReturnType<typeof terminalPtyService.instanceGet>) => {
 			if (!ptyInstance) return;
 
-			const currentProcess = ptyInstance.foregroundProcessGet();
-			lastProcessMap.set(ws.id, currentProcess);
-			ws.send({
-				process: currentProcess,
-				type: TerminalPtyMessageServerType.ForegroundProcess,
+			// Subscribe to foreground process changes (event-driven, no polling!)
+			const unsubscribe = ptyInstance.onForegroundProcessChange((process) => {
+				ws.send({
+					process,
+					type: TerminalPtyMessageServerType.ForegroundProcess,
+				});
 			});
 
-			const polling = setInterval(() => {
-				const inst = terminalPtyService.instanceGet(terminalId);
-				if (!inst) {
-					clearInterval(polling);
-					processPollingMap.delete(ws.id);
-					return;
-				}
-
-				const newProcess = inst.foregroundProcessGet();
-				const lastProcess = lastProcessMap.get(ws.id);
-
-				if (newProcess !== lastProcess) {
-					lastProcessMap.set(ws.id, newProcess);
-					ws.send({
-						process: newProcess,
-						type: TerminalPtyMessageServerType.ForegroundProcess,
-					});
-				}
-			}, PROCESS_POLL_INTERVAL_MS);
-
-			processPollingMap.set(ws.id, polling);
+			foregroundProcessUnsubscribeMap.set(ws.id, unsubscribe);
 		};
 
 		const existingInstance = terminalPtyService.instanceGet(terminalId);
-		console.log(`[WS] Existing instance for ${terminalId}:`, Boolean(existingInstance));
 		if (existingInstance) {
 			const scrollback = existingInstance.getScrollback();
 			if (scrollback) {
@@ -220,7 +196,7 @@ export const terminalPtyWebsocket = new Elysia({
 			});
 
 			unsubscribeMap.set(ws.id, unsubscribe);
-			setupProcessPolling(existingInstance);
+			setupForegroundProcessSubscription(existingInstance);
 			setupKeepalive();
 			return;
 		}
@@ -233,7 +209,6 @@ export const terminalPtyWebsocket = new Elysia({
 		});
 
 		if (!terminal) {
-			console.log(`[WS] Terminal not found in DB: ${terminalId}`);
 			ws.send({
 				message: "Terminal not found",
 				type: TerminalPtyMessageServerType.Error,
@@ -242,7 +217,6 @@ export const terminalPtyWebsocket = new Elysia({
 			return;
 		}
 
-		console.log(`[WS] Terminal found, project path: ${terminal.project.path}`);
 		const instance = terminalPtyService.instanceSpawn(terminalId, terminal.project.path);
 
 		const unsubscribe = instance.onData((message) => {
@@ -250,7 +224,7 @@ export const terminalPtyWebsocket = new Elysia({
 		});
 
 		unsubscribeMap.set(ws.id, unsubscribe);
-		setupProcessPolling(instance);
+		setupForegroundProcessSubscription(instance);
 		setupKeepalive();
 	},
 	params: z.object({

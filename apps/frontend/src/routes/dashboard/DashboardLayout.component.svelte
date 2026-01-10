@@ -68,10 +68,11 @@ function localhostUrlConvert(inputUrl: string): LocalhostUrlResult {
 
 interface Props {
 	layoutId?: LayoutId | null;
+	projectId?: ProjectId | null;
 	projectPath?: string;
 }
 
-let { layoutId = null, projectPath }: Props = $props();
+let { layoutId = null, projectId = null, projectPath }: Props = $props();
 
 let data = $state<LayoutData>(createDefaultLayout());
 let activeItemId = $state<string | null>(null);
@@ -79,7 +80,6 @@ let isLoading = $state(false);
 let error = $state<string | null>(null);
 let isReconnecting = $state(false);
 let isDirty = $state(false);
-let currentProjectId = $state<ProjectId | null>(null);
 let terminalCounter = $state(0);
 
 export function getActiveItemId(): string | null {
@@ -399,7 +399,21 @@ $effect(() => {
 		previousLayoutId = layoutId;
 	}
 
-	if (!layoutId) return;
+	if (!layoutId) {
+		if (currentEventSource) {
+			currentEventSource.close();
+			currentEventSource = null;
+		}
+		if (reconnectTimeout) {
+			clearTimeout(reconnectTimeout);
+			reconnectTimeout = null;
+		}
+		data = createDefaultLayout();
+		activeItemId = null;
+		isDirty = false;
+		isLoading = false;
+		return;
+	}
 
 	if (currentEventSource) {
 		currentEventSource.close();
@@ -706,12 +720,11 @@ function cleanupEmptyContainers() {
 }
 
 async function ensureProject(): Promise<ProjectId | null> {
-	if (currentProjectId) return currentProjectId;
+	if (projectId) return projectId;
 
 	const projectsResponse = await api.projects.get();
 	if (!projectsResponse.error && projectsResponse.data && projectsResponse.data.length > 0) {
-		currentProjectId = projectsResponse.data[0].id as ProjectId;
-		return currentProjectId;
+		return projectsResponse.data[0].id as ProjectId;
 	}
 
 	const createResponse = await api.projects.post({
@@ -720,8 +733,7 @@ async function ensureProject(): Promise<ProjectId | null> {
 	});
 
 	if (!createResponse.error && createResponse.data) {
-		currentProjectId = createResponse.data.id as ProjectId;
-		return currentProjectId;
+		return createResponse.data.id as ProjectId;
 	}
 
 	return null;

@@ -239,6 +239,6 @@
 	"vcs": {
 		"clientKind": "git",
 		"enabled": true,
-		"useIgnoreFile": false
+		"useIgnoreFile": true
 	}
 }
