@@ -12,6 +12,7 @@ export default defineConfig({
 	],
 	server: {
 		allowedHosts: true,
+		host: "0.0.0.0",
 		port: Number(process.env.PUBLIC_PORT) || 4035,
 	},
 	test: {

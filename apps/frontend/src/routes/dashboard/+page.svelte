@@ -3,6 +3,7 @@
 import { browser } from "$app/environment";
 import type { LayoutId } from "@claude-manager/common/src/layout/layout.id";
 import type { ProjectId } from "@claude-manager/common/src/project/project.id";
+import { commandsDefaultRegister } from "$lib/command/commands.default";
 import QuickOpen from "$lib/quickOpen/QuickOpen.component.svelte";
 import { QuickOpenMode } from "$lib/quickOpen/quickOpen.lib";
 import { DEFAULT_SIDEBAR_WIDTH, tabStateLoad, tabStateSave } from "$lib/tabState/tabState.service.svelte";
@@ -45,12 +46,22 @@ let isResizing = $state(false);
 
 $effect(() => {
 	function handleGlobalKeyDown(event: KeyboardEvent) {
-		if ((event.ctrlKey || event.metaKey) && event.key === "p") {
+		if (event.key === "F1") {
 			event.preventDefault();
 			quickOpenInitialMode = QuickOpenMode.File;
 			showQuickOpen = true;
 		}
-		if ((event.ctrlKey || event.metaKey) && event.key === "g") {
+		if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === "p") {
+			event.preventDefault();
+			quickOpenInitialMode = QuickOpenMode.File;
+			showQuickOpen = true;
+		}
+		if ((event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === "p") {
+			event.preventDefault();
+			quickOpenInitialMode = QuickOpenMode.File;
+			showQuickOpen = true;
+		}
+		if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "g") {
 			event.preventDefault();
 			quickOpenInitialMode = QuickOpenMode.Line;
 			showQuickOpen = true;
@@ -59,6 +70,23 @@ $effect(() => {
 
 	window.addEventListener("keydown", handleGlobalKeyDown);
 	return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+});
+
+$effect(() => {
+	const unregister = commandsDefaultRegister({
+		findInFiles: () => {
+			// TODO: focus search panel
+		},
+		goToLine: () => {
+			quickOpenInitialMode = QuickOpenMode.Line;
+			showQuickOpen = true;
+		},
+		toggleSidebar: () => {
+			isSidebarCollapsed = !isSidebarCollapsed;
+		},
+	});
+
+	return unregister;
 });
 
 const MIN_SIDEBAR_WIDTH = 200;
@@ -111,6 +139,7 @@ let sidebarRef:
 let layoutRef:
 	| {
 			openFile: (filePath: string, openToSide?: boolean) => void;
+			openDiff: (filePath: string, repoPath: string, staged: boolean) => void;
 			goToLine: (lineNumber: number) => void;
 			getActiveItemId: () => string | null;
 	  }
@@ -182,6 +211,10 @@ async function handleLayoutDelete() {
 function handleFileOpen(filePath: string, openToSide?: boolean) {
 	layoutRef?.openFile(filePath, openToSide);
 }
+
+function handleDiffOpen(filePath: string, repoPath: string, staged: boolean) {
+	layoutRef?.openDiff(filePath, repoPath, staged);
+}
 </script>
 
 <svelte:head>
@@ -214,6 +247,7 @@ function handleFileOpen(filePath: string, openToSide?: boolean) {
 						onLayoutAddClick={handleLayoutAddClick}
 						onLayoutSettingsClick={handleLayoutSettingsClick}
 						onFileOpen={handleFileOpen}
+						onDiffOpen={handleDiffOpen}
 					/>
 				</div>
 			</div>

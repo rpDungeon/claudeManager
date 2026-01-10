@@ -85,6 +85,8 @@ export const terminalPtyWebsocket = new Elysia({
 	body: terminalPtyMessageClientSchema,
 
 	close(ws) {
+		const { terminalId } = ws.data.params;
+
 		const unsubscribe = unsubscribeMap.get(ws.id);
 		if (unsubscribe) {
 			unsubscribe();
@@ -103,6 +105,9 @@ export const terminalPtyWebsocket = new Elysia({
 			clearInterval(keepalive.interval);
 			keepaliveMap.delete(ws.id);
 		}
+
+		inputBufferMap.delete(terminalId);
+		escapeStateMap.delete(terminalId);
 	},
 
 	message(ws, message) {

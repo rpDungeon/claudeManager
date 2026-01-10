@@ -21,6 +21,7 @@ interface Props {
 	draggable?: boolean;
 	isDropTarget?: boolean;
 	onclick?: (event: MouseEvent) => void;
+	onStatusClick?: (event: MouseEvent) => void;
 	onDragStart?: (itemId: string, event: DragEvent) => void;
 	onDragEnd?: (itemId: string, event: DragEvent) => void;
 	onDrop?: (droppedItemId: string, targetItemId: string, event: DragEvent) => void;
@@ -35,10 +36,18 @@ let {
 	draggable = false,
 	isDropTarget = false,
 	onclick,
+	onStatusClick,
 	onDragStart,
 	onDragEnd,
 	onDrop,
 }: Props = $props();
+
+function handleStatusClick(event: MouseEvent) {
+	if (onStatusClick) {
+		event.stopPropagation();
+		onStatusClick(event);
+	}
+}
 
 let isDragging = $state(false);
 let isDraggedOver = $state(false);
@@ -113,7 +122,17 @@ function handleDrop(event: DragEvent) {
 	ondragleave={handleDragLeave}
 	ondrop={handleDrop}
 >
-	<IndicatorDot color={statusColor} glow pulse={isActive} />
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<span
+		class="flex items-center justify-center p-1 -m-1 rounded transition-colors"
+		class:hover:bg-bg-elevated={onStatusClick}
+		class:cursor-pointer={onStatusClick}
+		onclick={handleStatusClick}
+		title={onStatusClick ? "Click to reconnect" : undefined}
+	>
+		<IndicatorDot color={statusColor} glow pulse={isActive} />
+	</span>
 	<span class="font-normal text-text-tertiary">
 		{#if titleIsSnippet}
 			{@render (title as Snippet)()}

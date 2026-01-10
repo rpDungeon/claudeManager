@@ -1,6 +1,6 @@
 import { EditorLspLanguageId } from "@claude-manager/common/src/editor/lsp.types";
 import type { Transport } from "@codemirror/lsp-client";
-import { PUBLIC_API_URL } from "$env/static/public";
+import { backendHost } from "$lib/api/api.client";
 
 type LspSessionConfig = {
 	rootUri: string;
@@ -12,7 +12,7 @@ export function editorLspTransportCreate(config: LspSessionConfig): Promise<Tran
 	const handlers: ((value: string) => void)[] = [];
 
 	const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-	const apiHost = PUBLIC_API_URL ? new URL(PUBLIC_API_URL).host : window.location.host;
+	const apiHost = backendHost || window.location.host;
 	const token = localStorage.getItem("auth_token");
 	const tokenQuery = token ? `?token=${encodeURIComponent(token)}` : "";
 	const wsUrl = `${wsProtocol}//${apiHost}/ws/lsp/${config.sessionId}${tokenQuery}`;

@@ -4,6 +4,6 @@ commonEnvVerify();
 
 import { api } from "./api";
 
-api.listen(Number(Bun.env.PORT), () => {
-	console.log(`Server running at http://${Bun.env.HOST}:${Bun.env.PORT}`);
+api.listen(Number(Bun.env.BACKEND_PORT), () => {
+	console.log(`Server running at http://${Bun.env.HOST}:${Bun.env.BACKEND_PORT}`);
 });

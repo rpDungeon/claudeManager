@@ -232,6 +232,8 @@ class PtyService {
 			}
 		}
 
+		console.log(`[PTY] Spawning terminal ${terminalId} with cwd: ${cwd}, isReattach: ${isReattach}`);
+
 		const process = spawn(
 			"dtach",
 			[
@@ -240,6 +242,8 @@ class PtyService {
 				"-r",
 				"winch",
 				"/bin/bash",
+				"-c",
+				`cd ${JSON.stringify(cwd)} && exec /bin/bash`,
 			],
 			{
 				cols,

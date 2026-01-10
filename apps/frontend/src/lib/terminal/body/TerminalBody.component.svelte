@@ -66,6 +66,8 @@ $effect(() => {
 			transparent 2px,
 			rgba(0, 255, 65, 0.03) 3px
 		);
+		will-change: transform;
+		transform: translateZ(0);
 	}
 
 	.xterm-container :global(.xterm) {

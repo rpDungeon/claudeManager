@@ -13,7 +13,8 @@ import StatusBarItem from "$lib/statusBar/_StatusBarItem.svelte";
 import StatusBarSeparator from "$lib/statusBar/_StatusBarSeparator.svelte";
 import { IndicatorDotColor } from "$lib/common/indicatorDot.lib";
 import { api } from "$lib/api/api.client";
-import { Settings } from "lucide-svelte";
+import { Settings, Columns2, AlignJustify } from "lucide-svelte";
+import { diffSettings, DiffViewMode } from "$lib/git/diffSettings.svelte";
 import GeneralSettingsModal from "./GeneralSettingsModal.component.svelte";
 
 let currentTime = $state(new Date().toLocaleTimeString());
@@ -113,6 +114,21 @@ const connectionIndicator = $derived(isConnected ? IndicatorDotColor.Green : Ind
 		<StatusBarItem indicator={memIndicator}>MEM {memFormatted}%</StatusBarItem>
 	{/snippet}
 	{#snippet right()}
+		<button
+			type="button"
+			onclick={() => diffSettings.toggle()}
+			class="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-text-tertiary hover:text-text-secondary hover:bg-bg-elevated transition-colors"
+			title={diffSettings.mode === DiffViewMode.Inline ? "Switch to split diff" : "Switch to inline diff"}
+		>
+			{#if diffSettings.mode === DiffViewMode.Inline}
+				<AlignJustify class="size-3" />
+				<span>Inline</span>
+			{:else}
+				<Columns2 class="size-3" />
+				<span>Split</span>
+			{/if}
+		</button>
+		<StatusBarSeparator />
 		<StatusBarItem>{currentTime}</StatusBarItem>
 		<button
 			type="button"

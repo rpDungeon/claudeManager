@@ -14,7 +14,6 @@ import { layoutRoutes } from "./layout/layout.routes";
 import { layoutSse } from "./layout/layout.sse";
 import { projectRoutes } from "./project/project.routes";
 import { proxyRoutes } from "./proxy/proxy.routes";
-import { searchRoutes } from "./search/search.routes";
 import { systemRoutes } from "./system/system.routes";
 import { systemWebsocket } from "./system/system.websocket";
 import { terminalInputlogWebsocket } from "./terminal/inputlog/inputlog.websocket";
@@ -52,7 +51,6 @@ export const api = new Elysia()
 	.use(layoutSse)
 	.use(projectRoutes)
 	.use(proxyRoutes)
-	.use(searchRoutes)
 	.use(claudeSessionRoutes)
 	.use(systemRoutes)
 	.use(systemWebsocket)

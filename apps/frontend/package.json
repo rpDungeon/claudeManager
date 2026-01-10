@@ -73,14 +73,14 @@
 	"name": "@claude-manager/frontend",
 	"private": true,
 	"scripts": {
-		"build": "bun --env-file=../../.env vite build",
+		"build": "../../scripts/with-clean-env.sh bun --env-file=../../.env vite build",
 		"build-storybook": "storybook build",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"dev": "bun --env-file=../../.env vite dev --host",
+		"dev": "../../scripts/with-clean-env.sh bun --env-file=../../.env vite dev --host",
 		"prepare": "svelte-kit sync || echo ''",
-		"preview": "bun --env-file=../../.env vite preview",
-		"storybook": "storybook dev -p ${STORYBOOK_PORT:-4039}",
+		"preview": "../../scripts/with-clean-env.sh bun --env-file=../../.env vite preview",
+		"storybook": "../../scripts/with-clean-env.sh bun --env-file=../../.env storybook dev -p $STORYBOOK_PORT",
 		"test": "npm run test:unit -- --run && npm run test:e2e",
 		"test:e2e": "playwright test",
 		"test:unit": "vitest"

@@ -5,7 +5,7 @@ import { transcriptionEnvs } from "../transcription/transcription.env";
 
 const commonEnvs = [
 	"HOST",
-	"PORT",
+	"BACKEND_PORT",
 ] as const;
 
 const allEnvs = [

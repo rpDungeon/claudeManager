@@ -40,6 +40,7 @@ interface Props {
 	onLayoutAddClick?: () => void;
 	onLayoutSettingsClick?: (layoutId: LayoutId, name: string) => void;
 	onFileOpen?: (filePath: string, openToSide?: boolean) => void;
+	onDiffOpen?: (filePath: string, repoPath: string, staged: boolean) => void;
 }
 
 let {
@@ -52,6 +53,7 @@ let {
 	onLayoutAddClick,
 	onLayoutSettingsClick,
 	onFileOpen,
+	onDiffOpen,
 }: Props = $props();
 
 export async function refresh() {
@@ -221,22 +223,31 @@ onMount(() => {
 		<button
 			type="button"
 			onclick={() => (activeTab = "files")}
-			class="flex-1 px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider transition-colors
+			class="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider transition-colors
 				{activeTab === 'files'
 				? 'bg-bg-elevated border-b-2 border-terminal-green text-text-primary -mb-px'
 				: 'text-text-tertiary hover:text-text-secondary'}"
+			title="Files"
 		>
-			Files
+			<svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+				<path d="M14 2v4a2 2 0 0 0 2 2h4" />
+			</svg>
 		</button>
 		<button
 			type="button"
 			onclick={() => (activeTab = "git")}
-			class="flex-1 px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider transition-colors
+			class="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider transition-colors
 				{activeTab === 'git'
 				? 'bg-bg-elevated border-b-2 border-terminal-green text-text-primary -mb-px'
 				: 'text-text-tertiary hover:text-text-secondary'}"
+			title="Git"
 		>
-			Git
+			<svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<circle cx="12" cy="12" r="3" />
+				<path d="M12 3v6" />
+				<path d="M12 15v6" />
+			</svg>
 		</button>
 	</div>
 
@@ -248,7 +259,7 @@ onMount(() => {
 		{:else if activeTab === "files"}
 			<DashboardFileExplorer rootPath={selectedProject.path} {onFileOpen} />
 		{:else}
-			<DashboardGitPanel rootPath={selectedProject.path} />
+			<DashboardGitPanel rootPath={selectedProject.path} {onDiffOpen} />
 		{/if}
 	</div>
 </div>

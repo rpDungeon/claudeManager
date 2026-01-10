@@ -76,6 +76,7 @@ let {
 }: Props = $props();
 
 let resizeObserver: ResizeObserver | undefined;
+let resizeTimeout: ReturnType<typeof setTimeout> | undefined;
 let mountCount = 0;
 let voiceRecorderState = $state(VoiceRecorderState.Idle);
 let isSidebarOpen = $state(false);
@@ -192,9 +193,12 @@ function handleBodyMount(container: HTMLDivElement) {
 
 	if (!resizeObserver) {
 		resizeObserver = new ResizeObserver(() => {
-			if (terminalId && terminalInstanceGet(terminalId)?.websocket) {
-				terminalInstanceFit(terminalId);
-			}
+			clearTimeout(resizeTimeout);
+			resizeTimeout = setTimeout(() => {
+				if (terminalId && terminalInstanceGet(terminalId)?.websocket) {
+					terminalInstanceFit(terminalId);
+				}
+			}, 16);
 		});
 		resizeObserver.observe(container);
 	}
