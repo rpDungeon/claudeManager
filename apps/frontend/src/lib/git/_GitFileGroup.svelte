@@ -9,7 +9,7 @@ interface Props {
 	area: GitFileArea;
 	onStage?: (filePath: string) => void;
 	onUnstage?: (filePath: string) => void;
-	onFileClick?: (filePath: string) => void;
+	onFileClick?: (filePath: string, area: GitFileArea) => void;
 }
 
 let { title, files, area, onStage, onUnstage, onFileClick }: Props = $props();
@@ -56,7 +56,7 @@ function fileNameGet(path: string): string {
 					>
 						<button
 							type="button"
-							onclick={() => onFileClick?.(file.path)}
+							onclick={() => onFileClick?.(file.path, area)}
 							class="flex flex-1 items-center gap-1.5 min-w-0"
 							title={file.path}
 						>

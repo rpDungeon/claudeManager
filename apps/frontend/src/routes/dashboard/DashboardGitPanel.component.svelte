@@ -9,14 +9,16 @@ usage: Place in dashboard sidebar to manage git changes
 <script lang="ts">
 import { onMount } from "svelte";
 import GitPanel from "$lib/git/GitPanel.component.svelte";
+import { GitFileArea } from "$lib/git/gitPanel.lib";
 import { gitStore } from "$lib/git/gitStore.svelte";
 import { api } from "$lib/api/api.client";
 
 interface Props {
 	rootPath?: string;
+	onDiffOpen?: (filePath: string, repoPath: string, staged: boolean) => void;
 }
 
-let { rootPath = "/home/claude/dev/+vm/+ai/claudeManager" }: Props = $props();
+let { rootPath = "/home/claude/dev/+vm/+ai/claudeManager", onDiffOpen }: Props = $props();
 
 const normalizedRepoPath = $derived(rootPath.endsWith("/") ? rootPath.slice(0, -1) : rootPath);
 
@@ -65,8 +67,13 @@ async function handleCommit(message: string) {
 	}
 }
 
-function handleFileClick(filePath: string) {
-	console.log("[GitPanel] File clicked:", filePath);
+function handleFileClick(filePath: string, area: GitFileArea) {
+	if (area === GitFileArea.Untracked) {
+		return;
+	}
+
+	const staged = area === GitFileArea.Staged;
+	onDiffOpen?.(filePath, normalizedRepoPath, staged);
 }
 </script>
 

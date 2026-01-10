@@ -21,7 +21,7 @@ interface Props {
 	onStage?: (filePath: string) => void;
 	onUnstage?: (filePath: string) => void;
 	onCommit?: (message: string) => void;
-	onFileClick?: (filePath: string) => void;
+	onFileClick?: (filePath: string, area: GitFileArea) => void;
 }
 
 let {

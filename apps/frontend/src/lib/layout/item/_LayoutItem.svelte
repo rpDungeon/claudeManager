@@ -9,6 +9,7 @@ usage: Pass a LayoutItem and it will render the appropriate specialized componen
 -->
 <script lang="ts">
 import type { LayoutItem } from "@claude-manager/common/src/layout/item/item.types";
+import LayoutItemDiff from "./LayoutItemDiff.component.svelte";
 import LayoutItemEditor from "./LayoutItemEditor.component.svelte";
 import LayoutItemTerminal from "./LayoutItemTerminal.component.svelte";
 import LayoutItemIframe from "./LayoutItemIframe.component.svelte";
@@ -51,6 +52,8 @@ let {
 	<LayoutItemMarkdown {item} {isActive} {draggable} {isDropTarget} {onclick} {onDragStart} {onDragEnd} {onDrop} />
 {:else if item.type === "editor"}
 	<LayoutItemEditor {item} {projectPath} {isActive} {draggable} {isDropTarget} {onclick} {onDragStart} {onDragEnd} {onDrop} />
+{:else if item.type === "diff"}
+	<LayoutItemDiff {item} {isActive} {draggable} {isDropTarget} {onclick} {onDragStart} {onDragEnd} {onDrop} />
 {:else}
 	<LayoutItemPlaceholder {item} {isActive} {draggable} {isDropTarget} {onclick} {onDragStart} {onDragEnd} {onDrop} />
 {/if}
