@@ -11,12 +11,15 @@ import { untrack } from "svelte";
 
 interface Props {
 	isActive?: boolean;
+	borderColor?: string | null;
 	onclick?: (event: MouseEvent) => void;
 	oncontextmenu?: (event: MouseEvent) => void;
 	onMount?: (container: HTMLDivElement) => void;
 }
 
-let { isActive = false, onclick, oncontextmenu, onMount: onMountCallback }: Props = $props();
+let { isActive = false, borderColor = null, onclick, oncontextmenu, onMount: onMountCallback }: Props = $props();
+
+const hasBorderColor = $derived(Boolean(borderColor));
 
 function handleContextMenu(event: MouseEvent) {
 	event.preventDefault();
@@ -27,19 +30,21 @@ let containerRef: HTMLDivElement | undefined = $state();
 
 $effect(() => {
 	if (containerRef) {
-		untrack(() => onMountCallback?.(containerRef));
+		untrack(() => onMountCallback?.(containerRef!));
 	}
 });
 </script>
 
 <div
 	class="terminal-body relative flex flex-1 cursor-pointer flex-col overflow-hidden bg-bg-void transition-shadow duration-[120ms] ease-out"
-	class:ring-2={isActive}
-	class:ring-inset={isActive}
-	class:ring-terminal-green={isActive}
-	class:hover:ring-1={!isActive}
-	class:hover:ring-inset={!isActive}
-	class:hover:ring-border-active={!isActive}
+	class:ring-2={isActive || hasBorderColor}
+	class:ring-inset={isActive || hasBorderColor}
+	class:ring-terminal-green={isActive && !hasBorderColor}
+	class:hover:ring-1={!isActive && !hasBorderColor}
+	class:hover:ring-inset={!isActive && !hasBorderColor}
+	class:hover:ring-border-active={!isActive && !hasBorderColor}
+	style:--ring-color={borderColor ?? undefined}
+	style:--tw-ring-color={hasBorderColor ? "var(--ring-color)" : undefined}
 	role="button"
 	tabindex="0"
 	onclick={(e) => onclick?.(e)}

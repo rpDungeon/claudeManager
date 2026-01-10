@@ -12,6 +12,7 @@ export const terminalSchema = sqliteTable("terminals", {
 			onDelete: "set null",
 		})
 		.$type<ClaudeSessionId | null>(),
+	color: text("color"),
 	createdAt: integer("created_at", {
 		mode: "timestamp",
 	})

@@ -31,6 +31,7 @@ export const terminalCreate = z.object({
 
 export const terminalPatch = z.object({
 	claudeSessionId: claudeSessionIdSchema.optional(),
+	color: z.string().nullable().optional(),
 	layoutConfig: z.string().optional(),
 	name: z.string().min(1).optional(),
 });

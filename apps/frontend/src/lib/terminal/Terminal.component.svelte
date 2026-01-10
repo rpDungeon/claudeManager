@@ -84,6 +84,22 @@ let audioChunks: Blob[] = [];
 
 let contextMenuPosition = $state<ContextMenuPosition | null>(null);
 let hasSelection = $state(false);
+let borderColor = $state<string | null>(null);
+
+$effect(() => {
+	if (terminalId) {
+		api
+			.terminals({
+				id: terminalId,
+			})
+			.get()
+			.then(({ data }) => {
+				if (data) {
+					borderColor = data.color ?? null;
+				}
+			});
+	}
+});
 
 const contextMenuItems = $derived.by((): ContextMenuItem<TerminalContextMenuAction>[] => {
 	const items: ContextMenuItem<TerminalContextMenuAction>[] = [];
@@ -249,6 +265,10 @@ function handleContextMenuClose() {
 	contextMenuPosition = null;
 }
 
+function handleColorChange(color: string | null) {
+	borderColor = color;
+}
+
 let audioStream: MediaStream | null = null;
 let recordingTerminalId: TerminalId | undefined;
 let shouldAutoSendOnStop = false;
@@ -400,6 +420,7 @@ onDestroy(() => {
 	/>
 	<TerminalBody
 		{isActive}
+		{borderColor}
 		onclick={handleBodyClick}
 		oncontextmenu={handleContextMenu}
 		onMount={handleBodyMount}
@@ -421,6 +442,7 @@ onDestroy(() => {
 			{terminalId}
 			isOpen={isSidebarOpen}
 			onclose={() => (isSidebarOpen = false)}
+			onColorChange={handleColorChange}
 		/>
 
 		<div class="absolute bottom-3 right-3 z-10">

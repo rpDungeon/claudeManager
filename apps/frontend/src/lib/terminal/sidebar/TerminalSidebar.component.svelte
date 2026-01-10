@@ -10,7 +10,7 @@ usage: Display terminal activity logs and other info in a sliding panel
 import type { TerminalId } from "@claude-manager/common/src/terminal/terminal.types";
 import type { TerminalInputLogEntry } from "@claude-manager/common/src/terminal/terminalInputLog.ws.types";
 import { onDestroy } from "svelte";
-import { TerminalSidebarTab } from "./terminalSidebar.lib";
+import { TerminalSidebarTab, TERMINAL_COLOR_OPTIONS, type TerminalColor } from "./terminalSidebar.lib";
 import { api } from "$lib/api/api.client";
 
 type EdenWebSocket = ReturnType<ReturnType<typeof api.ws.terminal>["input-logs"]["subscribe"]>;
@@ -19,14 +19,17 @@ interface Props {
 	terminalId: TerminalId;
 	isOpen: boolean;
 	onclose: () => void;
+	onColorChange?: (color: TerminalColor) => void;
 }
 
-let { terminalId, isOpen, onclose }: Props = $props();
+let { terminalId, isOpen, onclose, onColorChange }: Props = $props();
 
 let activeTab = $state(TerminalSidebarTab.Activity);
 let inputLogs = $state<TerminalInputLogEntry[]>([]);
 let isLoading = $state(true);
 let websocket: EdenWebSocket | null = null;
+let currentColor = $state<TerminalColor>(null);
+let isLoadingSettings = $state(false);
 
 function connectWebSocket() {
 	if (websocket || !terminalId) return;
@@ -73,7 +76,14 @@ function disconnectWebSocket() {
 
 $effect(() => {
 	if (isOpen && terminalId) {
-		connectWebSocket();
+		if (activeTab === TerminalSidebarTab.Activity) {
+			connectWebSocket();
+		} else {
+			disconnectWebSocket();
+		}
+		if (activeTab === TerminalSidebarTab.Settings) {
+			loadTerminalSettings();
+		}
 	} else {
 		disconnectWebSocket();
 	}
@@ -102,6 +112,39 @@ function formatTimestamp(timestamp: Date) {
 function formatInput(input: string): string {
 	return input;
 }
+
+async function loadTerminalSettings() {
+	if (!terminalId) return;
+
+	isLoadingSettings = true;
+	try {
+		const { data, error } = await api
+			.terminals({
+				id: terminalId,
+			})
+			.get();
+		if (!error && data) {
+			currentColor = (data.color as TerminalColor) ?? null;
+		}
+	} finally {
+		isLoadingSettings = false;
+	}
+}
+
+async function handleColorSelect(color: TerminalColor) {
+	if (!terminalId) return;
+
+	currentColor = color;
+	onColorChange?.(color);
+
+	await api
+		.terminals({
+			id: terminalId,
+		})
+		.patch({
+			color,
+		});
+}
 </script>
 
 <div
@@ -129,6 +172,16 @@ function formatInput(input: string): string {
 					onclick={() => (activeTab = TerminalSidebarTab.Activity)}
 				>
 					Activity
+				</button>
+				<button
+					type="button"
+					class="flex-1 h-full px-3 text-[10px] font-medium transition-colors border-l border-border-default"
+					class:text-terminal-green={activeTab === TerminalSidebarTab.Settings}
+					class:bg-bg-elevated={activeTab === TerminalSidebarTab.Settings}
+					class:text-text-tertiary={activeTab !== TerminalSidebarTab.Settings}
+					onclick={() => (activeTab = TerminalSidebarTab.Settings)}
+				>
+					Settings
 				</button>
 				<button
 					type="button"
@@ -164,6 +217,40 @@ function formatInput(input: string): string {
 									</div>
 								</div>
 							{/each}
+						</div>
+					{/if}
+				{:else if activeTab === TerminalSidebarTab.Settings}
+					{#if isLoadingSettings}
+						<div class="flex items-center justify-center p-4 text-[10px] text-text-tertiary">
+							Loading...
+						</div>
+					{:else}
+						<div class="p-3">
+							<div class="mb-2 text-[10px] text-text-secondary font-medium">
+								Border Color
+							</div>
+							<div class="flex flex-wrap gap-2">
+								{#each TERMINAL_COLOR_OPTIONS as color}
+									<button
+										type="button"
+										class="size-6 rounded border transition-all"
+										class:ring-2={currentColor === color}
+										class:ring-terminal-green={currentColor === color}
+										class:border-border-active={currentColor !== color}
+										class:border-transparent={currentColor === color}
+										style:background-color={color ?? "transparent"}
+										onclick={() => handleColorSelect(color)}
+										title={color ?? "None"}
+									>
+										{#if color === null}
+											<span class="flex items-center justify-center text-[8px] text-text-tertiary">✕</span>
+										{/if}
+									</button>
+								{/each}
+							</div>
+							<p class="mt-2 text-[9px] text-text-tertiary">
+								Set a persistent border color for this terminal
+							</p>
 						</div>
 					{/if}
 				{/if}
