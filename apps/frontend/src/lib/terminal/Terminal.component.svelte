@@ -24,9 +24,9 @@ import {
 	terminalInstanceGetSelection,
 	terminalInstanceMount,
 	terminalInstancePaste,
-	terminalInstanceReset,
 	terminalInstanceSelectAll,
 	terminalWebsocketConnect,
+	terminalWebsocketForceReconnect,
 } from "./terminal.service.svelte";
 import { TerminalConnectionStatus, TerminalContextMenuAction } from "./terminal.lib";
 import { IndicatorDotColor } from "$lib/common/indicatorDot.lib";
@@ -163,8 +163,8 @@ function handleBodyMount(container: HTMLDivElement) {
 	const inst = terminalInstanceGet(terminalId);
 
 	if (inst && inst.container !== container) {
-		console.log("[Terminal] Container changed, resetting instance");
-		terminalInstanceReset(terminalId, container);
+		console.log("[Terminal] Container changed, remounting (keeping connection)");
+		terminalInstanceMount(terminalId, container);
 	} else if (!inst) {
 		console.log("[Terminal] No instance yet, creating...");
 		terminalInstanceCreate(terminalId);
@@ -198,6 +198,12 @@ function handleBodyClick(event: MouseEvent) {
 	onBodyClick?.(event);
 	if (terminalId) {
 		terminalInstanceFocus(terminalId);
+	}
+}
+
+function handleStatusClick(_event: MouseEvent) {
+	if (terminalId) {
+		terminalWebsocketForceReconnect(terminalId);
 	}
 }
 
@@ -387,6 +393,7 @@ onDestroy(() => {
 		{draggable}
 		{isDropTarget}
 		onclick={handleHeaderClick}
+		onStatusClick={terminalId ? handleStatusClick : undefined}
 		{onDragStart}
 		{onDragEnd}
 		{onDrop}

@@ -306,6 +306,8 @@ function scheduleReconnect(terminalId: TerminalId): void {
 	const instance = instances.get(terminalId);
 	if (!instance) return;
 
+	if (instance.websocket) return;
+
 	const state = getReconnectState(terminalId);
 	if (state.intentionalClose || state.timeout) return;
 
@@ -367,15 +369,25 @@ export function terminalWebsocketConnect(terminalId: TerminalId): void {
 	});
 
 	ws.on("close", () => {
-		instance.connectionStatus = TerminalConnectionStatus.Disconnected;
-		instance.websocket = null;
+		const currentInstance = instances.get(terminalId);
+		if (!currentInstance || currentInstance.websocket !== ws) {
+			return;
+		}
+
+		currentInstance.connectionStatus = TerminalConnectionStatus.Disconnected;
+		currentInstance.websocket = null;
 		scheduleReconnect(terminalId);
 	});
 
 	ws.on("error", () => {
-		instance.connectionStatus = TerminalConnectionStatus.Error;
-		instance.lastError = "WebSocket connection error";
-		instance.websocket = null;
+		const currentInstance = instances.get(terminalId);
+		if (!currentInstance || currentInstance.websocket !== ws) {
+			return;
+		}
+
+		currentInstance.connectionStatus = TerminalConnectionStatus.Error;
+		currentInstance.lastError = "WebSocket connection error";
+		currentInstance.websocket = null;
 	});
 
 	instance.websocket = ws;
@@ -403,6 +415,30 @@ export function terminalWebsocketClose(terminalId: TerminalId): void {
 
 	instance.websocket.close();
 	instance.websocket = null;
+}
+
+export function terminalWebsocketForceReconnect(terminalId: TerminalId): void {
+	const instance = instances.get(terminalId);
+	if (!instance) return;
+
+	const state = getReconnectState(terminalId);
+	state.intentionalClose = true;
+
+	if (state.timeout) {
+		clearTimeout(state.timeout);
+		state.timeout = null;
+	}
+
+	if (instance.websocket) {
+		instance.websocket.close();
+		instance.websocket = null;
+	}
+
+	state.attempt = 0;
+	state.intentionalClose = false;
+
+	instance.terminal.reset();
+	terminalWebsocketConnect(terminalId);
 }
 
 function terminalDispatchServerMessage(terminalId: TerminalId, message: ServerMessage): void {
