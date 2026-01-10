@@ -19,7 +19,7 @@ interface Props {
 
 let { open = $bindable(false), onClose }: Props = $props();
 
-const MIN_FONT_SIZE = 8;
+const MIN_FONT_SIZE = 6;
 const MAX_FONT_SIZE = 24;
 
 let fontSize = $state(settings.terminalFontSize);
