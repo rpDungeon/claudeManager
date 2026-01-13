@@ -507,12 +507,13 @@ function handleItemReorder(containerId: string, fromItemId: string, toItemId: st
 		const fromIndex = tabsContainer.childIds.indexOf(fromItemId);
 		const toIndex = tabsContainer.childIds.indexOf(toItemId);
 
-		if (fromIndex !== -1 && toIndex !== -1) {
+		if (fromIndex !== -1 && toIndex !== -1 && fromIndex !== toIndex) {
 			const newChildIds = [
 				...tabsContainer.childIds,
 			];
 			newChildIds.splice(fromIndex, 1);
-			newChildIds.splice(toIndex, 0, fromItemId);
+			const insertIndex = fromIndex < toIndex ? toIndex - 1 : toIndex;
+			newChildIds.splice(insertIndex, 0, fromItemId);
 			tabsContainer.childIds = newChildIds;
 			data = {
 				...data,

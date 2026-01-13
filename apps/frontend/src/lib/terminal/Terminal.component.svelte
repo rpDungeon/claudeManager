@@ -171,6 +171,17 @@ const statusColor = $derived.by(() => {
 	}
 });
 
+$effect(() => {
+	if (isActive && terminalId) {
+		setTimeout(() => {
+			terminalInstanceFit(terminalId);
+			terminalInstanceFocus(terminalId);
+		}, 16);
+	}
+});
+
+let currentContainer: HTMLDivElement | undefined;
+
 function handleBodyMount(container: HTMLDivElement) {
 	mountCount++;
 	console.log("[Terminal] handleBodyMount:", terminalId, "count:", mountCount);
@@ -191,7 +202,8 @@ function handleBodyMount(container: HTMLDivElement) {
 		}
 	}
 
-	if (!resizeObserver) {
+	if (currentContainer !== container) {
+		resizeObserver?.disconnect();
 		resizeObserver = new ResizeObserver(() => {
 			clearTimeout(resizeTimeout);
 			resizeTimeout = setTimeout(() => {
@@ -201,6 +213,7 @@ function handleBodyMount(container: HTMLDivElement) {
 			}, 16);
 		});
 		resizeObserver.observe(container);
+		currentContainer = container;
 	}
 }
 
