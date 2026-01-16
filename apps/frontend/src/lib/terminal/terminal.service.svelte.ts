@@ -34,6 +34,7 @@ type TerminalInstance = {
 	onDataDisposable: {
 		dispose: () => void;
 	} | null;
+	scrollLock: boolean;
 	terminal: Terminal;
 	websocket: EdenWebSocket | null;
 };
@@ -84,6 +85,7 @@ export function terminalInstanceCreate(terminalId: TerminalId): TerminalInstance
 		foregroundProcess: null,
 		lastError: null,
 		onDataDisposable: null,
+		scrollLock: false,
 		terminal,
 		websocket: null,
 	});
@@ -441,14 +443,39 @@ export function terminalWebsocketForceReconnect(terminalId: TerminalId): void {
 	terminalWebsocketConnect(terminalId);
 }
 
+function terminalIsNearBottom(terminal: Terminal): boolean {
+	const buffer = terminal.buffer.active;
+	const scrollbackTop = buffer.baseY;
+	const viewportTop = buffer.viewportY;
+	return viewportTop >= scrollbackTop - 3;
+}
+
+export function terminalScrollLockToggle(terminalId: TerminalId): void {
+	const instance = instances.get(terminalId);
+	if (!instance) return;
+	instance.scrollLock = !instance.scrollLock;
+}
+
+export function terminalScrollLockGet(terminalId: TerminalId): boolean {
+	return instances.get(terminalId)?.scrollLock ?? false;
+}
+
 function terminalDispatchServerMessage(terminalId: TerminalId, message: ServerMessage): void {
 	const instance = instances.get(terminalId);
 	if (!instance) return;
 
 	switch (message.type) {
-		case "output":
-			instance.terminal.write(message.data);
+		case "output": {
+			const shouldPreserveScroll = instance.scrollLock || !terminalIsNearBottom(instance.terminal);
+			const scrollPos = instance.terminal.buffer.active.viewportY;
+
+			instance.terminal.write(message.data, () => {
+				if (shouldPreserveScroll) {
+					instance.terminal.scrollToLine(scrollPos);
+				}
+			});
 			break;
+		}
 
 		case "exit":
 			instance.exitCode = message.code;

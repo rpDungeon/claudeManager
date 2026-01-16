@@ -88,9 +88,12 @@ async function lspClientGet(rootUri: string, lspLanguageId: string): Promise<LSP
 
 	if (existing) {
 		existing.refCount++;
+		console.log(`[Editor] Reusing LSP client for ${lspLanguageId} (refCount: ${existing.refCount})`);
 		await existing.initializing;
 		return existing.client;
 	}
+
+	console.log(`[Editor] Creating NEW LSP client for ${lspLanguageId} at ${rootUri}`);
 
 	const sessionId = `lsp-${lspLanguageId}-${Date.now()}`;
 	const transport = await editorLspTransportCreate({
@@ -227,6 +230,8 @@ export async function editorLspConnect(editorId: EditorId, rootUri: string): Pro
 
 	const languageId = editorLanguageIdFromPath(instance.filePath);
 	const lspLanguageId = editorLanguageIdToLspLanguageId(languageId);
+
+	console.log(`[Editor] editorLspConnect called for ${instance.filePath}, rootUri=${rootUri}, language=${languageId}`);
 
 	if (!lspLanguageId) {
 		console.log(`[Editor] No LSP support for language: ${languageId}`);
