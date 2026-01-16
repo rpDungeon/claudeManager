@@ -48,7 +48,9 @@ class TranscriptionService {
 	}
 
 	async transcriptionFromBase64(audioBase64: string, language?: string): Promise<string> {
-		let prompt = "Transcribe this audio exactly as spoken.";
+		let prompt = `Transcribe this audio exactly as spoken.
+The speaker has a German accent speaking English. Interpret phonetically ambiguous words in context.
+Common topics: programming, software development, terminal commands, Claude AI, git, TypeScript, Svelte.`;
 		if (language) {
 			prompt += ` The audio is in ${language}.`;
 		}
