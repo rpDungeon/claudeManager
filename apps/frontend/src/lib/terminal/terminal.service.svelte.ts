@@ -441,14 +441,29 @@ export function terminalWebsocketForceReconnect(terminalId: TerminalId): void {
 	terminalWebsocketConnect(terminalId);
 }
 
+function terminalIsNearBottom(terminal: Terminal): boolean {
+	const buffer = terminal.buffer.active;
+	const scrollbackTop = buffer.baseY;
+	const viewportTop = buffer.viewportY;
+	return viewportTop >= scrollbackTop - 3;
+}
+
 function terminalDispatchServerMessage(terminalId: TerminalId, message: ServerMessage): void {
 	const instance = instances.get(terminalId);
 	if (!instance) return;
 
 	switch (message.type) {
-		case "output":
-			instance.terminal.write(message.data);
+		case "output": {
+			const wasAtBottom = terminalIsNearBottom(instance.terminal);
+			const scrollPos = instance.terminal.buffer.active.viewportY;
+
+			instance.terminal.write(message.data, () => {
+				if (!wasAtBottom) {
+					instance.terminal.scrollToLine(scrollPos);
+				}
+			});
 			break;
+		}
 
 		case "exit":
 			instance.exitCode = message.code;
