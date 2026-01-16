@@ -480,7 +480,7 @@ onDestroy(() => {
 
 		<button
 			type="button"
-			class="absolute bottom-0.5 right-0.5 z-10 size-2.5 rounded-tl opacity-40 hover:opacity-100 transition-opacity"
+			class="absolute bottom-0.5 right-0.5 z-10 size-1.5 rounded-tl opacity-40 hover:opacity-100 transition-opacity"
 			class:bg-terminal-amber={scrollLockEnabled}
 			class:bg-text-tertiary={!scrollLockEnabled}
 			onclick={handleScrollLockToggle}
