@@ -349,6 +349,16 @@ function connectSSE(targetLayoutId: LayoutId, _isInitial: boolean) {
 		const currentItemStillExists = activeItemId && data.items[activeItemId];
 		if (!currentItemStillExists) {
 			activeItemId = null;
+		} else if (activeItemId) {
+			for (const container of Object.values(data.desktop.containers)) {
+				if (container.type === "tabs") {
+					const tabsContainer = container as LayoutContainerTabs;
+					if (tabsContainer.childIds.includes(activeItemId)) {
+						tabsContainer.activeTabId = activeItemId;
+						break;
+					}
+				}
+			}
 		}
 
 		isLoading = false;
