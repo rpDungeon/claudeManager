@@ -20,17 +20,20 @@ const initialState = browser
 	: {
 			layoutId: null,
 			projectId: null,
+			sidebarCollapsed: false,
 			sidebarWidth: DEFAULT_SIDEBAR_WIDTH,
 		};
 let selectedProjectId = $state<ProjectId | null>(initialState.projectId);
 let selectedLayoutId = $state<LayoutId | null>(initialState.layoutId);
 let sidebarWidth = $state(initialState.sidebarWidth);
+let isSidebarCollapsed = $state(initialState.sidebarCollapsed);
 
 $effect(() => {
 	if (browser) {
 		tabStateSave({
 			layoutId: selectedLayoutId,
 			projectId: selectedProjectId,
+			sidebarCollapsed: isSidebarCollapsed,
 			sidebarWidth,
 		});
 	}
@@ -41,7 +44,6 @@ let showLayoutCreate = $state(false);
 let showLayoutSettings = $state(false);
 let showQuickOpen = $state(false);
 let quickOpenInitialMode = $state(QuickOpenMode.File);
-let isSidebarCollapsed = $state(false);
 let isResizing = $state(false);
 
 $effect(() => {

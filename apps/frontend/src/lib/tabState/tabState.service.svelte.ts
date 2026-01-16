@@ -8,6 +8,7 @@ interface TabState {
 	projectId: ProjectId | null;
 	layoutId: LayoutId | null;
 	sidebarWidth: number;
+	sidebarCollapsed: boolean;
 }
 
 const DEFAULT_SIDEBAR_WIDTH = 256;
@@ -15,6 +16,7 @@ const DEFAULT_SIDEBAR_WIDTH = 256;
 const DEFAULT_STATE: TabState = {
 	layoutId: null,
 	projectId: null,
+	sidebarCollapsed: false,
 	sidebarWidth: DEFAULT_SIDEBAR_WIDTH,
 };
 

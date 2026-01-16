@@ -298,20 +298,33 @@ function createDefaultLayout(): LayoutData {
 	};
 }
 
+let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+let isSaving = false;
+
 async function saveLayout() {
-	if (!(layoutId && isDirty)) return;
+	if (!layoutId) return;
 
-	const response = await api
-		.layouts({
-			id: layoutId,
-		})
-		.patch({
-			data,
-		});
-
-	if (!response.error) {
-		isDirty = false;
+	if (saveTimeout) {
+		clearTimeout(saveTimeout);
 	}
+
+	saveTimeout = setTimeout(async () => {
+		if (!isDirty || isSaving) return;
+
+		isSaving = true;
+		await api
+			.layouts({
+				id: layoutId,
+			})
+			.patch({
+				data,
+			});
+		isSaving = false;
+
+		if (isDirty) {
+			saveLayout();
+		}
+	}, 100);
 }
 
 let previousLayoutId: LayoutId | null = null;
@@ -369,7 +382,7 @@ function connectSSE(targetLayoutId: LayoutId, _isInitial: boolean) {
 	});
 
 	eventSource.addEventListener("update", (e: MessageEvent) => {
-		if (isDirty) {
+		if (isDirty || isSaving) {
 			isDirty = false;
 			return;
 		}
@@ -449,6 +462,10 @@ $effect(() => {
 		if (reconnectTimeout) {
 			clearTimeout(reconnectTimeout);
 			reconnectTimeout = null;
+		}
+		if (saveTimeout) {
+			clearTimeout(saveTimeout);
+			saveTimeout = null;
 		}
 	};
 });

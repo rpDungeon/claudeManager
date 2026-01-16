@@ -40,7 +40,6 @@ let {
 	filePath={item.filePath}
 	{projectPath}
 	enableLsp={!!projectPath}
-	title={item.label}
 	itemId={item.id}
 	{isActive}
 	{draggable}
