@@ -3,7 +3,7 @@ import type { Project } from "@claude-manager/common/src/project/project.types";
 import { SvelteMap } from "svelte/reactivity";
 import type { DocumentSymbol, SymbolInformation } from "vscode-languageserver-protocol";
 import { api } from "$lib/api/api.client";
-import { editorInstanceGet } from "$lib/editor/editor.service.svelte";
+import { editorInstanceGet, editorLspClientGet } from "$lib/editor/editor.service.svelte";
 import { QuickOpenMode, type QuickOpenResult } from "./quickOpen.lib";
 
 type ProjectCache = {
@@ -167,16 +167,17 @@ function flattenDocumentSymbols(
 
 export async function quickOpenDocumentSymbolsGet(editorId: string): Promise<QuickOpenResult[]> {
 	const instance = editorInstanceGet(editorId);
-	if (!(instance?.lspClient && instance.lspConnected)) {
+	const lspClient = editorLspClientGet(editorId);
+	if (!(instance && lspClient && instance.lspConnected)) {
 		return [];
 	}
 
 	const fileUri = `file://${instance.filePath}`;
 
 	try {
-		instance.lspClient.sync();
+		lspClient.sync();
 
-		const symbols = await instance.lspClient.request<
+		const symbols = await lspClient.request<
 			{
 				textDocument: {
 					uri: string;

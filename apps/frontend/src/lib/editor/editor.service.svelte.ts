@@ -63,14 +63,87 @@ type EditorInstance = {
 	isLoading: boolean;
 	error: string | null;
 	view: EditorView | null;
-	lspClient: LSPClient | null;
+	lspClientKey: string | null;
 	lspConnected: boolean;
 };
 
+type LspClientInstance = {
+	client: LSPClient;
+	rootUri: string;
+	languageId: string;
+	refCount: number;
+	initializing: Promise<void>;
+};
+
 const instances = new SvelteMap<EditorId, EditorInstance>();
+const lspClients = new Map<string, LspClientInstance>();
+
+function lspClientKeyGenerate(rootUri: string, languageId: string): string {
+	return `${languageId}:${rootUri}`;
+}
+
+async function lspClientGet(rootUri: string, lspLanguageId: string): Promise<LSPClient> {
+	const key = lspClientKeyGenerate(rootUri, lspLanguageId);
+	const existing = lspClients.get(key);
+
+	if (existing) {
+		existing.refCount++;
+		await existing.initializing;
+		return existing.client;
+	}
+
+	const sessionId = `lsp-${lspLanguageId}-${Date.now()}`;
+	const transport = await editorLspTransportCreate({
+		languageId: lspLanguageId as Parameters<typeof editorLspTransportCreate>[0]["languageId"],
+		rootUri,
+		sessionId,
+	});
+
+	const client = new LSPClient({
+		extensions: languageServerExtensions(),
+		rootUri,
+		timeout: 10_000,
+	}).connect(transport);
+
+	const initializing = client.initializing.then(() => {
+		console.log(`[Editor] LSP client initialized for ${lspLanguageId} at ${rootUri}`);
+	});
+
+	const instance: LspClientInstance = {
+		client,
+		initializing,
+		languageId: lspLanguageId,
+		refCount: 1,
+		rootUri,
+	};
+
+	lspClients.set(key, instance);
+	await initializing;
+
+	return client;
+}
+
+function lspClientRelease(key: string): void {
+	const instance = lspClients.get(key);
+	if (!instance) return;
+
+	instance.refCount--;
+
+	if (instance.refCount <= 0) {
+		instance.client.disconnect();
+		lspClients.delete(key);
+		console.log(`[Editor] LSP client disconnected for ${instance.languageId} at ${instance.rootUri}`);
+	}
+}
 
 export function editorInstanceGet(editorId: EditorId): EditorInstance | undefined {
 	return instances.get(editorId);
+}
+
+export function editorLspClientGet(editorId: EditorId): LSPClient | null {
+	const instance = instances.get(editorId);
+	if (!instance?.lspClientKey) return null;
+	return lspClients.get(instance.lspClientKey)?.client ?? null;
 }
 
 export function editorInstanceCreate(editorId: EditorId, filePath: string): EditorInstance {
@@ -85,7 +158,7 @@ export function editorInstanceCreate(editorId: EditorId, filePath: string): Edit
 		filePath,
 		isDirty: false,
 		isLoading: false,
-		lspClient: null,
+		lspClientKey: null,
 		lspConnected: false,
 		view: null,
 	});
@@ -100,6 +173,10 @@ export function editorInstanceDestroy(editorId: EditorId): void {
 
 	if (instance.view) {
 		instance.view.destroy();
+	}
+
+	if (instance.lspClientKey) {
+		lspClientRelease(instance.lspClientKey);
 	}
 
 	instances.delete(editorId);
@@ -157,20 +234,10 @@ export async function editorLspConnect(editorId: EditorId, rootUri: string): Pro
 	}
 
 	try {
-		const sessionId = `${editorId}-${Date.now()}`;
-		const transport = await editorLspTransportCreate({
-			languageId: lspLanguageId,
-			rootUri,
-			sessionId,
-		});
+		const client = await lspClientGet(rootUri, lspLanguageId);
+		const clientKey = lspClientKeyGenerate(rootUri, lspLanguageId);
 
-		const client = new LSPClient({
-			extensions: languageServerExtensions(),
-			rootUri,
-			timeout: 10_000,
-		}).connect(transport);
-
-		instance.lspClient = client;
+		instance.lspClientKey = clientKey;
 		instance.lspConnected = true;
 
 		const fileUri = `file://${instance.filePath}`;

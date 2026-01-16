@@ -312,10 +312,10 @@ function handleToggle(itemId: ItemId) {
 	}
 }
 
-function handleDoubleClick(itemId: ItemId, event: MouseEvent) {
+function handleDoubleClick(itemId: ItemId, event?: MouseEvent) {
 	const item = items.get(itemId);
 	if (item?.type === FileTreeItemType.File) {
-		onFileOpen?.(itemId, event.altKey);
+		onFileOpen?.(itemId, event?.altKey ?? false);
 	}
 }
 

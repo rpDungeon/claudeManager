@@ -23,7 +23,7 @@ interface Props {
 	onSelect?: (itemId: ItemId) => void;
 	onToggle?: (itemId: ItemId) => void;
 	onNodeMove?: (sourceId: ItemId, targetId: ItemId) => void;
-	onDoubleClick?: (itemId: ItemId, event: MouseEvent) => void;
+	onDoubleClick?: (itemId: ItemId, event?: MouseEvent) => void;
 	onContextMenu?: (itemId: ItemId, event: MouseEvent) => void;
 }
 
