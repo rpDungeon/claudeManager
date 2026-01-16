@@ -73,7 +73,7 @@ Common topics: programming, software development, terminal commands, Claude AI, 
 				},
 			],
 			model: MODEL_ID,
-			temperature: 0,
+			temperature: 0.1,
 		});
 
 		const message = response.choices?.[0]?.message;
