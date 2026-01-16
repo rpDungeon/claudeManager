@@ -25,6 +25,8 @@ import {
 	terminalInstanceMount,
 	terminalInstancePaste,
 	terminalInstanceSelectAll,
+	terminalScrollLockGet,
+	terminalScrollLockToggle,
 	terminalWebsocketConnect,
 	terminalWebsocketForceReconnect,
 } from "./terminal.service.svelte";
@@ -80,6 +82,7 @@ let resizeTimeout: ReturnType<typeof setTimeout> | undefined;
 let mountCount = 0;
 let voiceRecorderState = $state(VoiceRecorderState.Idle);
 let isSidebarOpen = $state(false);
+let scrollLockEnabled = $derived(terminalId ? terminalScrollLockGet(terminalId) : false);
 let mediaRecorder: MediaRecorder | null = null;
 let audioChunks: Blob[] = [];
 
@@ -284,6 +287,12 @@ function handleVoiceStopAndSend() {
 	}
 }
 
+function handleScrollLockToggle() {
+	if (terminalId) {
+		terminalScrollLockToggle(terminalId);
+	}
+}
+
 async function handleVoiceToggle() {
 	if (voiceRecorderState === VoiceRecorderState.Recording) {
 		if (mediaRecorder) {
@@ -455,6 +464,15 @@ onDestroy(() => {
 				onStopAndSend={handleVoiceStopAndSend}
 			/>
 		</div>
+
+		<button
+			type="button"
+			class="absolute bottom-0.5 right-0.5 z-10 size-2.5 rounded-tl opacity-40 hover:opacity-100 transition-opacity"
+			class:bg-terminal-amber={scrollLockEnabled}
+			class:bg-text-tertiary={!scrollLockEnabled}
+			onclick={handleScrollLockToggle}
+			title={scrollLockEnabled ? "Scroll lock ON (click to disable)" : "Scroll lock OFF (click to enable)"}
+		></button>
 	{/if}
 
 	{#if contextMenuPosition}

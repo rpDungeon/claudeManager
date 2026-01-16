@@ -34,6 +34,7 @@ type TerminalInstance = {
 	onDataDisposable: {
 		dispose: () => void;
 	} | null;
+	scrollLock: boolean;
 	terminal: Terminal;
 	websocket: EdenWebSocket | null;
 };
@@ -84,6 +85,7 @@ export function terminalInstanceCreate(terminalId: TerminalId): TerminalInstance
 		foregroundProcess: null,
 		lastError: null,
 		onDataDisposable: null,
+		scrollLock: false,
 		terminal,
 		websocket: null,
 	});
@@ -448,17 +450,27 @@ function terminalIsNearBottom(terminal: Terminal): boolean {
 	return viewportTop >= scrollbackTop - 3;
 }
 
+export function terminalScrollLockToggle(terminalId: TerminalId): void {
+	const instance = instances.get(terminalId);
+	if (!instance) return;
+	instance.scrollLock = !instance.scrollLock;
+}
+
+export function terminalScrollLockGet(terminalId: TerminalId): boolean {
+	return instances.get(terminalId)?.scrollLock ?? false;
+}
+
 function terminalDispatchServerMessage(terminalId: TerminalId, message: ServerMessage): void {
 	const instance = instances.get(terminalId);
 	if (!instance) return;
 
 	switch (message.type) {
 		case "output": {
-			const wasAtBottom = terminalIsNearBottom(instance.terminal);
+			const shouldPreserveScroll = instance.scrollLock || !terminalIsNearBottom(instance.terminal);
 			const scrollPos = instance.terminal.buffer.active.viewportY;
 
 			instance.terminal.write(message.data, () => {
-				if (!wasAtBottom) {
+				if (shouldPreserveScroll) {
 					instance.terminal.scrollToLine(scrollPos);
 				}
 			});
