@@ -223,20 +223,34 @@ function handleDiffOpen(filePath: string, repoPath: string, staged: boolean) {
 	<title>Dashboard | Claude Manager</title>
 </svelte:head>
 
-<div class="flex h-screen w-screen flex-col bg-bg-void">
+<div class="flex h-[100dvh] w-screen flex-col bg-bg-void">
 	<div class="flex flex-1 overflow-hidden" class:select-none={isResizing}>
+		<!-- Mobile sidebar backdrop -->
+		{#if !isSidebarCollapsed}
+			<button
+				type="button"
+				class="fixed inset-0 z-40 bg-black/50 md:hidden"
+				onclick={() => (isSidebarCollapsed = true)}
+				aria-label="Close sidebar"
+			></button>
+		{/if}
+
+		<!-- Sidebar container -->
 		<div class="relative flex-shrink-0">
 			<div
-				class="h-full overflow-hidden transition-[width] duration-200 ease-out"
+				class="h-full overflow-hidden transition-[width] duration-200 ease-out
+					fixed inset-y-0 left-0 z-50 w-[85vw] max-w-[320px]
+					md:relative md:inset-auto md:z-auto md:w-auto md:max-w-none"
 				class:!transition-none={isResizing}
-				class:w-0={isSidebarCollapsed}
-				style:width={isSidebarCollapsed ? undefined : `${sidebarWidth}px`}
+				class:!w-0={isSidebarCollapsed}
+				class:md:!w-0={isSidebarCollapsed}
+				style:--sidebar-width="{sidebarWidth}px"
 			>
 				<div
-					class="h-full border-r border-border-default transition-transform duration-200 ease-out"
+					class="h-full border-r border-border-default bg-bg-surface transition-transform duration-200 ease-out
+						w-full md:w-[var(--sidebar-width)]"
 					class:translate-x-0={!isSidebarCollapsed}
 					class:-translate-x-full={isSidebarCollapsed}
-					style:width="{sidebarWidth}px"
 				>
 					<DashboardSidebar
 						bind:this={sidebarRef}
@@ -253,7 +267,8 @@ function handleDiffOpen(filePath: string, repoPath: string, staged: boolean) {
 					/>
 				</div>
 			</div>
-			<!-- Resize handle -->
+
+			<!-- Resize handle (desktop only) -->
 			{#if !isSidebarCollapsed}
 				<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 				<div
@@ -263,13 +278,17 @@ function handleDiffOpen(filePath: string, repoPath: string, staged: boolean) {
 					aria-valuemin={MIN_SIDEBAR_WIDTH}
 					aria-valuemax={MAX_SIDEBAR_WIDTH}
 					tabindex="-1"
-					class="absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-terminal-green/30 transition-colors z-20 {isResizing ? 'bg-terminal-green/50' : ''}"
+					class="hidden md:block absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-terminal-green/30 transition-colors z-20 {isResizing ? 'bg-terminal-green/50' : ''}"
 					onmousedown={handleResizeStart}
 				></div>
 			{/if}
+
+			<!-- Sidebar toggle button -->
 			<button
 				type="button"
-				class="absolute top-2 left-full z-10 flex h-5 w-5 items-center justify-center text-[8px] text-text-tertiary hover:text-terminal-green hover:bg-bg-elevated transition-colors"
+				class="absolute top-2 left-full z-[60] flex items-center justify-center transition-colors
+					h-10 w-10 text-base md:h-5 md:w-5 md:text-[8px]
+					text-text-tertiary hover:text-terminal-green hover:bg-bg-elevated"
 				class:text-terminal-green={!isSidebarCollapsed}
 				class:bg-bg-elevated={!isSidebarCollapsed}
 				onclick={() => (isSidebarCollapsed = !isSidebarCollapsed)}
