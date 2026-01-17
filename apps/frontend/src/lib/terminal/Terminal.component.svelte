@@ -321,9 +321,18 @@ async function handleVoiceToggle() {
 		audioStream = await navigator.mediaDevices.getUserMedia({
 			audio: true,
 		});
-		mediaRecorder = new MediaRecorder(audioStream, {
-			mimeType: "audio/webm",
-		});
+
+		const mimeType = MediaRecorder.isTypeSupported("audio/webm")
+			? "audio/webm"
+			: MediaRecorder.isTypeSupported("audio/mp4")
+				? "audio/mp4"
+				: undefined;
+
+		mediaRecorder = mimeType
+			? new MediaRecorder(audioStream, {
+					mimeType,
+				})
+			: new MediaRecorder(audioStream);
 		audioChunks = [];
 
 		mediaRecorder.ondataavailable = (e) => {

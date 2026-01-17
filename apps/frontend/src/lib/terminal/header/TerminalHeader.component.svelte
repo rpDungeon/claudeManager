@@ -125,7 +125,7 @@ function handleDrop(event: DragEvent) {
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<span
-		class="flex items-center justify-center p-1 -m-1 rounded transition-colors"
+		class="flex items-center justify-center p-1 -m-1 rounded transition-colors order-last md:order-first"
 		class:hover:bg-bg-elevated={onStatusClick}
 		class:cursor-pointer={onStatusClick}
 		onclick={handleStatusClick}
