@@ -56,6 +56,25 @@ let {
 let isDragging = $state(false);
 let pendingSizes = $state<number[] | null>(null);
 
+const SNAP_THRESHOLD = 1.5;
+
+function snapSizesToEqual(sizes: number[]): number[] {
+	if (sizes.length < 2) return sizes;
+
+	const snapped = [
+		...sizes,
+	];
+	for (let i = 0; i < snapped.length - 1; i++) {
+		const diff = Math.abs(snapped[i] - snapped[i + 1]);
+		if (diff <= SNAP_THRESHOLD) {
+			const avg = (snapped[i] + snapped[i + 1]) / 2;
+			snapped[i] = avg;
+			snapped[i + 1] = avg;
+		}
+	}
+	return snapped;
+}
+
 function handleLayoutChange(sizes: number[]) {
 	if (isDragging) {
 		pendingSizes = sizes;
@@ -67,7 +86,8 @@ function handleLayoutChange(sizes: number[]) {
 function handleDraggingChange(dragging: boolean) {
 	isDragging = dragging;
 	if (!dragging && pendingSizes) {
-		onSplitResize?.(container.id, pendingSizes);
+		const snappedSizes = snapSizesToEqual(pendingSizes);
+		onSplitResize?.(container.id, snappedSizes);
 		pendingSizes = null;
 	}
 }
