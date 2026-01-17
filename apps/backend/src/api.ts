@@ -25,7 +25,7 @@ export const api = new Elysia()
 	.use(
 		cors({
 			credentials: true,
-			origin: () => true,
+			origin: true,
 		}),
 	)
 	// .use(authPlugin)
