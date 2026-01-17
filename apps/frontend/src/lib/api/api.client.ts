@@ -1,10 +1,28 @@
 import type { Api } from "@claude-manager/backend/api";
 import { treaty } from "@elysiajs/eden";
-import { PUBLIC_BACKEND_HOST, PUBLIC_BACKEND_PORT, PUBLIC_BACKEND_PROTOCOL } from "$env/static/public";
+import { PUBLIC_BACKEND_PORT } from "$env/static/public";
 
-const portSuffix = PUBLIC_BACKEND_PORT ? `:${PUBLIC_BACKEND_PORT}` : "";
-export const backendUrl = `${PUBLIC_BACKEND_PROTOCOL}://${PUBLIC_BACKEND_HOST}${portSuffix}`;
-export const backendHost = `${PUBLIC_BACKEND_HOST}${portSuffix}`;
+function backendUrlGet(): string {
+	if (typeof window === "undefined") {
+		return `http://localhost:${PUBLIC_BACKEND_PORT || "4030"}`;
+	}
+	const protocol = window.location.protocol;
+	const host = window.location.hostname;
+	const port = PUBLIC_BACKEND_PORT || "4030";
+	return `${protocol}//${host}:${port}`;
+}
+
+function backendHostGet(): string {
+	if (typeof window === "undefined") {
+		return `localhost:${PUBLIC_BACKEND_PORT || "4030"}`;
+	}
+	const host = window.location.hostname;
+	const port = PUBLIC_BACKEND_PORT || "4030";
+	return `${host}:${port}`;
+}
+
+export const backendUrl = backendUrlGet();
+export const backendHost = backendHostGet();
 
 export const api = treaty<Api>(backendUrl, {
 	headers: (): Record<string, string> => {
