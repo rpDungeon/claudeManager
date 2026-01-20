@@ -7,7 +7,7 @@ import { WebLinksAddon } from "@xterm/addon-web-links";
 import type { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal } from "@xterm/xterm";
 import { SvelteMap } from "svelte/reactivity";
-import { api } from "$lib/api/api.client";
+import { api, authTokenQueryGet } from "$lib/api/api.client";
 import { settingsTerminalFontSizeGet } from "$lib/settings/settings.service.svelte";
 import { TerminalConnectionStatus, terminalThemeCrt } from "./terminal.lib";
 
@@ -350,7 +350,9 @@ export function terminalWebsocketConnect(terminalId: TerminalId): void {
 		.terminal({
 			terminalId,
 		})
-		.subscribe();
+		.subscribe({
+			query: authTokenQueryGet(),
+		});
 
 	ws.subscribe((event) => {
 		terminalDispatchServerMessage(terminalId, event.data);
@@ -466,11 +468,13 @@ function terminalDispatchServerMessage(terminalId: TerminalId, message: ServerMe
 
 	switch (message.type) {
 		case "output": {
-			const shouldPreserveScroll = instance.scrollLock || !terminalIsNearBottom(instance.terminal);
+			const wasNearBottom = terminalIsNearBottom(instance.terminal);
 			const scrollPos = instance.terminal.buffer.active.viewportY;
 
 			instance.terminal.write(message.data, () => {
-				if (shouldPreserveScroll) {
+				if (instance.scrollLock) {
+					instance.terminal.scrollToBottom();
+				} else if (!wasNearBottom) {
 					instance.terminal.scrollToLine(scrollPos);
 				}
 			});

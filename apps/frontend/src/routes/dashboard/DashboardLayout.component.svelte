@@ -81,6 +81,30 @@ let error = $state<string | null>(null);
 let isReconnecting = $state(false);
 let isDirty = $state(false);
 let terminalCounter = $state(0);
+let isMobile = $state(false);
+
+const MOBILE_TABS_CONTAINER_ID = "mobile-tabs";
+
+const mobileData = $derived.by((): LayoutData => {
+	const itemIds = Object.keys(data.items);
+	const mobileTabsContainer: LayoutContainerTabs = {
+		activeTabId: activeItemId ?? itemIds[0] ?? null,
+		childIds: itemIds,
+		id: MOBILE_TABS_CONTAINER_ID,
+		type: "tabs",
+	};
+
+	return {
+		desktop: data.desktop,
+		items: data.items,
+		mobile: {
+			containers: {
+				[MOBILE_TABS_CONTAINER_ID]: mobileTabsContainer,
+			},
+			rootId: itemIds.length > 0 ? MOBILE_TABS_CONTAINER_ID : null,
+		},
+	};
+});
 
 export function getActiveItemId(): string | null {
 	return activeItemId;
@@ -345,6 +369,16 @@ function connectSSE(targetLayoutId: LayoutId, _isInitial: boolean) {
 		const layout: LayoutType = JSON.parse(e.data);
 		const hasValidLayout = layout.data?.desktop?.rootId != null;
 
+		const localActiveTabIds = new Map<string, string>();
+		for (const [containerId, container] of Object.entries(data.desktop.containers)) {
+			if (container.type === "tabs") {
+				const tabsContainer = container as LayoutContainerTabs;
+				if (tabsContainer.activeTabId) {
+					localActiveTabIds.set(containerId, tabsContainer.activeTabId);
+				}
+			}
+		}
+
 		if (hasValidLayout && layout.data) {
 			data = layout.data;
 		} else {
@@ -357,6 +391,16 @@ function connectSSE(targetLayoutId: LayoutId, _isInitial: boolean) {
 				.patch({
 					data: defaultData,
 				});
+		}
+
+		for (const [containerId, localActiveTabId] of localActiveTabIds) {
+			const container = data.desktop.containers[containerId];
+			if (container?.type === "tabs") {
+				const tabsContainer = container as LayoutContainerTabs;
+				if (tabsContainer.childIds.includes(localActiveTabId)) {
+					tabsContainer.activeTabId = localActiveTabId;
+				}
+			}
 		}
 
 		const currentItemStillExists = activeItemId && data.items[activeItemId];
@@ -386,9 +430,30 @@ function connectSSE(targetLayoutId: LayoutId, _isInitial: boolean) {
 			isDirty = false;
 			return;
 		}
+
+		const localActiveTabIds = new Map<string, string>();
+		for (const [containerId, container] of Object.entries(data.desktop.containers)) {
+			if (container.type === "tabs") {
+				const tabsContainer = container as LayoutContainerTabs;
+				if (tabsContainer.activeTabId) {
+					localActiveTabIds.set(containerId, tabsContainer.activeTabId);
+				}
+			}
+		}
+
 		const layout: LayoutType = JSON.parse(e.data);
 		if (layout.data) {
 			data = layout.data;
+
+			for (const [containerId, localActiveTabId] of localActiveTabIds) {
+				const container = data.desktop.containers[containerId];
+				if (container?.type === "tabs") {
+					const tabsContainer = container as LayoutContainerTabs;
+					if (tabsContainer.childIds.includes(localActiveTabId)) {
+						tabsContainer.activeTabId = localActiveTabId;
+					}
+				}
+			}
 		}
 	});
 
@@ -416,6 +481,18 @@ function connectSSE(targetLayoutId: LayoutId, _isInitial: boolean) {
 
 	return eventSource;
 }
+
+$effect(() => {
+	const mediaQuery = window.matchMedia("(max-width: 767px)");
+	isMobile = mediaQuery.matches;
+
+	function handleChange(e: MediaQueryListEvent) {
+		isMobile = e.matches;
+	}
+
+	mediaQuery.addEventListener("change", handleChange);
+	return () => mediaQuery.removeEventListener("change", handleChange);
+});
 
 $effect(() => {
 	if (layoutId !== previousLayoutId) {
@@ -493,6 +570,7 @@ $effect(() => {
 });
 
 function markDirty() {
+	if (isMobile) return;
 	isDirty = true;
 	void saveLayout();
 }
@@ -507,6 +585,10 @@ function handleTabSelect(containerId: string, itemId: string) {
 		};
 		markDirty();
 	}
+}
+
+function handleMobileTabSelect(_containerId: string, itemId: string) {
+	activeItemId = itemId;
 }
 
 function handleItemSelect(itemId: string) {
@@ -1081,20 +1163,21 @@ async function handleAddItemToEmptyLayout(itemType: AddItemType) {
 			</div>
 		{/if}
 		<Layout
-			{data}
+			data={isMobile ? mobileData : data}
+			mode={isMobile ? "mobile" : "desktop"}
 			{projectPath}
 			{activeItemId}
-			onTabSelect={handleTabSelect}
+			onTabSelect={isMobile ? handleMobileTabSelect : handleTabSelect}
 			onItemSelect={handleItemSelect}
-			onItemReorder={handleItemReorder}
-			onItemDrop={handleItemDrop}
-			onSplitResize={handleSplitResize}
-			onSplitDrop={handleSplitDrop}
-			onAddItem={handleAddItem}
-			onItemRename={handleItemRename}
-			onItemChangeUrl={handleItemChangeUrl}
-			onItemClose={handleItemClose}
-			onAddItemToEmptyLayout={handleAddItemToEmptyLayout}
+			onItemReorder={isMobile ? undefined : handleItemReorder}
+			onItemDrop={isMobile ? undefined : handleItemDrop}
+			onSplitResize={isMobile ? undefined : handleSplitResize}
+			onSplitDrop={isMobile ? undefined : handleSplitDrop}
+			onAddItem={isMobile ? undefined : handleAddItem}
+			onItemRename={isMobile ? undefined : handleItemRename}
+			onItemChangeUrl={isMobile ? undefined : handleItemChangeUrl}
+			onItemClose={isMobile ? undefined : handleItemClose}
+			onAddItemToEmptyLayout={isMobile ? undefined : handleAddItemToEmptyLayout}
 		/>
 	{/if}
 </div>

@@ -493,7 +493,7 @@ onDestroy(() => {
 			class:bg-terminal-amber={scrollLockEnabled}
 			class:bg-text-tertiary={!scrollLockEnabled}
 			onclick={handleScrollLockToggle}
-			title={scrollLockEnabled ? "Scroll lock ON (click to disable)" : "Scroll lock OFF (click to enable)"}
+			title={scrollLockEnabled ? "Auto-scroll ON (click to disable)" : "Auto-scroll OFF (click to enable)"}
 		></button>
 	{/if}
 
