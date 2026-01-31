@@ -3,6 +3,14 @@ import { Mistral } from "@mistralai/mistralai";
 const MODEL_ID = "voxtral-small-latest";
 
 async function audioConvertToMp3(inputBuffer: Buffer): Promise<Buffer> {
+	if (inputBuffer.length === 0) {
+		throw new Error("Empty audio buffer received");
+	}
+
+	if (inputBuffer.length < 100) {
+		throw new Error(`Audio buffer too small: ${inputBuffer.length} bytes`);
+	}
+
 	const proc = Bun.spawn(
 		[
 			"ffmpeg",
@@ -28,14 +36,22 @@ async function audioConvertToMp3(inputBuffer: Buffer): Promise<Buffer> {
 	proc.stdin.write(inputBuffer);
 	proc.stdin.end();
 
-	const output = await new Response(proc.stdout).arrayBuffer();
-	const exitCode = await proc.exited;
+	const [output, stderrData, exitCode] = await Promise.all([
+		new Response(proc.stdout).arrayBuffer(),
+		new Response(proc.stderr).text(),
+		proc.exited,
+	]);
 
 	if (exitCode !== 0) {
-		throw new Error(`FFmpeg exited with code ${exitCode}`);
+		throw new Error(`FFmpeg exited with code ${exitCode}: ${stderrData.slice(0, 500)}`);
 	}
 
-	return Buffer.from(output);
+	const mp3Buffer = Buffer.from(output);
+	if (mp3Buffer.length === 0) {
+		throw new Error("FFmpeg produced empty output");
+	}
+
+	return mp3Buffer;
 }
 
 class TranscriptionService {
@@ -56,32 +72,52 @@ Common topics: programming, software development, terminal commands, Claude AI, 
 		}
 		prompt += " Output only the transcription, no additional commentary.";
 
-		const response = await this.client.chat.complete({
-			messages: [
-				{
-					content: [
+		const maxRetries = 3;
+		let lastError: Error | null = null;
+
+		for (let attempt = 0; attempt < maxRetries; attempt++) {
+			try {
+				const response = await this.client.chat.complete({
+					messages: [
 						{
-							inputAudio: audioBase64,
-							type: "input_audio",
-						},
-						{
-							text: prompt,
-							type: "text",
+							content: [
+								{
+									inputAudio: audioBase64,
+									type: "input_audio",
+								},
+								{
+									text: prompt,
+									type: "text",
+								},
+							],
+							role: "user",
 						},
 					],
-					role: "user",
-				},
-			],
-			model: MODEL_ID,
-			temperature: 0.1,
-		});
+					model: MODEL_ID,
+					temperature: 0.1,
+				});
 
-		const message = response.choices?.[0]?.message;
-		if (!message || typeof message.content !== "string") {
-			throw new Error("Failed to get transcription response");
+				const message = response.choices?.[0]?.message;
+				if (!message || typeof message.content !== "string") {
+					throw new Error("Failed to get transcription response");
+				}
+
+				return message.content;
+			} catch (error) {
+				lastError = error instanceof Error ? error : new Error(String(error));
+				const isRateLimit = lastError.message.includes("429") || lastError.message.includes("rate limit");
+
+				if (isRateLimit && attempt < maxRetries - 1) {
+					console.log(`[Transcription] Rate limited, retrying in 1s (attempt ${attempt + 1}/${maxRetries})`);
+					await new Promise((resolve) => setTimeout(resolve, 1000));
+					continue;
+				}
+
+				throw lastError;
+			}
 		}
 
-		return message.content;
+		throw lastError ?? new Error("Transcription failed after retries");
 	}
 
 	async transcriptionFromBuffer(audioBuffer: Buffer, language?: string): Promise<string> {

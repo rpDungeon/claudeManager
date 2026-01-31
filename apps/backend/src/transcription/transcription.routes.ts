@@ -25,14 +25,24 @@ export const transcriptionRoutes = new Elysia({
 			const audioBuffer = Buffer.from(await body.audio.arrayBuffer());
 			const language = body.language ?? undefined;
 
+			console.log(`[Transcription] Processing ${(audioBuffer.length / 1024).toFixed(1)}KB audio`);
+
 			const transcription = await transcriptionService.transcriptionFromBuffer(audioBuffer, language);
 
 			return {
 				transcription,
 			};
 		} catch (error) {
+			console.error("[Transcription] Error:", error);
 			const message = error instanceof Error ? error.message : "Transcription failed";
-			return status(500, {
+
+			if (message.includes("429") || message.includes("rate limit")) {
+				return status("Too Many Requests", {
+					error: "Rate limit exceeded. Try shorter recordings or wait a moment.",
+				});
+			}
+
+			return status("Internal Server Error", {
 				error: message,
 			});
 		}
@@ -41,6 +51,7 @@ export const transcriptionRoutes = new Elysia({
 		body: transcriptionBody,
 		response: {
 			200: transcriptionResponse,
+			429: transcriptionError,
 			500: transcriptionError,
 		},
 	},
