@@ -38,6 +38,7 @@ import type { ContextMenuItem, ContextMenuPosition } from "$lib/common/contextMe
 import VoiceRecorder from "$lib/common/input/VoiceRecorder.component.svelte";
 import { VoiceRecorderState } from "$lib/common/input/voiceRecorder.lib";
 import { api } from "$lib/api/api.client";
+import { transcriptionHistoryAdd } from "./sidebar/terminalSidebar.lib.svelte";
 
 const WHITESPACE_REGEX = /\s+/;
 
@@ -178,7 +179,6 @@ $effect(() => {
 	if (isActive && terminalId) {
 		setTimeout(() => {
 			terminalInstanceFit(terminalId);
-			terminalInstanceFocus(terminalId);
 		}, 16);
 	}
 });
@@ -373,9 +373,18 @@ async function handleVoiceToggle() {
 				});
 
 				if (error || !data) {
-					console.error("[VoiceRecorder] Transcription error:", error);
+					const errorMsg =
+						typeof error === "object" && error !== null && "error" in error
+							? (
+									error as {
+										error: string;
+									}
+								).error
+							: JSON.stringify(error);
+					console.error("[VoiceRecorder] Transcription error:", errorMsg);
 				} else if (recordingTerminalId) {
 					let text = data.transcription.trim();
+					transcriptionHistoryAdd(text, recordingTerminalId);
 					let autoSend = shouldAutoSendOnStop;
 
 					if (!autoSend) {
@@ -438,71 +447,73 @@ onDestroy(() => {
 </script>
 
 <div class="relative flex h-full flex-col">
-	<TerminalHeader
-		title={displayTitle}
-		{info}
-		{itemId}
-		{isActive}
-		{statusColor}
-		{draggable}
-		{isDropTarget}
-		onclick={handleHeaderClick}
-		onStatusClick={terminalId ? handleStatusClick : undefined}
-		{onDragStart}
-		{onDragEnd}
-		{onDrop}
-	/>
-	<TerminalBody
-		{isActive}
-		{borderColor}
-		onclick={handleBodyClick}
-		oncontextmenu={handleContextMenu}
-		onMount={handleBodyMount}
-	/>
+  <TerminalHeader
+    title={displayTitle}
+    {info}
+    {itemId}
+    {isActive}
+    {statusColor}
+    {draggable}
+    {isDropTarget}
+    onclick={handleHeaderClick}
+    onStatusClick={terminalId ? handleStatusClick : undefined}
+    {onDragStart}
+    {onDragEnd}
+    {onDrop}
+  />
+  <TerminalBody
+    {isActive}
+    {borderColor}
+    onclick={handleBodyClick}
+    oncontextmenu={handleContextMenu}
+    onMount={handleBodyMount}
+  />
 
-	{#if terminalId}
-		<button
-			type="button"
-			class="absolute top-0 right-0 z-10 flex h-5 w-5 items-center justify-center text-[8px] text-text-tertiary hover:text-terminal-green hover:bg-bg-elevated transition-colors"
-			class:text-terminal-green={isSidebarOpen}
-			class:bg-bg-elevated={isSidebarOpen}
-			onclick={() => (isSidebarOpen = !isSidebarOpen)}
-			title="Toggle activity panel"
-		>
-			◀
-		</button>
+  {#if terminalId}
+    <button
+      type="button"
+      class="absolute top-0 right-0 z-10 flex h-5 w-5 items-center justify-center text-[8px] text-text-tertiary hover:text-terminal-green hover:bg-bg-elevated transition-colors"
+      class:text-terminal-green={isSidebarOpen}
+      class:bg-bg-elevated={isSidebarOpen}
+      onclick={() => (isSidebarOpen = !isSidebarOpen)}
+      title="Toggle activity panel"
+    >
+      ◀
+    </button>
 
-		<TerminalSidebar
-			{terminalId}
-			isOpen={isSidebarOpen}
-			onclose={() => (isSidebarOpen = false)}
-			onColorChange={handleColorChange}
-		/>
+    <TerminalSidebar
+      {terminalId}
+      isOpen={isSidebarOpen}
+      onclose={() => (isSidebarOpen = false)}
+      onColorChange={handleColorChange}
+    />
 
-		<div class="absolute bottom-3 right-3 z-10">
-			<VoiceRecorder
-				state={voiceRecorderState}
-				onclick={handleVoiceToggle}
-				onStopAndSend={handleVoiceStopAndSend}
-			/>
-		</div>
+    <div class="absolute bottom-3 right-3 z-10">
+      <VoiceRecorder
+        state={voiceRecorderState}
+        onclick={handleVoiceToggle}
+        onStopAndSend={handleVoiceStopAndSend}
+      />
+    </div>
 
-		<button
-			type="button"
-			class="absolute bottom-0.5 right-0.5 z-10 size-1.5 rounded-tl opacity-40 hover:opacity-100 transition-opacity"
-			class:bg-terminal-amber={scrollLockEnabled}
-			class:bg-text-tertiary={!scrollLockEnabled}
-			onclick={handleScrollLockToggle}
-			title={scrollLockEnabled ? "Auto-scroll ON (click to disable)" : "Auto-scroll OFF (click to enable)"}
-		></button>
-	{/if}
+    <button
+      type="button"
+      class="absolute bottom-0.5 right-0.5 z-10 size-1.5 rounded-tl opacity-40 hover:opacity-100 transition-opacity"
+      class:bg-terminal-amber={scrollLockEnabled}
+      class:bg-text-tertiary={!scrollLockEnabled}
+      onclick={handleScrollLockToggle}
+      title={scrollLockEnabled
+        ? "Auto-scroll ON (click to disable)"
+        : "Auto-scroll OFF (click to enable)"}
+    ></button>
+  {/if}
 
-	{#if contextMenuPosition}
-		<ContextMenu
-			items={contextMenuItems}
-			position={contextMenuPosition}
-			onAction={handleContextMenuAction}
-			onClose={handleContextMenuClose}
-		/>
-	{/if}
+  {#if contextMenuPosition}
+    <ContextMenu
+      items={contextMenuItems}
+      position={contextMenuPosition}
+      onAction={handleContextMenuAction}
+      onClose={handleContextMenuClose}
+    />
+  {/if}
 </div>
