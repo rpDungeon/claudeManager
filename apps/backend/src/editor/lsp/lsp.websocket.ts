@@ -1,5 +1,5 @@
 import {
-	EditorLspLanguageId,
+	type EditorLspLanguageId,
 	EditorLspMessageServerType,
 	editorLspMessageClientSchema,
 	editorLspMessageServerSchema,
@@ -10,7 +10,7 @@ import { editorLspService } from "./lsp.service";
 
 const unsubscribeMap = new Map<string, () => void>();
 
-const PING_INTERVAL_MS = 30000;
+const PING_INTERVAL_MS = 30_000;
 const MAX_MISSED_PINGS = 2;
 
 type KeepaliveState = {
@@ -60,8 +60,8 @@ export const editorLspWebsocket = new Elysia({
 		if (message.type === "initialize") {
 			if (session) {
 				ws.send({
-					type: EditorLspMessageServerType.Error,
 					message: "Session already initialized",
+					type: EditorLspMessageServerType.Error,
 				});
 				return;
 			}
@@ -69,8 +69,8 @@ export const editorLspWebsocket = new Elysia({
 			const { rootUri, languageId } = message;
 
 			sessionMap.set(ws.id, {
-				rootUri,
 				languageId,
+				rootUri,
 			});
 
 			let instance = editorLspService.instanceGet(rootUri, languageId);
@@ -81,8 +81,8 @@ export const editorLspWebsocket = new Elysia({
 
 			const unsubscribe = instance.onMessage((jsonRpcContent) => {
 				ws.send({
-					type: EditorLspMessageServerType.JsonRpc,
 					content: jsonRpcContent,
+					type: EditorLspMessageServerType.JsonRpc,
 				});
 			});
 			unsubscribeMap.set(ws.id, unsubscribe);
@@ -97,8 +97,8 @@ export const editorLspWebsocket = new Elysia({
 		if (message.type === "jsonrpc") {
 			if (!session) {
 				ws.send({
-					type: EditorLspMessageServerType.Error,
 					message: "Session not initialized. Send initialize message first.",
+					type: EditorLspMessageServerType.Error,
 				});
 				return;
 			}
@@ -106,8 +106,8 @@ export const editorLspWebsocket = new Elysia({
 			const instance = editorLspService.instanceGet(session.rootUri, session.languageId);
 			if (!instance) {
 				ws.send({
-					type: EditorLspMessageServerType.Error,
 					message: "Language server not running",
+					type: EditorLspMessageServerType.Error,
 				});
 				return;
 			}

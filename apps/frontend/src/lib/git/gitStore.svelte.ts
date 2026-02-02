@@ -6,7 +6,7 @@ import {
 	GitWatchMessageServerType,
 } from "@claude-manager/common/src/git/git.types";
 import { SvelteMap } from "svelte/reactivity";
-import { api } from "$lib/api/api.client";
+import { api, authTokenQueryGet } from "$lib/api/api.client";
 import { FileStatus } from "$lib/fileTree/fileTree.lib";
 
 type WsConnection = ReturnType<typeof api.ws.git.watch.subscribe>;
@@ -61,7 +61,9 @@ class GitStore {
 		this.isLoading = true;
 		this.error = null;
 
-		const ws = api.ws.git.watch.subscribe();
+		const ws = api.ws.git.watch.subscribe({
+			query: authTokenQueryGet(),
+		});
 		this.wsConnection = ws;
 
 		ws.on("open", () => {

@@ -20,7 +20,7 @@ import {
 import { fsPathEnsureTrailingSlash, fsPathParent } from "@claude-manager/common/src/fs/fs.utils";
 import FileTree from "$lib/fileTree/FileTree.component.svelte";
 import { FileTreeItemType, type FileTreeItemData } from "$lib/fileTree/fileTree.lib";
-import { api } from "$lib/api/api.client";
+import { api, authTokenQueryGet } from "$lib/api/api.client";
 import DashboardFileExplorerContextMenu from "./DashboardFileExplorerContextMenu.component.svelte";
 import { TargetType } from "./dashboardFileExplorerContextMenu.lib";
 import type { ContextMenuPosition } from "$lib/common/contextMenu/contextMenu.lib";
@@ -181,7 +181,9 @@ $effect(() => {
 	gitStore.connect(repoPath);
 
 	if (!wsConnection) {
-		const ws = api.ws.fs.watch.subscribe();
+		const ws = api.ws.fs.watch.subscribe({
+			query: authTokenQueryGet(),
+		});
 		wsConnection = ws;
 
 		ws.on("open", () => {
@@ -530,7 +532,9 @@ function handleReconnect() {
 	const repoPath = pathToWatch.endsWith("/") ? pathToWatch.slice(0, -1) : pathToWatch;
 	gitStore.connect(repoPath);
 
-	const ws = api.ws.fs.watch.subscribe();
+	const ws = api.ws.fs.watch.subscribe({
+		query: authTokenQueryGet(),
+	});
 	wsConnection = ws;
 
 	ws.on("open", () => {

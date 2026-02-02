@@ -12,8 +12,9 @@ import StatusBar from "$lib/statusBar/StatusBar.component.svelte";
 import StatusBarItem from "$lib/statusBar/_StatusBarItem.svelte";
 import StatusBarSeparator from "$lib/statusBar/_StatusBarSeparator.svelte";
 import { IndicatorDotColor } from "$lib/common/indicatorDot.lib";
-import { api } from "$lib/api/api.client";
-import { Settings, Columns2, AlignJustify } from "lucide-svelte";
+import { api, authTokenQueryGet } from "$lib/api/api.client";
+import { Settings, Columns2, AlignJustify, LogOut } from "lucide-svelte";
+import { goto } from "$app/navigation";
 import { diffSettings, DiffViewMode } from "$lib/git/diffSettings.svelte";
 import GeneralSettingsModal from "./GeneralSettingsModal.component.svelte";
 
@@ -36,7 +37,9 @@ onMount(() => {
 	function connect() {
 		if (isDestroyed) return;
 
-		ws = api.ws.system.stats.subscribe();
+		ws = api.ws.system.stats.subscribe({
+			query: authTokenQueryGet(),
+		});
 
 		ws.on("open", () => {
 			isConnected = true;
@@ -103,6 +106,11 @@ const memIndicator = $derived(
 );
 
 const connectionIndicator = $derived(isConnected ? IndicatorDotColor.Green : IndicatorDotColor.Red);
+
+function handleLogout() {
+	localStorage.removeItem("auth_token");
+	goto("/login");
+}
 </script>
 
 <StatusBar>
@@ -134,8 +142,17 @@ const connectionIndicator = $derived(isConnected ? IndicatorDotColor.Green : Ind
 			type="button"
 			onclick={() => (settingsOpen = true)}
 			class="-ml-2 flex items-center justify-center text-text-tertiary hover:text-text-secondary transition-colors"
+			title="Settings"
 		>
 			<Settings class="size-3" />
+		</button>
+		<button
+			type="button"
+			onclick={handleLogout}
+			class="flex items-center justify-center text-text-tertiary hover:text-terminal-red transition-colors"
+			title="Logout"
+		>
+			<LogOut class="size-3" />
 		</button>
 	{/snippet}
 </StatusBar>

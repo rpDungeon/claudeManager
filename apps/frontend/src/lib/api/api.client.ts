@@ -35,4 +35,17 @@ export const api = treaty<Api>(backendUrl, {
 	},
 });
 
+export function authTokenQueryGet():
+	| {
+			token: string;
+	  }
+	| undefined {
+	if (typeof localStorage === "undefined") return undefined;
+	const token = localStorage.getItem("auth_token");
+	if (!token) return undefined;
+	return {
+		token,
+	};
+}
+
 export type { Api };
