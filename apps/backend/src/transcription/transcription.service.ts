@@ -1,6 +1,26 @@
 import { Mistral } from "@mistralai/mistralai";
 
-const MODEL_ID = "voxtral-small-latest";
+const TRANSCRIPTION_MODEL_ID = "voxtral-mini-latest";
+const LEGACY_MODEL_ID = "voxtral-small-latest";
+
+const CONTEXT_BIAS_TERMS = [
+	"Claude",
+	"TypeScript",
+	"Svelte",
+	"SvelteKit",
+	"Bun",
+	"ElysiaJS",
+	"Drizzle",
+	"xterm",
+	"paneforge",
+	"git",
+	"npm",
+	"FFmpeg",
+	"WebSocket",
+	"PTY",
+	"SQLite",
+	"Tailwind",
+];
 
 async function audioConvertToMp3(inputBuffer: Buffer): Promise<Buffer> {
 	const proc = Bun.spawn(
@@ -47,7 +67,47 @@ class TranscriptionService {
 		});
 	}
 
-	async transcriptionFromBase64(audioBase64: string, language?: string): Promise<string> {
+	private get useLegacy(): boolean {
+		return Bun.env.TRANSCRIPTION_USE_LEGACY === "true";
+	}
+
+	async transcriptionFromBuffer(audioBuffer: Buffer, language?: string): Promise<string> {
+		const mp3Buffer = await audioConvertToMp3(audioBuffer);
+
+		if (this.useLegacy) {
+			return this.transcriptionLegacyChat(mp3Buffer.toString("base64"), language);
+		}
+
+		return this.transcriptionEndpoint(mp3Buffer, language);
+	}
+
+	private async transcriptionEndpoint(mp3Buffer: Buffer, language?: string): Promise<string> {
+		const file = new File(
+			[
+				new Uint8Array(mp3Buffer),
+			],
+			"audio.mp3",
+			{
+				type: "audio/mpeg",
+			},
+		);
+
+		const response = await this.client.audio.transcriptions.complete({
+			contextBias: CONTEXT_BIAS_TERMS,
+			file,
+			language: language ?? undefined,
+			model: TRANSCRIPTION_MODEL_ID,
+			temperature: 0.1,
+		});
+
+		if (!response.text) {
+			throw new Error("Failed to get transcription response");
+		}
+
+		return response.text;
+	}
+
+	private async transcriptionLegacyChat(audioBase64: string, language?: string): Promise<string> {
 		let prompt = `Transcribe this audio exactly as spoken.
 The speaker has a German accent speaking English. Interpret phonetically ambiguous words in context.
 Common topics: programming, software development, terminal commands, Claude AI, git, TypeScript, Svelte.`;
@@ -72,7 +132,7 @@ Common topics: programming, software development, terminal commands, Claude AI, 
 					role: "user",
 				},
 			],
-			model: MODEL_ID,
+			model: LEGACY_MODEL_ID,
 			temperature: 0.1,
 		});
 
@@ -82,12 +142,6 @@ Common topics: programming, software development, terminal commands, Claude AI, 
 		}
 
 		return message.content;
-	}
-
-	async transcriptionFromBuffer(audioBuffer: Buffer, language?: string): Promise<string> {
-		const mp3Buffer = await audioConvertToMp3(audioBuffer);
-		const audioBase64 = mp3Buffer.toString("base64");
-		return this.transcriptionFromBase64(audioBase64, language);
 	}
 }
 

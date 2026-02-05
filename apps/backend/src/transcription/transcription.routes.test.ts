@@ -9,12 +9,11 @@ const app = new Elysia().use(transcriptionRoutes);
 const SAMPLE_AUDIO_URL = "https://docs.mistral.ai/audio/obama.mp3";
 
 describe("transcription service", () => {
-	it("transcribes audio from base64", async () => {
+	it("transcribes audio from buffer", async () => {
 		const response = await fetch(SAMPLE_AUDIO_URL);
 		const arrayBuffer = await response.arrayBuffer();
-		const audioBase64 = Buffer.from(arrayBuffer).toString("base64");
 
-		const transcription = await transcriptionService.transcriptionFromBase64(audioBase64);
+		const transcription = await transcriptionService.transcriptionFromBuffer(Buffer.from(arrayBuffer));
 
 		expect(typeof transcription).toBe("string");
 		expect(transcription.length).toBeGreaterThan(0);
