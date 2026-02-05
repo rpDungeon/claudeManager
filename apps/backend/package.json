@@ -4,7 +4,7 @@
 		"@elysiajs/bearer": "^1.4.2",
 		"@elysiajs/cors": "^1.1.1",
 		"@elysiajs/jwt": "^1.1.1",
-		"@mistralai/mistralai": "^1.11.0",
+		"@mistralai/mistralai": "^1.14.0",
 		"@xterm/addon-serialize": "^0.14.0",
 		"@xterm/headless": "^6.0.0",
 		"bun-pty": "^0.4.2",
