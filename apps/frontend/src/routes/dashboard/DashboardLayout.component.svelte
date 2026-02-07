@@ -669,10 +669,12 @@ function handleItemDrop(droppedItemId: string, targetContainerId: string) {
 function handleSplitResize(containerId: string, sizes: number[]) {
 	const container = data.desktop.containers[containerId];
 	if (container?.type === "split") {
-		(container as LayoutContainerSplit).sizes = sizes as Percentage[];
-		data = {
-			...data,
-		};
+		const splitContainer = container as LayoutContainerSplit;
+		const currentSizes = splitContainer.sizes;
+		if (currentSizes.length === sizes.length && currentSizes.every((s, i) => Math.abs(s - sizes[i]) < 0.01)) {
+			return;
+		}
+		splitContainer.sizes = sizes as Percentage[];
 		markDirty();
 	}
 }
