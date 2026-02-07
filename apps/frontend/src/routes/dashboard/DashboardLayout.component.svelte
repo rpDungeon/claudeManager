@@ -659,9 +659,6 @@ function handleItemDrop(droppedItemId: string, targetContainerId: string) {
 		}
 
 		cleanupEmptyContainers();
-		data = {
-			...data,
-		};
 		markDirty();
 	}
 }
@@ -776,9 +773,6 @@ function handleSplitDrop(droppedItemId: string, targetContainerId: string, posit
 	}
 
 	cleanupEmptyContainers();
-	data = {
-		...data,
-	};
 	markDirty();
 }
 
@@ -1023,9 +1017,6 @@ async function handleItemClose(containerId: string, itemId: string) {
 
 	delete data.items[itemId];
 	cleanupEmptyContainers();
-	data = {
-		...data,
-	};
 	markDirty();
 }
 

@@ -78,8 +78,6 @@ function snapSizesToEqual(sizes: number[]): number[] {
 function handleLayoutChange(sizes: number[]) {
 	if (isDragging) {
 		pendingSizes = sizes;
-	} else {
-		onSplitResize?.(container.id, sizes);
 	}
 }
 
