@@ -31,6 +31,7 @@ type TerminalInstance = {
 	exitCode: number | null;
 	foregroundProcess: string | null;
 	lastError: string | null;
+	dismissedAt: number;
 	needsAttention: boolean;
 	outputIdle: boolean;
 	settledAt: number;
@@ -52,6 +53,7 @@ export function terminalInstanceAttentionClear(terminalId: TerminalId): void {
 	const instance = instances.get(terminalId);
 	if (instance) {
 		instance.needsAttention = false;
+		instance.dismissedAt = Date.now();
 	}
 }
 
@@ -91,6 +93,7 @@ export function terminalInstanceCreate(terminalId: TerminalId): TerminalInstance
 		},
 		connectionStatus: TerminalConnectionStatus.Disconnected,
 		container: null,
+		dismissedAt: 0,
 		exitCode: null,
 		foregroundProcess: null,
 		lastError: null,
@@ -512,7 +515,10 @@ function terminalDispatchServerMessage(terminalId: TerminalId, message: ServerMe
 				instance.needsAttention = false;
 			}
 			if (message.idle && !instance.outputIdle && Date.now() > instance.settledAt) {
-				instance.needsAttention = true;
+				const timeSinceDismiss = Date.now() - instance.dismissedAt;
+				if (timeSinceDismiss > 5000) {
+					instance.needsAttention = true;
+				}
 			}
 			instance.outputIdle = message.idle;
 			break;
