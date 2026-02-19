@@ -17,6 +17,7 @@ import TerminalSidebar from "./sidebar/TerminalSidebar.component.svelte";
 import {
 	terminalInstanceCreate,
 	terminalInstanceCopySelection,
+	terminalInstanceCopyViewport,
 	terminalInstanceDestroy,
 	terminalInstanceFit,
 	terminalInstanceFocus,
@@ -83,6 +84,7 @@ let resizeTimeout: ReturnType<typeof setTimeout> | undefined;
 let mountCount = 0;
 let voiceRecorderState = $state(VoiceRecorderState.Idle);
 let isSidebarOpen = $state(false);
+let copyFlash = $state(false);
 let scrollLockEnabled = $derived(terminalId ? terminalScrollLockGet(terminalId) : false);
 let mediaRecorder: MediaRecorder | null = null;
 let audioChunks: Blob[] = [];
@@ -300,6 +302,17 @@ function handleVoiceStopAndSend() {
 	}
 }
 
+async function handleCopyViewport() {
+	if (!terminalId) return;
+	const success = await terminalInstanceCopyViewport(terminalId);
+	if (success) {
+		copyFlash = true;
+		setTimeout(() => {
+			copyFlash = false;
+		}, 600);
+	}
+}
+
 function handleScrollLockToggle() {
 	if (terminalId) {
 		terminalScrollLockToggle(terminalId);
@@ -470,6 +483,15 @@ onDestroy(() => {
   />
 
   {#if terminalId}
+    <button
+      type="button"
+      class="absolute top-0 right-5 z-10 flex h-5 w-5 items-center justify-center text-[8px] text-text-tertiary hover:text-terminal-green hover:bg-bg-elevated transition-colors"
+      class:text-terminal-green={copyFlash}
+      onclick={handleCopyViewport}
+      title="Copy viewport to clipboard"
+    >
+      ⎘
+    </button>
     <button
       type="button"
       class="absolute top-0 right-0 z-10 flex h-5 w-5 items-center justify-center text-[8px] text-text-tertiary hover:text-terminal-green hover:bg-bg-elevated transition-colors"

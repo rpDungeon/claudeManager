@@ -590,6 +590,34 @@ export async function terminalInstanceCopySelection(terminalId: TerminalId): Pro
 	}
 }
 
+export async function terminalInstanceCopyViewport(terminalId: TerminalId): Promise<boolean> {
+	const instance = instances.get(terminalId);
+	if (!instance) return false;
+
+	const terminal = instance.terminal;
+	const buffer = terminal.buffer.active;
+	const lines: string[] = [];
+
+	for (let i = buffer.viewportY; i < buffer.viewportY + terminal.rows; i++) {
+		const line = buffer.getLine(i);
+		lines.push(line ? line.translateToString(true) : "");
+	}
+
+	while (lines.length > 0 && lines[lines.length - 1]?.trim() === "") {
+		lines.pop();
+	}
+
+	const text = lines.join("\n");
+	if (!text) return false;
+
+	try {
+		await navigator.clipboard.writeText(text);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 export function terminalInstanceSelectAll(terminalId: TerminalId): void {
 	const instance = instances.get(terminalId);
 	if (!instance) return;
