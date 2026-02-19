@@ -26,9 +26,11 @@ interface Props {
 	isOpen: boolean;
 	onclose: () => void;
 	onColorChange?: (color: TerminalColor) => void;
+	onCopyViewport?: () => void;
+	copyFlash?: boolean;
 }
 
-let { terminalId, isOpen, onclose, onColorChange }: Props = $props();
+let { terminalId, isOpen, onclose, onColorChange, onCopyViewport, copyFlash = false }: Props = $props();
 
 let activeTab = $state(TerminalSidebarTab.Activity);
 let inputLogs = $state<TerminalInputLogEntry[]>([]);
@@ -216,6 +218,20 @@ async function handleColorSelect(color: TerminalColor) {
         >
           Settings
         </button>
+        {#if onCopyViewport}
+          <button
+            type="button"
+            class="flex h-full w-6 items-center justify-center text-[10px] transition-colors border-l border-border-default"
+            class:text-terminal-green={copyFlash}
+            class:text-text-tertiary={!copyFlash}
+            class:hover:text-terminal-green={!copyFlash}
+            class:hover:bg-bg-elevated={!copyFlash}
+            onclick={onCopyViewport}
+            title="Copy viewport to clipboard"
+          >
+            ⎘
+          </button>
+        {/if}
         <button
           type="button"
           class="flex h-full w-6 items-center justify-center text-[10px] text-text-tertiary hover:text-terminal-green hover:bg-bg-elevated transition-colors border-l border-border-default"

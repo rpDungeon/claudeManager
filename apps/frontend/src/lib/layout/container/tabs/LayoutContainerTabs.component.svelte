@@ -10,8 +10,10 @@ usage: Pass container data with childIds to render tabs with content switching a
 <script lang="ts">
 import type { LayoutContainerTabs } from "@claude-manager/common/src/layout/container/container.tabs";
 import type { LayoutItem } from "@claude-manager/common/src/layout/item/item.types";
+import type { TerminalId } from "@claude-manager/common/src/terminal/terminal.types";
 import type { LayoutDropZonePosition } from "../../dropzone/dropzone.lib";
 import type { ContextMenuPosition } from "$lib/common/contextMenu/contextMenu.lib";
+import { terminalInstanceAttentionClear, terminalInstanceGet } from "$lib/terminal/terminal.service.svelte";
 import LayoutItem_ from "../../item/_LayoutItem.svelte";
 import LayoutDropZone from "../../dropzone/LayoutDropZone.component.svelte";
 import LayoutContainerTabsContextMenu from "./LayoutContainerTabsContextMenu.component.svelte";
@@ -52,6 +54,15 @@ let {
 
 const activeTabId = $derived(container.activeTabId ?? container.childIds[0] ?? null);
 
+$effect(() => {
+	if (activeItemId) {
+		const item = items[activeItemId];
+		if (item?.type === "terminal") {
+			terminalInstanceAttentionClear(activeItemId as TerminalId);
+		}
+	}
+});
+
 let dragOverTabId = $state<string | null>(null);
 let isDragOverContent = $state(false);
 let contextMenuPosition = $state<ContextMenuPosition | null>(null);
@@ -86,6 +97,10 @@ $effect(() => {
 });
 
 function handleTabClick(itemId: string) {
+	const item = items[itemId];
+	if (item?.type === "terminal") {
+		terminalInstanceAttentionClear(itemId as TerminalId);
+	}
 	onTabSelect?.(container.id, itemId);
 }
 
@@ -259,16 +274,20 @@ function handleDropZoneDrop(containerId: string, zone: LayoutDropZonePosition, e
 		>
 			{#each container.childIds as childId (childId)}
 				{@const item = items[childId]}
+				{@const terminalInstance = item?.type === "terminal" ? terminalInstanceGet(childId as TerminalId) : undefined}
+				{@const needsAttention = terminalInstance ? terminalInstance.needsAttention : false}
+				{@const showNotification = needsAttention && activeItemId !== childId}
 				{#if item}
 					<button
 						type="button"
 						role="tab"
 						aria-selected={activeTabId === childId}
-						class="shrink-0 px-2 py-0.5 text-[10px] transition-colors duration-100 cursor-grab
+						class="shrink-0 flex items-center gap-1 px-2 py-0.5 text-[10px] transition-all duration-300 cursor-grab
 							{activeTabId === childId
 								? 'bg-bg-elevated text-text-primary'
 								: 'text-text-tertiary hover:text-text-secondary hover:bg-bg-elevated/50'}
-							{dragOverTabId === childId ? 'ring-1 ring-terminal-green ring-inset' : ''}"
+							{dragOverTabId === childId ? 'ring-1 ring-terminal-green ring-inset' : ''}
+							{showNotification ? 'ring-1 ring-terminal-green/30 ring-inset' : ''}"
 						draggable="true"
 						onclick={() => handleTabClick(childId)}
 						oncontextmenu={(e) => handleTabContextMenu(childId, e)}
@@ -278,6 +297,12 @@ function handleDropZoneDrop(containerId: string, zone: LayoutDropZonePosition, e
 						ondrop={(e) => handleTabDrop(childId, e)}
 					>
 						{item.label ?? item.type}
+						{#if terminalInstance}
+							<span
+								class="inline-block size-1 rounded-full bg-terminal-green shadow-[0_0_4px_var(--color-terminal-green)] transition-opacity duration-300
+									{showNotification ? 'opacity-100' : 'opacity-0'}"
+							></span>
+						{/if}
 					</button>
 				{/if}
 			{/each}

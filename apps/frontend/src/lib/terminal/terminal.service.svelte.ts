@@ -31,6 +31,9 @@ type TerminalInstance = {
 	exitCode: number | null;
 	foregroundProcess: string | null;
 	lastError: string | null;
+	needsAttention: boolean;
+	outputIdle: boolean;
+	settledAt: number;
 	onDataDisposable: {
 		dispose: () => void;
 	} | null;
@@ -43,6 +46,13 @@ const instances = new SvelteMap<TerminalId, TerminalInstance>();
 
 export function terminalInstanceGet(terminalId: TerminalId): TerminalInstance | undefined {
 	return instances.get(terminalId);
+}
+
+export function terminalInstanceAttentionClear(terminalId: TerminalId): void {
+	const instance = instances.get(terminalId);
+	if (instance) {
+		instance.needsAttention = false;
+	}
 }
 
 export function terminalInstanceCreate(terminalId: TerminalId): TerminalInstance {
@@ -84,8 +94,11 @@ export function terminalInstanceCreate(terminalId: TerminalId): TerminalInstance
 		exitCode: null,
 		foregroundProcess: null,
 		lastError: null,
+		needsAttention: false,
 		onDataDisposable: null,
+		outputIdle: false,
 		scrollLock: false,
+		settledAt: 0,
 		terminal,
 		websocket: null,
 	});
@@ -360,6 +373,7 @@ export function terminalWebsocketConnect(terminalId: TerminalId): void {
 
 	ws.on("open", () => {
 		instance.connectionStatus = TerminalConnectionStatus.Connected;
+		instance.settledAt = Date.now() + 10_000;
 		reconnectState.attempt = 0;
 
 		const dims = instance.addons.fit.proposeDimensions();
@@ -491,6 +505,16 @@ function terminalDispatchServerMessage(terminalId: TerminalId, message: ServerMe
 
 		case "foreground_process":
 			instance.foregroundProcess = message.process;
+			break;
+
+		case "output_idle":
+			if (!message.idle) {
+				instance.needsAttention = false;
+			}
+			if (message.idle && !instance.outputIdle && Date.now() > instance.settledAt) {
+				instance.needsAttention = true;
+			}
+			instance.outputIdle = message.idle;
 			break;
 
 		case "ping":

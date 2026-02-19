@@ -37,6 +37,7 @@ const dtachPidCache = new Map<string, number>();
 
 // Debounce delay for foreground process checks (ms)
 const FOREGROUND_PROCESS_DEBOUNCE_MS = 300;
+const OUTPUT_IDLE_TIMEOUT_MS = 3000;
 
 const PID_REGEX = /^\d+$/;
 const WHITESPACE_REGEX = /\s+/;
@@ -162,6 +163,7 @@ function clearDtachPidCache(socketPath: string): void {
 }
 
 type ForegroundProcessCallback = (process: string | null) => void;
+type OutputIdleCallback = (idle: boolean) => void;
 
 type TerminalPtyInstance = {
 	foregroundProcessGet: () => string | null;
@@ -170,6 +172,7 @@ type TerminalPtyInstance = {
 	kill: () => void;
 	onData: (callback: (message: TerminalPtyMessageServer) => void) => Unsubscribe;
 	onForegroundProcessChange: (callback: ForegroundProcessCallback) => Unsubscribe;
+	onOutputIdleChange: (callback: OutputIdleCallback) => Unsubscribe;
 	resize: (cols: number, rows: number) => void;
 	write: (data: string) => void;
 };
@@ -181,7 +184,10 @@ type InternalPtyState = {
 	debounceTimer: ReturnType<typeof setTimeout> | null;
 	foregroundProcessCallbacks: Set<ForegroundProcessCallback>;
 	headlessTerminal: Terminal;
+	idleTimer: ReturnType<typeof setTimeout> | null;
 	lastForegroundProcess: string | null;
+	outputIdle: boolean;
+	outputIdleCallbacks: Set<OutputIdleCallback>;
 	process: IPty;
 	rows: number;
 	serializeAddon: SerializeAddon;
@@ -269,10 +275,16 @@ class PtyService {
 			},
 			onForegroundProcessChange: (callback) => {
 				state.foregroundProcessCallbacks.add(callback);
-				// Immediately call with current value
 				callback(state.lastForegroundProcess);
 				return () => {
 					state.foregroundProcessCallbacks.delete(callback);
+				};
+			},
+			onOutputIdleChange: (callback) => {
+				state.outputIdleCallbacks.add(callback);
+				callback(state.outputIdle);
+				return () => {
+					state.outputIdleCallbacks.delete(callback);
 				};
 			},
 			resize: (cols, rows) => {
@@ -353,6 +365,7 @@ class PtyService {
 
 		const callbacks = new Set<(message: TerminalPtyMessageServer) => void>();
 		const foregroundProcessCallbacks = new Set<ForegroundProcessCallback>();
+		const outputIdleCallbacks = new Set<OutputIdleCallback>();
 
 		const state: InternalPtyState = {
 			callbacks,
@@ -361,7 +374,10 @@ class PtyService {
 			debounceTimer: null,
 			foregroundProcessCallbacks,
 			headlessTerminal,
+			idleTimer: null,
 			lastForegroundProcess: null,
+			outputIdle: true,
+			outputIdleCallbacks,
 			process,
 			rows,
 			serializeAddon,
@@ -380,6 +396,24 @@ class PtyService {
 			}
 		};
 
+		const outputIdleTimerReset = () => {
+			if (state.outputIdle) {
+				state.outputIdle = false;
+				for (const cb of outputIdleCallbacks) {
+					cb(false);
+				}
+			}
+			if (state.idleTimer) {
+				clearTimeout(state.idleTimer);
+			}
+			state.idleTimer = setTimeout(() => {
+				state.outputIdle = true;
+				for (const cb of outputIdleCallbacks) {
+					cb(true);
+				}
+			}, OUTPUT_IDLE_TIMEOUT_MS);
+		};
+
 		process.onData((data) => {
 			headlessTerminal.write(data);
 
@@ -391,7 +425,8 @@ class PtyService {
 				cb(message);
 			}
 
-			// Debounced foreground process check - only when there's activity
+			outputIdleTimerReset();
+
 			if (state.debounceTimer) {
 				clearTimeout(state.debounceTimer);
 			}
@@ -408,13 +443,18 @@ class PtyService {
 			}
 			callbacks.clear();
 			foregroundProcessCallbacks.clear();
+			outputIdleCallbacks.clear();
 			headlessTerminal.dispose();
 			this.instances.delete(terminalId);
 
-			// Clean up debounce timer
 			if (state.debounceTimer) {
 				clearTimeout(state.debounceTimer);
 				state.debounceTimer = null;
+			}
+
+			if (state.idleTimer) {
+				clearTimeout(state.idleTimer);
+				state.idleTimer = null;
 			}
 
 			// Clear dtach PID cache
@@ -464,13 +504,17 @@ class PtyService {
 			return false;
 		}
 
-		// Clean up debounce timer
 		if (state.debounceTimer) {
 			clearTimeout(state.debounceTimer);
 		}
 
+		if (state.idleTimer) {
+			clearTimeout(state.idleTimer);
+		}
+
 		state.callbacks.clear();
 		state.foregroundProcessCallbacks.clear();
+		state.outputIdleCallbacks.clear();
 		state.headlessTerminal.dispose();
 		state.process.kill();
 		this.instances.delete(terminalId);

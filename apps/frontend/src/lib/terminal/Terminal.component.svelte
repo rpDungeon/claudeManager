@@ -149,6 +149,7 @@ const contextMenuItems = $derived.by((): ContextMenuItem<TerminalContextMenuActi
 const instance = $derived(terminalId ? terminalInstanceGet(terminalId) : undefined);
 const connectionStatus = $derived(instance?.connectionStatus ?? TerminalConnectionStatus.Disconnected);
 const foregroundProcess = $derived(instance?.foregroundProcess ?? null);
+const outputIdle = $derived(instance?.outputIdle ?? false);
 
 const displayTitle = $derived.by(() => {
 	const baseTitle = typeof title === "string" ? title : null;
@@ -167,7 +168,7 @@ const displayTitle = $derived.by(() => {
 const statusColor = $derived.by(() => {
 	switch (connectionStatus) {
 		case TerminalConnectionStatus.Connected:
-			return IndicatorDotColor.Green;
+			return outputIdle ? IndicatorDotColor.Gray : IndicatorDotColor.Green;
 		case TerminalConnectionStatus.Connecting:
 			return IndicatorDotColor.Amber;
 		case TerminalConnectionStatus.Error:
@@ -485,15 +486,6 @@ onDestroy(() => {
   {#if terminalId}
     <button
       type="button"
-      class="absolute top-0 right-5 z-10 flex h-5 w-5 items-center justify-center text-[8px] text-text-tertiary hover:text-terminal-green hover:bg-bg-elevated transition-colors"
-      class:text-terminal-green={copyFlash}
-      onclick={handleCopyViewport}
-      title="Copy viewport to clipboard"
-    >
-      ⎘
-    </button>
-    <button
-      type="button"
       class="absolute top-0 right-0 z-10 flex h-5 w-5 items-center justify-center text-[8px] text-text-tertiary hover:text-terminal-green hover:bg-bg-elevated transition-colors"
       class:text-terminal-green={isSidebarOpen}
       class:bg-bg-elevated={isSidebarOpen}
@@ -508,6 +500,8 @@ onDestroy(() => {
       isOpen={isSidebarOpen}
       onclose={() => (isSidebarOpen = false)}
       onColorChange={handleColorChange}
+      onCopyViewport={handleCopyViewport}
+      {copyFlash}
     />
 
     <div class="absolute bottom-3 right-3 z-10">

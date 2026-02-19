@@ -17,6 +17,7 @@ import { terminalPtyService } from "./pty.service";
 
 const unsubscribeMap = new Map<string, () => void>();
 const foregroundProcessUnsubscribeMap = new Map<string, () => void>();
+const outputIdleUnsubscribeMap = new Map<string, () => void>();
 const inputBufferMap = new Map<TerminalId, string>();
 const escapeStateMap = new Map<TerminalId, boolean>();
 
@@ -97,6 +98,12 @@ export const terminalPtyWebsocket = new Elysia({
 			foregroundProcessUnsubscribeMap.delete(ws.id);
 		}
 
+		const idleUnsubscribe = outputIdleUnsubscribeMap.get(ws.id);
+		if (idleUnsubscribe) {
+			idleUnsubscribe();
+			outputIdleUnsubscribeMap.delete(ws.id);
+		}
+
 		const keepalive = keepaliveMap.get(ws.id);
 		if (keepalive) {
 			clearInterval(keepalive.interval);
@@ -170,7 +177,6 @@ export const terminalPtyWebsocket = new Elysia({
 		const setupForegroundProcessSubscription = (ptyInstance: ReturnType<typeof terminalPtyService.instanceGet>) => {
 			if (!ptyInstance) return;
 
-			// Subscribe to foreground process changes (event-driven, no polling!)
 			const unsubscribe = ptyInstance.onForegroundProcessChange((process) => {
 				ws.send({
 					process,
@@ -179,6 +185,19 @@ export const terminalPtyWebsocket = new Elysia({
 			});
 
 			foregroundProcessUnsubscribeMap.set(ws.id, unsubscribe);
+		};
+
+		const setupOutputIdleSubscription = (ptyInstance: ReturnType<typeof terminalPtyService.instanceGet>) => {
+			if (!ptyInstance) return;
+
+			const unsubscribe = ptyInstance.onOutputIdleChange((idle) => {
+				ws.send({
+					idle,
+					type: TerminalPtyMessageServerType.OutputIdle,
+				});
+			});
+
+			outputIdleUnsubscribeMap.set(ws.id, unsubscribe);
 		};
 
 		const existingInstance = terminalPtyService.instanceGet(terminalId);
@@ -197,6 +216,7 @@ export const terminalPtyWebsocket = new Elysia({
 
 			unsubscribeMap.set(ws.id, unsubscribe);
 			setupForegroundProcessSubscription(existingInstance);
+			setupOutputIdleSubscription(existingInstance);
 			setupKeepalive();
 			return;
 		}
@@ -225,6 +245,7 @@ export const terminalPtyWebsocket = new Elysia({
 
 		unsubscribeMap.set(ws.id, unsubscribe);
 		setupForegroundProcessSubscription(instance);
+		setupOutputIdleSubscription(instance);
 		setupKeepalive();
 	},
 	params: z.object({

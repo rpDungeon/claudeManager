@@ -28,6 +28,7 @@ export enum TerminalPtyMessageServerType {
 	Exit = "exit",
 	ForegroundProcess = "foreground_process",
 	Output = "output",
+	OutputIdle = "output_idle",
 	Ping = "ping",
 }
 
@@ -51,6 +52,11 @@ const terminalPtyMessageServerForegroundProcessSchema = z.object({
 	type: z.literal(TerminalPtyMessageServerType.ForegroundProcess),
 });
 
+const terminalPtyMessageServerOutputIdleSchema = z.object({
+	idle: z.boolean(),
+	type: z.literal(TerminalPtyMessageServerType.OutputIdle),
+});
+
 const terminalPtyMessageServerPingSchema = z.object({
 	type: z.literal(TerminalPtyMessageServerType.Ping),
 });
@@ -60,6 +66,7 @@ export const terminalPtyMessageServerSchema = z.discriminatedUnion("type", [
 	terminalPtyMessageServerExitSchema,
 	terminalPtyMessageServerErrorSchema,
 	terminalPtyMessageServerForegroundProcessSchema,
+	terminalPtyMessageServerOutputIdleSchema,
 	terminalPtyMessageServerPingSchema,
 ]);
 
