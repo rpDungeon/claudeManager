@@ -111,7 +111,7 @@ class TranscriptionService {
 		const response = await this.client.audio.transcriptions.complete({
 			contextBias: CONTEXT_BIAS_TERMS,
 			file,
-			language: language ?? undefined,
+			language: language ?? "en",
 			model: TRANSCRIPTION_MODEL_ID,
 			temperature: 0.1,
 		});
