@@ -13,6 +13,7 @@ import type { LayoutItem } from "@claude-manager/common/src/layout/item/item.typ
 import type { TerminalId } from "@claude-manager/common/src/terminal/terminal.types";
 import type { LayoutDropZonePosition } from "../../dropzone/dropzone.lib";
 import type { ContextMenuPosition } from "$lib/common/contextMenu/contextMenu.lib";
+import { FILETREE_FILE_DRAG_MIME } from "$lib/fileTree/fileTree.lib";
 import { terminalInstanceAttentionClear, terminalInstanceGet } from "$lib/terminal/terminal.service.svelte";
 import LayoutItem_ from "../../item/_LayoutItem.svelte";
 import LayoutDropZone from "../../dropzone/LayoutDropZone.component.svelte";
@@ -34,6 +35,7 @@ interface Props {
 	onItemRename?: (containerId: string, itemId: string) => void;
 	onItemChangeUrl?: (containerId: string, itemId: string) => void;
 	onItemClose?: (containerId: string, itemId: string) => void;
+	onFileDrop?: (filePath: string, targetContainerId: string, position: LayoutDropZonePosition) => void;
 }
 
 let {
@@ -50,7 +52,14 @@ let {
 	onItemRename,
 	onItemChangeUrl,
 	onItemClose,
+	onFileDrop,
 }: Props = $props();
+
+function dragHasDroppableData(dataTransfer: DataTransfer): boolean {
+	return (
+		dataTransfer.types.includes("application/x-layout-item") || dataTransfer.types.includes(FILETREE_FILE_DRAG_MIME)
+	);
+}
 
 const activeTabId = $derived(container.activeTabId ?? container.childIds[0] ?? null);
 
@@ -191,6 +200,12 @@ function handleTabDrop(targetItemId: string, event: DragEvent) {
 	event.preventDefault();
 	dragOverTabId = null;
 
+	const filePath = event.dataTransfer?.getData(FILETREE_FILE_DRAG_MIME);
+	if (filePath) {
+		onFileDrop?.(filePath, container.id, "center");
+		return;
+	}
+
 	const droppedItemId = event.dataTransfer?.getData("application/x-layout-item");
 	const sourceContainerId = event.dataTransfer?.getData("application/x-source-container");
 
@@ -212,6 +227,13 @@ function handleContainerDragOver(event: DragEvent) {
 
 function handleContainerDrop(event: DragEvent) {
 	event.preventDefault();
+
+	const filePath = event.dataTransfer?.getData(FILETREE_FILE_DRAG_MIME);
+	if (filePath) {
+		onFileDrop?.(filePath, container.id, "center");
+		return;
+	}
+
 	const droppedItemId = event.dataTransfer?.getData("application/x-layout-item");
 	if (droppedItemId) {
 		onItemDrop?.(droppedItemId, container.id);
@@ -220,14 +242,14 @@ function handleContainerDrop(event: DragEvent) {
 
 function handleContentDragEnter(event: DragEvent) {
 	event.preventDefault();
-	if (event.dataTransfer?.types.includes("application/x-layout-item")) {
+	if (event.dataTransfer && dragHasDroppableData(event.dataTransfer)) {
 		isDragOverContent = true;
 	}
 }
 
 function handleContentDragOver(event: DragEvent) {
 	event.preventDefault();
-	if (!isDragOverContent && event.dataTransfer?.types.includes("application/x-layout-item")) {
+	if (!isDragOverContent && event.dataTransfer && dragHasDroppableData(event.dataTransfer)) {
 		isDragOverContent = true;
 	}
 }
@@ -243,6 +265,12 @@ function handleContentDragLeave(event: DragEvent) {
 
 function handleDropZoneDrop(containerId: string, zone: LayoutDropZonePosition, event: DragEvent) {
 	isDragOverContent = false;
+
+	const filePath = event.dataTransfer?.getData(FILETREE_FILE_DRAG_MIME);
+	if (filePath) {
+		onFileDrop?.(filePath, containerId, zone);
+		return;
+	}
 
 	const droppedItemId = event.dataTransfer?.getData("application/x-layout-item");
 	if (!droppedItemId) return;

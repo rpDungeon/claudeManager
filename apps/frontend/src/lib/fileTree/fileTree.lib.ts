@@ -49,3 +49,5 @@ export interface FileTreeDragData {
 	name: FileTreeItemData["name"];
 	type: FileTreeItemData["type"];
 }
+
+export const FILETREE_FILE_DRAG_MIME = "application/x-filetree-file";

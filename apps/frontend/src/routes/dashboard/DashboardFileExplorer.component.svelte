@@ -637,6 +637,7 @@ function handleReconnect() {
 				{rootId}
 				{selectedId}
 				{expandedIds}
+				draggable={true}
 				onSelect={handleSelect}
 				onToggle={handleToggle}
 				onDoubleClick={handleDoubleClick}

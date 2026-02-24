@@ -12,6 +12,7 @@ import type { TerminalId } from "@claude-manager/common/src/terminal/terminal.ty
 import type { Snippet } from "svelte";
 import { onMount, onDestroy } from "svelte";
 import TerminalBody from "./body/TerminalBody.component.svelte";
+import TerminalFooter from "./footer/TerminalFooter.component.svelte";
 import TerminalHeader from "./header/TerminalHeader.component.svelte";
 import TerminalSidebar from "./sidebar/TerminalSidebar.component.svelte";
 import {
@@ -40,6 +41,11 @@ import VoiceRecorder from "$lib/common/input/VoiceRecorder.component.svelte";
 import { VoiceRecorderState } from "$lib/common/input/voiceRecorder.lib";
 import { api } from "$lib/api/api.client";
 import { transcriptionHistoryAdd } from "./sidebar/terminalSidebar.lib.svelte";
+import {
+	terminalShortcutsGet,
+	terminalShortcutsLoad,
+	terminalShortcutsIsLoaded,
+} from "./shortcut/terminalShortcut.service.svelte";
 
 const WHITESPACE_REGEX = /\s+/;
 
@@ -84,8 +90,10 @@ let resizeTimeout: ReturnType<typeof setTimeout> | undefined;
 let mountCount = 0;
 let voiceRecorderState = $state(VoiceRecorderState.Idle);
 let isSidebarOpen = $state(false);
+let isFooterExpanded = $state(false);
 let copyFlash = $state(false);
 let scrollLockEnabled = $derived(terminalId ? terminalScrollLockGet(terminalId) : false);
+const footerShortcuts = $derived(terminalShortcutsGet());
 let mediaRecorder: MediaRecorder | null = null;
 let audioChunks: Blob[] = [];
 
@@ -465,8 +473,37 @@ async function handleVoiceToggle() {
 	}
 }
 
+function handleShortcutClick(
+	shortcut: import("@claude-manager/common/src/terminal/shortcut/terminalShortcut.types").TerminalShortcut,
+) {
+	if (!terminalId) return;
+	const id = terminalId;
+	if (shortcut.sendCtrlC) {
+		terminalInstancePaste(id, "\x03");
+		setTimeout(() => {
+			terminalInstancePaste(id, "\x03");
+			setTimeout(() => {
+				terminalInstancePaste(id, shortcut.command);
+				if (shortcut.sendEnter) {
+					setTimeout(() => terminalInstancePaste(id, "\r"), 50);
+				}
+				terminalInstanceFocus(id);
+			}, 50);
+		}, 50);
+	} else {
+		terminalInstancePaste(id, shortcut.command);
+		if (shortcut.sendEnter) {
+			setTimeout(() => terminalInstancePaste(id, "\r"), 50);
+		}
+		terminalInstanceFocus(id);
+	}
+}
+
 onMount(() => {
 	console.log("[Terminal] onMount:", terminalId);
+	if (!terminalShortcutsIsLoaded()) {
+		terminalShortcutsLoad();
+	}
 });
 
 onDestroy(() => {
@@ -499,6 +536,12 @@ onDestroy(() => {
     onclick={handleBodyClick}
     oncontextmenu={handleContextMenu}
     onMount={handleBodyMount}
+  />
+  <TerminalFooter
+    isExpanded={isFooterExpanded}
+    shortcuts={footerShortcuts}
+    onToggle={() => (isFooterExpanded = !isFooterExpanded)}
+    onShortcutClick={handleShortcutClick}
   />
 
   {#if terminalId}

@@ -14,6 +14,7 @@ import Self from "./FileTreeNode.component.svelte";
 import {
 	FileTreeItemType,
 	FILETREE_NOTFOUND_ITEM,
+	FILETREE_FILE_DRAG_MIME,
 	type FileTreeItemData,
 	type FileTreeDragData,
 } from "../fileTree.lib";
@@ -106,6 +107,9 @@ function handleDragStart(event: DragEvent) {
 	};
 
 	event.dataTransfer.setData("application/json", JSON.stringify(dragData));
+	if (item.type === FileTreeItemType.File) {
+		event.dataTransfer.setData(FILETREE_FILE_DRAG_MIME, item.id);
+	}
 	event.dataTransfer.effectAllowed = "move";
 	onDragStart?.(itemId, event);
 }

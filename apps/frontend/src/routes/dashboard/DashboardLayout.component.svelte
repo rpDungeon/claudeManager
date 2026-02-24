@@ -335,6 +335,7 @@ async function saveLayout() {
 	saveTimeout = setTimeout(async () => {
 		if (!isDirty || isSaving) return;
 
+		isDirty = false;
 		isSaving = true;
 		await api
 			.layouts({
@@ -348,7 +349,7 @@ async function saveLayout() {
 		if (isDirty) {
 			saveLayout();
 		}
-	}, 100);
+	}, 250);
 }
 
 let previousLayoutId: LayoutId | null = null;
@@ -427,7 +428,6 @@ function connectSSE(targetLayoutId: LayoutId, _isInitial: boolean) {
 
 	eventSource.addEventListener("update", (e: MessageEvent) => {
 		if (isDirty || isSaving) {
-			isDirty = false;
 			return;
 		}
 
@@ -773,6 +773,115 @@ function handleSplitDrop(droppedItemId: string, targetContainerId: string, posit
 	}
 
 	cleanupEmptyContainers();
+	markDirty();
+}
+
+function handleFileDrop(filePath: string, targetContainerId: string, position: LayoutDropZonePosition) {
+	const itemId = crypto.randomUUID();
+	const fileName = filePath.split("/").pop() || "Editor";
+
+	const editorItem: LayoutItemEditor = {
+		filePath,
+		id: itemId,
+		label: fileName,
+		type: "editor",
+	};
+
+	data.items[itemId] = editorItem;
+
+	if (position === "center") {
+		const container = data.desktop.containers[targetContainerId];
+		if (container?.type === "tabs") {
+			const tabsContainer = container as LayoutContainerTabs;
+			tabsContainer.childIds = [
+				...tabsContainer.childIds,
+				itemId,
+			];
+			tabsContainer.activeTabId = itemId;
+		}
+	} else {
+		const newTabsId = `tabs-${++splitCounter}-${Date.now()}`;
+
+		const newTabsContainer: LayoutContainerTabs = {
+			activeTabId: itemId,
+			childIds: [
+				itemId,
+			],
+			id: newTabsId,
+			type: "tabs",
+		};
+
+		const direction: "horizontal" | "vertical" =
+			position === "left" || position === "right" ? "horizontal" : "vertical";
+		const isFirstPosition = position === "left" || position === "top";
+
+		const parentContainerId = findParentContainer(targetContainerId);
+		const parentContainer = parentContainerId ? data.desktop.containers[parentContainerId] : null;
+
+		data.desktop.containers[newTabsId] = newTabsContainer;
+
+		if (parentContainer?.type === "split" && (parentContainer as LayoutContainerSplit).direction === direction) {
+			const splitParent = parentContainer as LayoutContainerSplit;
+			const targetIdx = splitParent.childIds.indexOf(targetContainerId);
+
+			if (targetIdx !== -1) {
+				const insertIdx = isFirstPosition ? targetIdx : targetIdx + 1;
+				splitParent.childIds = [
+					...splitParent.childIds.slice(0, insertIdx),
+					newTabsId,
+					...splitParent.childIds.slice(insertIdx),
+				];
+
+				const equalSize = Math.floor(100 / splitParent.childIds.length);
+				const remainder = 100 - equalSize * splitParent.childIds.length;
+				splitParent.sizes = splitParent.childIds.map(
+					(_, i) => (i === splitParent.childIds.length - 1 ? equalSize + remainder : equalSize) as Percentage,
+				);
+			}
+		} else {
+			const newSplitId = `split-${splitCounter}-${Date.now()}`;
+			const childIds = isFirstPosition
+				? [
+						newTabsId,
+						targetContainerId,
+					]
+				: [
+						targetContainerId,
+						newTabsId,
+					];
+
+			const newSplitContainer: LayoutContainerSplit = {
+				childIds,
+				direction,
+				id: newSplitId,
+				sizes: [
+					50,
+					50,
+				] as Percentage[],
+				type: "split",
+			};
+
+			data.desktop.containers[newSplitId] = newSplitContainer;
+
+			if (parentContainerId) {
+				const parent = data.desktop.containers[parentContainerId];
+				if (parent.type === "split") {
+					const splitParent = parent as LayoutContainerSplit;
+					const idx = splitParent.childIds.indexOf(targetContainerId);
+					if (idx !== -1) {
+						splitParent.childIds[idx] = newSplitId;
+					}
+				}
+			} else if (data.desktop.rootId === targetContainerId) {
+				data.desktop.rootId = newSplitId;
+			}
+		}
+	}
+
+	activeItemId = itemId;
+	data = {
+		...data,
+	};
 	markDirty();
 }
 
@@ -1171,6 +1280,7 @@ async function handleAddItemToEmptyLayout(itemType: AddItemType) {
 			onItemChangeUrl={isMobile ? undefined : handleItemChangeUrl}
 			onItemClose={isMobile ? undefined : handleItemClose}
 			onAddItemToEmptyLayout={isMobile ? undefined : handleAddItemToEmptyLayout}
+			onFileDrop={isMobile ? undefined : handleFileDrop}
 		/>
 	{/if}
 </div>

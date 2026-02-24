@@ -45,6 +45,7 @@ interface Props {
 	onItemChangeUrl?: (containerId: string, itemId: string) => void;
 	onItemClose?: (containerId: string, itemId: string) => void;
 	onAddItemToEmptyLayout?: (itemType: AddItemType) => void;
+	onFileDrop?: (filePath: string, targetContainerId: string, position: LayoutDropZonePosition) => void;
 }
 
 let {
@@ -63,6 +64,7 @@ let {
 	onItemChangeUrl,
 	onItemClose,
 	onAddItemToEmptyLayout,
+	onFileDrop,
 }: Props = $props();
 
 let addMenuPosition = $state<ContextMenuPosition | null>(null);
@@ -137,6 +139,7 @@ function handleItemClick(itemId: string) {
 			{onItemRename}
 			{onItemChangeUrl}
 			{onItemClose}
+			{onFileDrop}
 		/>
 	{:else if root?.type === "item"}
 		<LayoutItem_

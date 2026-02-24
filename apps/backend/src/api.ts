@@ -18,6 +18,7 @@ import { systemRoutes } from "./system/system.routes";
 import { systemWebsocket } from "./system/system.websocket";
 import { terminalInputlogWebsocket } from "./terminal/inputlog/inputlog.websocket";
 import { terminalPtyWebsocket } from "./terminal/pty/pty.websocket";
+import { terminalShortcutRoutes } from "./terminal/shortcut/shortcut.routes";
 import { terminalRoutes } from "./terminal/terminal.routes";
 import { transcriptionRoutes } from "./transcription/transcription.routes";
 
@@ -55,6 +56,7 @@ export const api = new Elysia()
 	.use(systemRoutes)
 	.use(systemWebsocket)
 	.use(terminalRoutes)
+	.use(terminalShortcutRoutes)
 	.use(terminalPtyWebsocket)
 	.use(terminalInputlogWebsocket)
 	.use(transcriptionRoutes)

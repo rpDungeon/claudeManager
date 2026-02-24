@@ -33,6 +33,7 @@ interface Props {
 	onItemRename?: (containerId: string, itemId: string) => void;
 	onItemChangeUrl?: (containerId: string, itemId: string) => void;
 	onItemClose?: (containerId: string, itemId: string) => void;
+	onFileDrop?: (filePath: string, targetContainerId: string, position: LayoutDropZonePosition) => void;
 }
 
 let {
@@ -51,6 +52,7 @@ let {
 	onItemRename,
 	onItemChangeUrl,
 	onItemClose,
+	onFileDrop,
 }: Props = $props();
 
 let isDragging = $state(false);
@@ -155,6 +157,7 @@ function handleItemClick(itemId: string) {
 					{onItemRename}
 					{onItemChangeUrl}
 					{onItemClose}
+					{onFileDrop}
 				/>
 			{:else if child?.type === "item"}
 				<LayoutItem_

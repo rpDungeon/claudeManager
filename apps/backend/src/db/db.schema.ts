@@ -1,11 +1,19 @@
 import { claudeSessionSchema } from "@claude-manager/common/src/claude/session/claudeSession.schema";
 import { layoutSchema } from "@claude-manager/common/src/layout/layout.schema";
 import { projectSchema } from "@claude-manager/common/src/project/project.schema";
+import { terminalShortcutSchema } from "@claude-manager/common/src/terminal/shortcut/terminalShortcut.schema";
 import { terminalInputLogSchema } from "@claude-manager/common/src/terminal/terminal.inputlog.schema";
 import { terminalSchema } from "@claude-manager/common/src/terminal/terminal.schema";
 import { relations } from "drizzle-orm";
 
-export { claudeSessionSchema, layoutSchema, projectSchema, terminalInputLogSchema, terminalSchema };
+export {
+	claudeSessionSchema,
+	layoutSchema,
+	projectSchema,
+	terminalInputLogSchema,
+	terminalSchema,
+	terminalShortcutSchema,
+};
 
 export const projectRelations = relations(projectSchema, ({ many, one }) => ({
 	claudeSessions: many(claudeSessionSchema),
@@ -78,4 +86,5 @@ export const dbSchemas = {
 	terminalInputLog: terminalInputLogSchema,
 	terminalInputLogRelations,
 	terminalRelations,
+	terminalShortcut: terminalShortcutSchema,
 } as const;
