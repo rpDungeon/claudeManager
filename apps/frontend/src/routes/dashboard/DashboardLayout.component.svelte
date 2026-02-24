@@ -1100,18 +1100,10 @@ function handleItemChangeUrl(_containerId: string, itemId: string) {
 	}
 }
 
-async function handleItemClose(containerId: string, itemId: string) {
+function handleItemClose(containerId: string, itemId: string) {
 	const item = data.items[itemId];
 	const container = data.desktop.containers[containerId];
 	if (container?.type !== "tabs") return;
-
-	if (item?.type === "terminal") {
-		await api
-			.terminals({
-				id: itemId,
-			})
-			.delete();
-	}
 
 	const tabsContainer = container as LayoutContainerTabs;
 	tabsContainer.childIds = tabsContainer.childIds.filter((id) => id !== itemId);
@@ -1127,6 +1119,14 @@ async function handleItemClose(containerId: string, itemId: string) {
 	delete data.items[itemId];
 	cleanupEmptyContainers();
 	markDirty();
+
+	if (item?.type === "terminal") {
+		void api
+			.terminals({
+				id: itemId,
+			})
+			.delete();
+	}
 }
 
 async function handleAddItemToEmptyLayout(itemType: AddItemType) {
