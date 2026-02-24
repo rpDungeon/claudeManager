@@ -128,6 +128,11 @@ const contextMenuItems = $derived.by((): ContextMenuItem<TerminalContextMenuActi
 			type: ContextMenuItemType.Action,
 		},
 		{
+			id: TerminalContextMenuAction.CopyPasteEnter,
+			label: "Copy & Paste & Enter \u23CE",
+			type: ContextMenuItemType.Action,
+		},
+		{
 			id: TerminalContextMenuAction.SelectAll,
 			label: "Select All",
 			type: ContextMenuItemType.Action,
@@ -272,6 +277,17 @@ function handleContextMenuAction(actionId: TerminalContextMenuAction) {
 					terminalInstancePaste(id, text);
 				}
 			});
+			break;
+		case TerminalContextMenuAction.CopyPasteEnter:
+			void terminalInstanceCopySelection(id)
+				.then(() => {
+					return navigator.clipboard.readText();
+				})
+				.then((text) => {
+					if (text) {
+						terminalInstancePaste(id, `${text}\r`);
+					}
+				});
 			break;
 		case TerminalContextMenuAction.SelectAll:
 			terminalInstanceSelectAll(terminalId);

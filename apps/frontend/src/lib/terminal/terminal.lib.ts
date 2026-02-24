@@ -10,6 +10,7 @@ export enum TerminalConnectionStatus {
 export enum TerminalContextMenuAction {
 	Copy = "copy",
 	Paste = "paste",
+	CopyPasteEnter = "copy-paste-enter",
 	SelectAll = "select-all",
 	Close = "close",
 }
