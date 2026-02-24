@@ -112,12 +112,19 @@ const contextMenuItems = $derived.by((): ContextMenuItem<TerminalContextMenuActi
 	const items: ContextMenuItem<TerminalContextMenuAction>[] = [];
 
 	if (hasSelection) {
-		items.push({
-			id: TerminalContextMenuAction.Copy,
-			label: "Copy",
-			shortcut: "Ctrl+C",
-			type: ContextMenuItemType.Action,
-		});
+		items.push(
+			{
+				id: TerminalContextMenuAction.Copy,
+				label: "Copy",
+				shortcut: "Ctrl+C",
+				type: ContextMenuItemType.Action,
+			},
+			{
+				id: TerminalContextMenuAction.CopyPasteEnter,
+				label: "Copy & Paste & Enter \u23CE",
+				type: ContextMenuItemType.Action,
+			},
+		);
 	}
 
 	items.push(
@@ -125,11 +132,6 @@ const contextMenuItems = $derived.by((): ContextMenuItem<TerminalContextMenuActi
 			id: TerminalContextMenuAction.Paste,
 			label: "Paste",
 			shortcut: "Ctrl+V",
-			type: ContextMenuItemType.Action,
-		},
-		{
-			id: TerminalContextMenuAction.CopyPasteEnter,
-			label: "Copy & Paste & Enter \u23CE",
 			type: ContextMenuItemType.Action,
 		},
 		{

@@ -200,6 +200,19 @@ export const terminalPtyWebsocket = new Elysia({
 			outputIdleUnsubscribeMap.set(ws.id, unsubscribe);
 		};
 
+		const forceRedraw = (
+			id: TerminalId,
+			ptyInstance: NonNullable<ReturnType<typeof terminalPtyService.instanceGet>>,
+		) => {
+			setTimeout(() => {
+				const info = terminalPtyService.instanceInfo(id);
+				if (info && info.cols > 1) {
+					ptyInstance.resize(info.cols - 1, info.rows);
+					ptyInstance.resize(info.cols, info.rows);
+				}
+			}, 200);
+		};
+
 		const existingInstance = terminalPtyService.instanceGet(terminalId);
 		if (existingInstance) {
 			const scrollback = existingInstance.getScrollback();
@@ -218,6 +231,7 @@ export const terminalPtyWebsocket = new Elysia({
 			setupForegroundProcessSubscription(existingInstance);
 			setupOutputIdleSubscription(existingInstance);
 			setupKeepalive();
+			forceRedraw(terminalId, existingInstance);
 			return;
 		}
 
@@ -237,15 +251,27 @@ export const terminalPtyWebsocket = new Elysia({
 			return;
 		}
 
-		const instance = terminalPtyService.instanceSpawn(terminalId, terminal.project.path);
-
-		const scrollback = instance.getScrollback();
-		if (scrollback) {
+		let instance: ReturnType<typeof terminalPtyService.instanceSpawn>;
+		try {
+			instance = terminalPtyService.instanceSpawn(terminalId, terminal.project.path);
+		} catch (error) {
 			ws.send({
-				data: scrollback,
-				type: TerminalPtyMessageServerType.Output,
+				message: `Failed to spawn terminal: ${error instanceof Error ? error.message : String(error)}`,
+				type: TerminalPtyMessageServerType.Error,
 			});
+			ws.close();
+			return;
 		}
+
+		try {
+			const scrollback = instance.getScrollback();
+			if (scrollback) {
+				ws.send({
+					data: scrollback,
+					type: TerminalPtyMessageServerType.Output,
+				});
+			}
+		} catch {}
 
 		const unsubscribe = instance.onData((message) => {
 			ws.send(message);
@@ -255,6 +281,7 @@ export const terminalPtyWebsocket = new Elysia({
 		setupForegroundProcessSubscription(instance);
 		setupOutputIdleSubscription(instance);
 		setupKeepalive();
+		forceRedraw(terminalId, instance);
 	},
 	params: z.object({
 		terminalId: terminalIdSchema,
