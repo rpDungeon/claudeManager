@@ -42,6 +42,16 @@ const OUTPUT_IDLE_TIMEOUT_MS = 3000;
 const PID_REGEX = /^\d+$/;
 const WHITESPACE_REGEX = /\s+/;
 
+function bufferSnapshotGet(terminal: Terminal): string {
+	const buffer = terminal.buffer.active;
+	const lines: string[] = [];
+	for (let i = 0; i < terminal.rows; i++) {
+		const line = buffer.getLine(buffer.baseY + i);
+		lines.push(line ? line.translateToString(false) : "");
+	}
+	return lines.join("\n");
+}
+
 function foregroundProcessGetFromShellPid(shellPid: number): string | null {
 	try {
 		const statPath = `/proc/${shellPid}/stat`;
@@ -185,6 +195,7 @@ type InternalPtyState = {
 	foregroundProcessCallbacks: Set<ForegroundProcessCallback>;
 	headlessTerminal: Terminal;
 	idleTimer: ReturnType<typeof setTimeout> | null;
+	lastBufferSnapshot: string;
 	lastForegroundProcess: string | null;
 	outputIdle: boolean;
 	outputIdleCallbacks: Set<OutputIdleCallback>;
@@ -375,6 +386,7 @@ class PtyService {
 			foregroundProcessCallbacks,
 			headlessTerminal,
 			idleTimer: null,
+			lastBufferSnapshot: bufferSnapshotGet(headlessTerminal),
 			lastForegroundProcess: null,
 			outputIdle: true,
 			outputIdleCallbacks,
@@ -425,7 +437,11 @@ class PtyService {
 				cb(message);
 			}
 
-			outputIdleTimerReset();
+			const snapshot = bufferSnapshotGet(headlessTerminal);
+			if (snapshot !== state.lastBufferSnapshot) {
+				state.lastBufferSnapshot = snapshot;
+				outputIdleTimerReset();
+			}
 
 			if (state.debounceTimer) {
 				clearTimeout(state.debounceTimer);

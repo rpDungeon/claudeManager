@@ -125,8 +125,9 @@ class TranscriptionService {
 
 	private async transcriptionLegacyChat(audioBase64: string, language?: string): Promise<string> {
 		let prompt = `Transcribe this audio exactly as spoken.
-The speaker has a German accent speaking English. Interpret phonetically ambiguous words in context.
-Common topics: programming, software development, terminal commands, Claude AI, git, TypeScript, Svelte.`;
+The speaker is a native German speaker with a strong accent speaking English in a programming context.
+Phonetically ambiguous words should be interpreted as programming terms when plausible (e.g. "commit", "component", "comment", "command" may sound similar).
+Common vocabulary: git, commit, push, pull, merge, branch, rebase, TypeScript, Svelte, SvelteKit, Bun, ElysiaJS, Drizzle, xterm, paneforge, WebSocket, PTY, SQLite, Tailwind, Claude, FFmpeg, npm, API, endpoint, schema, router, service, middleware, terminal, transcription.`;
 		if (language) {
 			prompt += ` The audio is in ${language}.`;
 		}

@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.3.10/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.4.4/schema.json",
 	"assist": {
 		"actions": {
 			"source": {
@@ -83,6 +83,7 @@
 				"noForEach": "error",
 				"noImplicitCoercions": "error",
 				"noStaticOnlyClass": "off",
+				"noUselessUndefined": "off",
 				"useSimplifiedLogicExpression": "error",
 				"useWhile": "error"
 			},
@@ -97,9 +98,7 @@
 			},
 			"nursery": {
 				"noFloatingPromises": "info",
-				"noImportCycles": "off",
 				"noShadow": "warn",
-				"noUselessUndefined": "off",
 				"useExhaustiveSwitchCases": "warn",
 				"useExplicitType": "off"
 			},
@@ -139,6 +138,7 @@
 			},
 			"suspicious": {
 				"noConstantBinaryExpressions": "error",
+				"noImportCycles": "off",
 				"noThenProperty": "off",
 				"noTsIgnore": "error",
 				"noUnassignedVariables": "warn",
