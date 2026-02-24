@@ -907,7 +907,16 @@ function cleanupEmptyContainers() {
 
 				if (parentId) {
 					const parent = data.desktop.containers[parentId] as LayoutContainerSplit;
+					const removedIdx = parent.childIds.indexOf(id);
 					parent.childIds = parent.childIds.filter((cid) => cid !== id);
+
+					if (removedIdx !== -1 && parent.sizes.length > parent.childIds.length) {
+						parent.sizes = parent.sizes.filter((_, i) => i !== removedIdx);
+						if (parent.sizes.length > 0) {
+							const scale = 100 / parent.sizes.reduce((a, b) => a + b, 0);
+							parent.sizes = parent.sizes.map((s) => s * scale) as typeof parent.sizes;
+						}
+					}
 
 					if (parent.childIds.length === 1) {
 						const remainingChildId = parent.childIds[0];
