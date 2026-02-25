@@ -1,0 +1,17 @@
+{
+	auto_https disable_redirects
+}
+
+:4036 {
+	tls internal {
+		on_demand
+	}
+	reverse_proxy localhost:4035
+}
+
+:4031 {
+	tls internal {
+		on_demand
+	}
+	reverse_proxy localhost:4030
+}

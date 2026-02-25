@@ -1,24 +1,28 @@
 import type { Api } from "@claude-manager/backend/api";
 import { treaty } from "@elysiajs/eden";
-import { PUBLIC_BACKEND_PORT } from "$env/static/public";
+import { PUBLIC_BACKEND_PORT, PUBLIC_BACKEND_PORT_TLS } from "$env/static/public";
+
+function backendPortGet(): string {
+	if (typeof window === "undefined") return PUBLIC_BACKEND_PORT || "4030";
+	const isSecure = window.location.protocol === "https:";
+	return isSecure ? PUBLIC_BACKEND_PORT_TLS || PUBLIC_BACKEND_PORT || "4031" : PUBLIC_BACKEND_PORT || "4030";
+}
 
 function backendUrlGet(): string {
 	if (typeof window === "undefined") {
-		return `http://localhost:${PUBLIC_BACKEND_PORT || "4030"}`;
+		return `http://localhost:${backendPortGet()}`;
 	}
 	const protocol = window.location.protocol;
 	const host = window.location.hostname;
-	const port = PUBLIC_BACKEND_PORT || "4030";
-	return `${protocol}//${host}:${port}`;
+	return `${protocol}//${host}:${backendPortGet()}`;
 }
 
 function backendHostGet(): string {
 	if (typeof window === "undefined") {
-		return `localhost:${PUBLIC_BACKEND_PORT || "4030"}`;
+		return `localhost:${backendPortGet()}`;
 	}
 	const host = window.location.hostname;
-	const port = PUBLIC_BACKEND_PORT || "4030";
-	return `${host}:${port}`;
+	return `${host}:${backendPortGet()}`;
 }
 
 export const backendUrl = backendUrlGet();
