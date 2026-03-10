@@ -80,6 +80,7 @@
 		"dev": "../../scripts/with-clean-env.sh bun --env-file=../../.env vite dev --host",
 		"prepare": "svelte-kit sync || echo ''",
 		"preview": "../../scripts/with-clean-env.sh bun --env-file=../../.env vite preview",
+		"start": "../../scripts/with-clean-env.sh bun --env-file=../../.env build/index.js",
 		"storybook": "../../scripts/with-clean-env.sh bun --env-file=../../.env storybook dev -p $STORYBOOK_PORT",
 		"test": "npm run test:unit -- --run && npm run test:e2e",
 		"test:e2e": "playwright test",
