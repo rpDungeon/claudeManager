@@ -46,6 +46,10 @@ import {
 	terminalShortcutsLoad,
 	terminalShortcutsIsLoaded,
 } from "./shortcut/terminalShortcut.service.svelte";
+import {
+	settingsTerminalFooterExpandedGet,
+	settingsTerminalFooterExpandedSet,
+} from "$lib/settings/settings.service.svelte";
 
 const WHITESPACE_REGEX = /\s+/;
 
@@ -90,7 +94,7 @@ let resizeTimeout: ReturnType<typeof setTimeout> | undefined;
 let mountCount = 0;
 let voiceRecorderState = $state(VoiceRecorderState.Idle);
 let isSidebarOpen = $state(false);
-let isFooterExpanded = $state(true);
+let isFooterExpanded = $state(settingsTerminalFooterExpandedGet());
 let copyFlash = $state(false);
 let scrollLockEnabled = $derived(terminalId ? terminalScrollLockGet(terminalId) : false);
 const footerShortcuts = $derived(terminalShortcutsGet());
@@ -540,7 +544,10 @@ onDestroy(() => {
   <TerminalFooter
     isExpanded={isFooterExpanded}
     shortcuts={footerShortcuts}
-    onToggle={() => (isFooterExpanded = !isFooterExpanded)}
+    onToggle={() => {
+      isFooterExpanded = !isFooterExpanded;
+      settingsTerminalFooterExpandedSet(isFooterExpanded);
+    }}
     onShortcutClick={handleShortcutClick}
   />
 
