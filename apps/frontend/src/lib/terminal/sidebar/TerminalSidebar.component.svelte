@@ -17,7 +17,13 @@ import {
 	transcriptionHistoryGet,
 	type TranscriptionEntry,
 } from "./terminalSidebar.lib.svelte";
+import {
+	claudeSessionHistoryGet,
+	claudeSessionHistoryLoad,
+	claudeSessionHistoryIsLoaded,
+} from "../statusLine/claudeSessionHistory.service.svelte";
 import { api, authTokenQueryGet } from "$lib/api/api.client";
+import { terminalInstancePaste } from "../terminal.service.svelte";
 
 type EdenWebSocket = ReturnType<ReturnType<typeof api.ws.terminal>["input-logs"]["subscribe"]>;
 
@@ -39,6 +45,11 @@ let websocket: EdenWebSocket | null = null;
 let currentColor = $state<TerminalColor>(null);
 let isLoadingSettings = $state(false);
 let copiedId = $state<string | null>(null);
+
+function handleResume(sessionId: string) {
+	terminalInstancePaste(terminalId, `claude --resume ${sessionId}\r`);
+	onclose();
+}
 
 function transcriptions(): TranscriptionEntry[] {
 	return transcriptionHistoryGet();
@@ -106,6 +117,9 @@ $effect(() => {
 		}
 		if (activeTab === TerminalSidebarTab.Settings) {
 			loadTerminalSettings();
+		}
+		if (activeTab === TerminalSidebarTab.Claude && !claudeSessionHistoryIsLoaded()) {
+			claudeSessionHistoryLoad();
 		}
 	} else {
 		disconnectWebSocket();
@@ -207,6 +221,16 @@ async function handleColorSelect(color: TerminalColor) {
           onclick={() => (activeTab = TerminalSidebarTab.Transcriptions)}
         >
           Voice
+        </button>
+        <button
+          type="button"
+          class="flex-1 h-full px-3 text-[10px] font-medium transition-colors border-l border-border-default"
+          class:text-terminal-green={activeTab === TerminalSidebarTab.Claude}
+          class:bg-bg-elevated={activeTab === TerminalSidebarTab.Claude}
+          class:text-text-tertiary={activeTab !== TerminalSidebarTab.Claude}
+          onclick={() => (activeTab = TerminalSidebarTab.Claude)}
+        >
+          Claude
         </button>
         <button
           type="button"
@@ -316,6 +340,46 @@ async function handleColorSelect(color: TerminalColor) {
                       {copiedId === entry.id ? "Copied" : "Copy"}
                     </button>
                   </div>
+                </div>
+              {/each}
+            </div>
+          {/if}
+        {:else if activeTab === TerminalSidebarTab.Claude}
+          {@const sessions = claudeSessionHistoryGet()}
+          {#if sessions.length === 0}
+            <div class="flex items-center justify-center p-4 text-[10px] text-text-tertiary">
+              No Claude sessions detected
+            </div>
+          {:else}
+            <div class="flex flex-col">
+              {#each sessions as entry (entry.sessionId)}
+                <div class="border-b border-border-default px-2 py-2 hover:bg-bg-elevated">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="text-[9px] text-text-tertiary font-mono shrink-0">
+                      {entry.sessionId.slice(0, 8)}
+                    </span>
+                    {#if entry.model}
+                      <span class="text-[9px] text-cyan-400">{entry.model}</span>
+                    {/if}
+                  </div>
+                  <div class="flex items-center gap-2 mb-1.5">
+                    {#if entry.branch}
+                      <span class="text-[9px] text-text-secondary">{entry.branch}</span>
+                    {/if}
+                    {#if entry.tokenUsage}
+                      <span class="text-[9px] text-amber-400">{entry.tokenUsage}</span>
+                    {/if}
+                    {#if entry.cost}
+                      <span class="text-[9px] text-terminal-green">{entry.cost}</span>
+                    {/if}
+                  </div>
+                  <button
+                    type="button"
+                    class="w-full h-5 rounded bg-terminal-green/20 border border-terminal-green/40 text-[9px] text-terminal-green font-medium hover:bg-terminal-green/30 transition-colors"
+                    onclick={() => handleResume(entry.sessionId)}
+                  >
+                    ▶ Resume
+                  </button>
                 </div>
               {/each}
             </div>

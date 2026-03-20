@@ -90,7 +90,7 @@ let resizeTimeout: ReturnType<typeof setTimeout> | undefined;
 let mountCount = 0;
 let voiceRecorderState = $state(VoiceRecorderState.Idle);
 let isSidebarOpen = $state(false);
-let isFooterExpanded = $state(false);
+let isFooterExpanded = $state(true);
 let copyFlash = $state(false);
 let scrollLockEnabled = $derived(terminalId ? terminalScrollLockGet(terminalId) : false);
 const footerShortcuts = $derived(terminalShortcutsGet());

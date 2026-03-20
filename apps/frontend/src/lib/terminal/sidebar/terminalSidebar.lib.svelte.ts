@@ -1,5 +1,6 @@
 export enum TerminalSidebarTab {
 	Activity = "activity",
+	Claude = "claude",
 	Transcriptions = "transcriptions",
 	Settings = "settings",
 }

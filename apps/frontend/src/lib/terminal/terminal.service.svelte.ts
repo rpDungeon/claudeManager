@@ -9,6 +9,11 @@ import { Terminal } from "@xterm/xterm";
 import { SvelteMap } from "svelte/reactivity";
 import { api, authTokenQueryGet } from "$lib/api/api.client";
 import { settingsTerminalFontSizeGet } from "$lib/settings/settings.service.svelte";
+import {
+	terminalStatusLineDestroy,
+	terminalStatusLineOnInput,
+	terminalStatusLineScanThrottled,
+} from "./statusLine/terminalStatusLine.service.svelte";
 import { TerminalConnectionStatus, terminalThemeCrt } from "./terminal.lib";
 
 type EdenWebSocket = ReturnType<ReturnType<typeof api.ws.terminal>["subscribe"]>;
@@ -123,6 +128,7 @@ export function terminalInstanceDestroy(terminalId: TerminalId): void {
 		reconnectStates.delete(terminalId);
 	}
 
+	terminalStatusLineDestroy(terminalId);
 	terminalWebsocketClose(terminalId);
 	if (instance.onDataDisposable) {
 		instance.onDataDisposable.dispose();
@@ -421,6 +427,7 @@ export function terminalWebsocketConnect(terminalId: TerminalId): void {
 			data,
 			type: "input",
 		});
+		terminalStatusLineOnInput(terminalId, data);
 	});
 }
 
@@ -495,6 +502,7 @@ function terminalDispatchServerMessage(terminalId: TerminalId, message: ServerMe
 					instance.terminal.scrollToLine(scrollPos);
 				}
 			});
+			terminalStatusLineScanThrottled(terminalId);
 			break;
 		}
 
