@@ -352,11 +352,11 @@ async function handleColorSelect(color: TerminalColor) {
             </div>
           {:else}
             <div class="flex flex-col">
-              {#each sessions as entry (entry.sessionId)}
+              {#each sessions as entry (entry.externalSessionId)}
                 <div class="border-b border-border-default px-2 py-2 hover:bg-bg-elevated">
                   <div class="flex items-center gap-2 mb-1">
                     <span class="text-[9px] text-text-tertiary font-mono shrink-0">
-                      {entry.sessionId.slice(0, 8)}
+                      {entry.externalSessionId.slice(0, 8)}
                     </span>
                     {#if entry.model}
                       <span class="text-[9px] text-cyan-400">{entry.model}</span>
@@ -376,7 +376,7 @@ async function handleColorSelect(color: TerminalColor) {
                   <button
                     type="button"
                     class="w-full h-5 rounded bg-terminal-green/20 border border-terminal-green/40 text-[9px] text-terminal-green font-medium hover:bg-terminal-green/30 transition-colors"
-                    onclick={() => handleResume(entry.sessionId)}
+                    onclick={() => handleResume(entry.externalSessionId)}
                   >
                     ▶ Resume
                   </button>
