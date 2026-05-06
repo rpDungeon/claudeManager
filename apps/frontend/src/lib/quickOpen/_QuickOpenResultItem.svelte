@@ -13,11 +13,11 @@ import { QuickOpenMode, type QuickOpenResult } from "./quickOpen.lib";
 
 interface Props {
 	isSelected?: boolean;
-	onclick?: () => void;
+	onpointerdown?: () => void;
 	result: QuickOpenResult;
 }
 
-let { isSelected = false, onclick, result }: Props = $props();
+let { isSelected = false, onpointerdown, result }: Props = $props();
 
 const isCommand = $derived(result.type === QuickOpenMode.Command);
 </script>
@@ -27,7 +27,7 @@ const isCommand = $derived(result.type === QuickOpenMode.Command);
 	class="flex w-full items-center gap-3 px-3 py-2 text-left transition-colors {isSelected
 		? 'bg-terminal-green/10 text-terminal-green'
 		: 'text-text-primary hover:bg-bg-elevated'}"
-	{onclick}
+	{onpointerdown}
 >
 	{#if isCommand}
 		<Terminal class="size-4 flex-shrink-0 {isSelected ? 'text-terminal-green' : 'text-text-tertiary'}" />

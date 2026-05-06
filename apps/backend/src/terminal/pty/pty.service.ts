@@ -9,6 +9,7 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { resolve } from "node:path";
+import process from "node:process";
 import {
 	type TerminalPtyMessageServer,
 	TerminalPtyMessageServerType,
@@ -108,7 +109,6 @@ function findSocketOwnerPid(socketPath: string): number | null {
 	}
 }
 
-// Find child PIDs of a process by reading /proc - replaces `pgrep -P`
 function findChildPids(parentPid: number): number[] {
 	try {
 		const childrenPath = `/proc/${parentPid}/task/${parentPid}/children`;
@@ -124,6 +124,46 @@ function findChildPids(parentPid: number): number[] {
 		return [];
 	} catch {
 		return [];
+	}
+}
+
+function findDescendantPids(pid: number): number[] {
+	const descendants: number[] = [];
+	const stack = [
+		pid,
+	];
+	while (stack.length > 0) {
+		const current = stack.pop()!;
+		const children = findChildPids(current);
+		for (const child of children) {
+			descendants.push(child);
+			stack.push(child);
+		}
+	}
+	return descendants;
+}
+
+function processTreeKill(rootPid: number): void {
+	const descendants = findDescendantPids(rootPid);
+
+	for (let i = descendants.length - 1; i >= 0; i--) {
+		try {
+			process.kill(descendants[i], "SIGTERM");
+		} catch {}
+	}
+
+	try {
+		process.kill(rootPid, "SIGTERM");
+	} catch {}
+}
+
+function dtachProcessTreeKill(socketPath: string): void {
+	let dtachPid = dtachPidCache.get(socketPath);
+	if (dtachPid === undefined) {
+		dtachPid = findSocketOwnerPid(socketPath) ?? undefined;
+	}
+	if (dtachPid !== undefined && existsSync(`/proc/${dtachPid}`)) {
+		processTreeKill(dtachPid);
 	}
 }
 
@@ -497,6 +537,8 @@ class PtyService {
 		const state = this.instances.get(terminalId);
 		const socketPath = terminalIdToSocketPath(terminalId);
 
+		dtachProcessTreeKill(socketPath);
+
 		try {
 			if (existsSync(socketPath)) {
 				unlinkSync(socketPath);
@@ -505,7 +547,6 @@ class PtyService {
 			console.error(`[Terminal] Failed to delete socket for ${terminalId}:`, error);
 		}
 
-		// Clear dtach PID cache
 		clearDtachPidCache(socketPath);
 
 		scrollbackDelete(terminalId);

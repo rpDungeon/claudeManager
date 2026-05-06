@@ -1,6 +1,7 @@
 import type { ClaudeSessionExternalId } from "@claude-manager/common/src/claude/session/claudeSession.id";
 import type { ProjectId } from "@claude-manager/common/src/project/project.id";
 import type { TerminalId } from "@claude-manager/common/src/terminal/terminal.types";
+import { SvelteMap } from "svelte/reactivity";
 import { api } from "$lib/api/api.client";
 
 export interface ClaudeSessionHistoryEntry {
@@ -12,44 +13,30 @@ export interface ClaudeSessionHistoryEntry {
 	lastActiveAt: Date;
 }
 
-let sessions = $state<ClaudeSessionHistoryEntry[]>([]);
-let loaded = false;
-let loading = false;
+const sessionsMap = new SvelteMap<TerminalId, ClaudeSessionHistoryEntry[]>();
 
 const knownExternalIds = new Set<string>();
+let knownIdsLoaded = false;
 const terminalProjectCache = new Map<TerminalId, ProjectId>();
 
-export function claudeSessionHistoryGet(): ClaudeSessionHistoryEntry[] {
-	return sessions;
+export function claudeSessionHistoryGet(terminalId: TerminalId): ClaudeSessionHistoryEntry[] {
+	return sessionsMap.get(terminalId) ?? [];
 }
 
-export async function claudeSessionHistoryLoad(): Promise<void> {
-	if (loading) return;
-	loading = true;
+async function knownExternalIdsEnsureLoaded(): Promise<void> {
+	if (knownIdsLoaded) return;
+	knownIdsLoaded = true;
 
 	try {
 		const { data } = await api.claude.sessions.get();
 		if (data && Array.isArray(data)) {
-			sessions = data.map((s) => ({
-				branch: null,
-				cost: null,
-				externalSessionId: s.externalSessionId,
-				lastActiveAt: new Date(s.lastActiveAt),
-				model: null,
-				tokenUsage: null,
-			}));
-			for (const s of sessions) {
+			for (const s of data) {
 				knownExternalIds.add(s.externalSessionId);
 			}
 		}
-		loaded = true;
-	} finally {
-		loading = false;
+	} catch {
+		knownIdsLoaded = false;
 	}
-}
-
-export function claudeSessionHistoryIsLoaded(): boolean {
-	return loaded;
 }
 
 async function terminalProjectIdGet(terminalId: TerminalId): Promise<ProjectId | null> {
@@ -77,6 +64,7 @@ export async function claudeSessionHistoryPush(
 	tokenUsage: string | null,
 	branch: string | null,
 ): Promise<void> {
+	const sessions = sessionsMap.get(terminalId) ?? [];
 	const existing = sessions.find((e) => e.externalSessionId === externalSessionId);
 	if (existing) {
 		existing.model = model;
@@ -87,7 +75,7 @@ export async function claudeSessionHistoryPush(
 		return;
 	}
 
-	sessions = [
+	sessionsMap.set(terminalId, [
 		{
 			branch,
 			cost,
@@ -97,7 +85,9 @@ export async function claudeSessionHistoryPush(
 			tokenUsage,
 		},
 		...sessions,
-	];
+	]);
+
+	await knownExternalIdsEnsureLoaded();
 
 	if (knownExternalIds.has(externalSessionId)) return;
 	knownExternalIds.add(externalSessionId);
@@ -110,7 +100,5 @@ export async function claudeSessionHistoryPush(
 			externalSessionId: externalSessionId as ClaudeSessionExternalId,
 			projectId,
 		});
-	} catch {
-		// Session already exists or other error — ignore
-	}
+	} catch {}
 }

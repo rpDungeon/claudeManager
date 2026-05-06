@@ -27,6 +27,7 @@ import {
 	terminalInstanceMount,
 	terminalInstancePaste,
 	terminalInstanceSelectAll,
+	terminalDisplayTitleGet,
 	terminalScrollLockGet,
 	terminalScrollLockToggle,
 	terminalWebsocketConnect,
@@ -56,13 +57,14 @@ const WHITESPACE_REGEX = /\s+/;
 interface Props {
 	terminalId?: TerminalId;
 	title?: string | Snippet;
+	titleIsCustom?: boolean;
 	info?: string | Snippet;
 	itemId?: string;
 	isActive?: boolean;
 	autoConnect?: boolean;
 	draggable?: boolean;
 	isDropTarget?: boolean;
-	onclick?: (event: MouseEvent) => void;
+	onpointerdown?: (event: MouseEvent) => void;
 	onHeaderClick?: (event: MouseEvent) => void;
 	onBodyClick?: (event: MouseEvent) => void;
 	onClose?: () => void;
@@ -74,13 +76,14 @@ interface Props {
 let {
 	terminalId,
 	title = "shell",
+	titleIsCustom = false,
 	info,
 	itemId,
 	isActive = false,
 	autoConnect = true,
 	draggable = false,
 	isDropTarget = false,
-	onclick,
+	onpointerdown,
 	onHeaderClick,
 	onBodyClick,
 	onClose,
@@ -169,17 +172,21 @@ const instance = $derived(terminalId ? terminalInstanceGet(terminalId) : undefin
 const connectionStatus = $derived(instance?.connectionStatus ?? TerminalConnectionStatus.Disconnected);
 const foregroundProcess = $derived(instance?.foregroundProcess ?? null);
 const outputIdle = $derived(instance?.outputIdle ?? false);
+const automaticTitle = $derived(instance?.windowTitle ?? instance?.screenTitle ?? null);
+const terminalTitle = $derived(
+	typeof title === "string" ? terminalDisplayTitleGet(title, titleIsCustom, automaticTitle) : title,
+);
 
 const displayTitle = $derived.by(() => {
-	const baseTitle = typeof title === "string" ? title : null;
-	if (!(baseTitle && foregroundProcess)) return title;
+	const baseTitle = typeof terminalTitle === "string" ? terminalTitle : null;
+	if (!(baseTitle && foregroundProcess)) return terminalTitle;
 	if (
 		foregroundProcess === "bash" ||
 		foregroundProcess === "zsh" ||
 		foregroundProcess === "fish" ||
 		foregroundProcess === "sh"
 	) {
-		return title;
+		return terminalTitle;
 	}
 	return `${baseTitle} - ${foregroundProcess}`;
 });
@@ -243,7 +250,7 @@ function handleBodyMount(container: HTMLDivElement) {
 }
 
 function handleClick(event: MouseEvent) {
-	onclick?.(event);
+	onpointerdown?.(event);
 }
 
 function handleHeaderClick(event: MouseEvent) {
@@ -528,7 +535,7 @@ onDestroy(() => {
     {statusColor}
     {draggable}
     {isDropTarget}
-    onclick={handleHeaderClick}
+    onpointerdown={handleHeaderClick}
     onStatusClick={terminalId ? handleStatusClick : undefined}
     {onDragStart}
     {onDragEnd}
@@ -537,7 +544,7 @@ onDestroy(() => {
   <TerminalBody
     {isActive}
     {borderColor}
-    onclick={handleBodyClick}
+    onpointerdown={handleBodyClick}
     oncontextmenu={handleContextMenu}
     onMount={handleBodyMount}
   />
@@ -557,7 +564,7 @@ onDestroy(() => {
       class="absolute top-0 right-0 z-10 flex h-5 w-5 items-center justify-center text-[8px] text-text-tertiary hover:text-terminal-green hover:bg-bg-elevated transition-colors"
       class:text-terminal-green={isSidebarOpen}
       class:bg-bg-elevated={isSidebarOpen}
-      onclick={() => (isSidebarOpen = !isSidebarOpen)}
+      onpointerdown={() => (isSidebarOpen = !isSidebarOpen)}
       title="Toggle activity panel"
     >
       ◀
@@ -575,7 +582,7 @@ onDestroy(() => {
     <div class="absolute bottom-3 right-3 z-10">
       <VoiceRecorder
         state={voiceRecorderState}
-        onclick={handleVoiceToggle}
+        onpointerdown={handleVoiceToggle}
         onStopAndSend={handleVoiceStopAndSend}
       />
     </div>
@@ -585,7 +592,7 @@ onDestroy(() => {
       class="absolute bottom-0.5 right-0.5 z-10 size-1.5 rounded-tl opacity-40 hover:opacity-100 transition-opacity"
       class:bg-terminal-amber={scrollLockEnabled}
       class:bg-text-tertiary={!scrollLockEnabled}
-      onclick={handleScrollLockToggle}
+      onpointerdown={handleScrollLockToggle}
       title={scrollLockEnabled
         ? "Auto-scroll ON (click to disable)"
         : "Auto-scroll OFF (click to enable)"}

@@ -23,7 +23,7 @@ interface Props {
 	isActive?: boolean;
 	draggable?: boolean;
 	isDropTarget?: boolean;
-	onclick?: (event: MouseEvent) => void;
+	onpointerdown?: (event: MouseEvent) => void;
 	onDragStart?: (itemId: string, event: DragEvent) => void;
 	onDragEnd?: (itemId: string, event: DragEvent) => void;
 	onDrop?: (droppedItemId: string, targetItemId: string, event: DragEvent) => void;
@@ -35,7 +35,7 @@ let {
 	isActive = false,
 	draggable = true,
 	isDropTarget = false,
-	onclick,
+	onpointerdown,
 	onDragStart,
 	onDragEnd,
 	onDrop,
@@ -43,17 +43,17 @@ let {
 </script>
 
 {#if item.type === "terminal"}
-	<LayoutItemTerminal {item} {isActive} {draggable} {isDropTarget} {onclick} {onDragStart} {onDragEnd} {onDrop} />
+	<LayoutItemTerminal {item} {isActive} {draggable} {isDropTarget} {onpointerdown} {onDragStart} {onDragEnd} {onDrop} />
 {:else if item.type === "iframe"}
-	<LayoutItemIframe {item} {isActive} {draggable} {isDropTarget} {onclick} {onDragStart} {onDragEnd} {onDrop} />
+	<LayoutItemIframe {item} {isActive} {draggable} {isDropTarget} {onpointerdown} {onDragStart} {onDragEnd} {onDrop} />
 {:else if item.type === "image"}
-	<LayoutItemImage {item} {isActive} {draggable} {isDropTarget} {onclick} {onDragStart} {onDragEnd} {onDrop} />
+	<LayoutItemImage {item} {isActive} {draggable} {isDropTarget} {onpointerdown} {onDragStart} {onDragEnd} {onDrop} />
 {:else if item.type === "markdown"}
-	<LayoutItemMarkdown {item} {isActive} {draggable} {isDropTarget} {onclick} {onDragStart} {onDragEnd} {onDrop} />
+	<LayoutItemMarkdown {item} {isActive} {draggable} {isDropTarget} {onpointerdown} {onDragStart} {onDragEnd} {onDrop} />
 {:else if item.type === "editor"}
-	<LayoutItemEditor {item} {projectPath} {isActive} {draggable} {isDropTarget} {onclick} {onDragStart} {onDragEnd} {onDrop} />
+	<LayoutItemEditor {item} {projectPath} {isActive} {draggable} {isDropTarget} {onpointerdown} {onDragStart} {onDragEnd} {onDrop} />
 {:else if item.type === "diff"}
-	<LayoutItemDiff {item} {isActive} {draggable} {isDropTarget} {onclick} {onDragStart} {onDragEnd} {onDrop} />
+	<LayoutItemDiff {item} {isActive} {draggable} {isDropTarget} {onpointerdown} {onDragStart} {onDragEnd} {onDrop} />
 {:else}
-	<LayoutItemPlaceholder {item} {isActive} {draggable} {isDropTarget} {onclick} {onDragStart} {onDragEnd} {onDrop} />
+	<LayoutItemPlaceholder {item} {isActive} {draggable} {isDropTarget} {onpointerdown} {onDragStart} {onDragEnd} {onDrop} />
 {/if}

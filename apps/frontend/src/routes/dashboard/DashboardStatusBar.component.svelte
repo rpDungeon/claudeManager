@@ -124,7 +124,7 @@ function handleLogout() {
 	{#snippet right()}
 		<button
 			type="button"
-			onclick={() => diffSettings.toggle()}
+			onpointerdown={() => diffSettings.toggle()}
 			class="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-text-tertiary hover:text-text-secondary hover:bg-bg-elevated transition-colors"
 			title={diffSettings.mode === DiffViewMode.Inline ? "Switch to split diff" : "Switch to inline diff"}
 		>
@@ -140,7 +140,7 @@ function handleLogout() {
 		<StatusBarItem>{currentTime}</StatusBarItem>
 		<button
 			type="button"
-			onclick={() => (settingsOpen = true)}
+			onpointerdown={() => (settingsOpen = true)}
 			class="-ml-2 flex items-center justify-center text-text-tertiary hover:text-text-secondary transition-colors"
 			title="Settings"
 		>
@@ -148,7 +148,7 @@ function handleLogout() {
 		</button>
 		<button
 			type="button"
-			onclick={handleLogout}
+			onpointerdown={handleLogout}
 			class="flex items-center justify-center text-text-tertiary hover:text-terminal-red transition-colors"
 			title="Logout"
 		>

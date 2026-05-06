@@ -338,7 +338,7 @@ function resetLayout() {
 		<button
 			type="button"
 			class="rounded bg-bg-elevated px-2 py-0.5 text-[10px] text-text-secondary hover:bg-border-active hover:text-text-primary"
-			onclick={resetLayout}
+			onpointerdown={resetLayout}
 		>
 			Reset Layout
 		</button>

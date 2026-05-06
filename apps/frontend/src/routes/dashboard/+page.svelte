@@ -230,7 +230,7 @@ function handleDiffOpen(filePath: string, repoPath: string, staged: boolean) {
 			<button
 				type="button"
 				class="fixed inset-0 z-40 bg-black/50 md:hidden"
-				onclick={() => (isSidebarCollapsed = true)}
+				onpointerdown={() => (isSidebarCollapsed = true)}
 				aria-label="Close sidebar"
 			></button>
 		{/if}
@@ -291,7 +291,7 @@ function handleDiffOpen(filePath: string, repoPath: string, staged: boolean) {
 					text-text-tertiary hover:text-terminal-green hover:bg-bg-elevated"
 				class:text-terminal-green={!isSidebarCollapsed}
 				class:bg-bg-elevated={!isSidebarCollapsed}
-				onclick={() => (isSidebarCollapsed = !isSidebarCollapsed)}
+				onpointerdown={() => (isSidebarCollapsed = !isSidebarCollapsed)}
 				title="Toggle sidebar"
 			>
 				{isSidebarCollapsed ? '▶' : '◀'}

@@ -40,7 +40,7 @@ function handleKeydown(event: KeyboardEvent) {
 	></textarea>
 	<button
 		type="button"
-		onclick={handleSubmit}
+		onpointerdown={handleSubmit}
 		disabled={!message.trim() || disabled || isSubmitting}
 		class="flex items-center justify-center gap-1.5 rounded border border-border-default bg-bg-elevated px-3 py-1.5 text-[11px] font-medium text-text-primary transition-colors hover:border-terminal-green hover:text-terminal-green disabled:cursor-not-allowed disabled:opacity-30"
 	>

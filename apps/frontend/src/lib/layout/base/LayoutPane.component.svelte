@@ -61,7 +61,7 @@ let {
 			{isActive}
 			{draggable}
 			{isDropTarget}
-			onclick={onHeaderClick}
+			onpointerdown={onHeaderClick}
 			{onDragStart}
 			{onDragEnd}
 			{onDrop}
@@ -75,8 +75,8 @@ let {
 		class="flex-1 overflow-hidden"
 		role="button"
 		tabindex="-1"
-		onclick={(e) => onBodyClick?.(e)}
-		onkeydown={(e) => e.key === "Enter" && onBodyClick?.(new MouseEvent("click"))}
+		onpointerdown={(e) => onBodyClick?.(e)}
+		onkeydown={(e) => e.key === "Enter" && onBodyClick?.(new PointerEvent("pointerdown"))}
 	>
 		{@render children()}
 	</div>

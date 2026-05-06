@@ -55,7 +55,7 @@ const rightOffset = $derived(window.innerWidth - position.x);
 
 <div
 	class="fixed inset-0 z-50"
-	onclick={handleBackdropClick}
+	onpointerdown={handleBackdropClick}
 	onkeydown={handleKeyDown}
 	role="presentation"
 >
@@ -65,7 +65,7 @@ const rightOffset = $derived(window.innerWidth - position.x);
 		style:top="{position.y}px"
 		role="menu"
 		tabindex="-1"
-		onclick={(e) => e.stopPropagation()}
+		onpointerdown={(e) => e.stopPropagation()}
 		onkeydown={(e) => e.stopPropagation()}
 	>
 		{#each menuItems as item (item.id)}
@@ -73,7 +73,7 @@ const rightOffset = $derived(window.innerWidth - position.x);
 				type="button"
 				role="menuitem"
 				class="flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-[11px] transition-colors text-text-primary hover:bg-bg-surface cursor-pointer"
-				onclick={() => handleAction(item.id)}
+				onpointerdown={() => handleAction(item.id)}
 			>
 				<span>{item.label}</span>
 			</button>

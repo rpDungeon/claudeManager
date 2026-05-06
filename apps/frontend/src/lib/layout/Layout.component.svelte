@@ -42,6 +42,7 @@ interface Props {
 	onSplitDrop?: (droppedItemId: string, targetContainerId: string, position: LayoutDropZonePosition) => void;
 	onAddItem?: (containerId: string, itemType: AddItemType) => void;
 	onItemRename?: (containerId: string, itemId: string) => void;
+	onItemResetAutomaticTitle?: (containerId: string, itemId: string) => void;
 	onItemChangeUrl?: (containerId: string, itemId: string) => void;
 	onItemClose?: (containerId: string, itemId: string) => void;
 	onAddItemToEmptyLayout?: (itemType: AddItemType) => void;
@@ -61,6 +62,7 @@ let {
 	onSplitDrop,
 	onAddItem,
 	onItemRename,
+	onItemResetAutomaticTitle,
 	onItemChangeUrl,
 	onItemClose,
 	onAddItemToEmptyLayout,
@@ -137,6 +139,7 @@ function handleItemClick(itemId: string) {
 			{onSplitDrop}
 			{onAddItem}
 			{onItemRename}
+			{onItemResetAutomaticTitle}
 			{onItemChangeUrl}
 			{onItemClose}
 			{onFileDrop}
@@ -147,7 +150,7 @@ function handleItemClick(itemId: string) {
 			{projectPath}
 			isActive={activeItemId === rootId}
 			draggable={true}
-			onclick={handleItemClick(rootId!)}
+			onpointerdown={handleItemClick(rootId!)}
 		/>
 	{:else}
 		<div class="flex h-full flex-col items-center justify-center gap-3 text-text-tertiary text-xs">
@@ -156,7 +159,7 @@ function handleItemClick(itemId: string) {
 				<button
 					type="button"
 					class="flex size-8 items-center justify-center rounded border border-border-default bg-bg-elevated text-text-secondary transition-colors hover:border-terminal-green hover:text-terminal-green cursor-pointer"
-					onclick={handleAddButtonClick}
+					onpointerdown={handleAddButtonClick}
 					title="Add item"
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

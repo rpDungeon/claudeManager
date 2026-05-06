@@ -151,7 +151,7 @@ function handleContextMenu(event: MouseEvent) {
 		isLoading={item.isLoading}
 		{hasChildren}
 		{draggable}
-		onclick={handleClick}
+		onpointerdown={handleClick}
 		ondblclick={handleDoubleClick}
 		onToggle={handleToggle}
 		ondragstart={handleDragStart}

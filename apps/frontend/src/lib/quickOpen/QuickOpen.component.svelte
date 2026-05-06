@@ -261,7 +261,7 @@ function selectResult(result: QuickOpenResult | undefined) {
 						<QuickOpenResultItem
 							{result}
 							isSelected={index === selectedIndex}
-							onclick={() => selectResult(result)}
+							onpointerdown={() => selectResult(result)}
 						/>
 					{/each}
 				{/if}

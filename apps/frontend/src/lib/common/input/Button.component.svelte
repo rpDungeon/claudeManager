@@ -16,7 +16,7 @@ interface Props {
 	disabled?: boolean;
 	loading?: boolean;
 	type?: "button" | "submit" | "reset";
-	onclick?: (event: MouseEvent) => void;
+	onpointerdown?: (event: MouseEvent) => void;
 	children?: Snippet;
 }
 
@@ -26,7 +26,7 @@ let {
 	disabled = false,
 	loading = false,
 	type = "button",
-	onclick,
+	onpointerdown,
 	children,
 }: Props = $props();
 
@@ -42,7 +42,7 @@ const isDisabled = $derived(disabled || loading);
 		{variantClass}
 		{sizeClass}
 		{isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}"
-	{onclick}
+	{onpointerdown}
 >
 	{#if loading}
 		<span class="size-3 animate-spin rounded-full border-2 border-current border-t-transparent"></span>

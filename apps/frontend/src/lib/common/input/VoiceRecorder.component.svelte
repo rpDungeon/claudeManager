@@ -13,11 +13,11 @@ import { VoiceRecorderState, voiceRecorderStateClasses } from "./voiceRecorder.l
 interface Props {
 	state?: VoiceRecorderState;
 	disabled?: boolean;
-	onclick?: () => void;
+	onpointerdown?: () => void;
 	onStopAndSend?: () => void;
 }
 
-let { state = VoiceRecorderState.Idle, disabled = false, onclick, onStopAndSend }: Props = $props();
+let { state = VoiceRecorderState.Idle, disabled = false, onpointerdown, onStopAndSend }: Props = $props();
 
 const stateClass = $derived(voiceRecorderStateClasses[state]);
 const isDisabled = $derived(disabled || state === VoiceRecorderState.Processing);
@@ -25,7 +25,7 @@ const isRecording = $derived(state === VoiceRecorderState.Recording);
 
 function handleClick() {
 	if (isDisabled) return;
-	onclick?.();
+	onpointerdown?.();
 }
 </script>
 

@@ -20,7 +20,7 @@ interface Props {
 	statusColor?: IndicatorDotColor;
 	draggable?: boolean;
 	isDropTarget?: boolean;
-	onclick?: (event: MouseEvent) => void;
+	onpointerdown?: (event: MouseEvent) => void;
 	onStatusClick?: (event: MouseEvent) => void;
 	onDragStart?: (itemId: string, event: DragEvent) => void;
 	onDragEnd?: (itemId: string, event: DragEvent) => void;
@@ -35,7 +35,7 @@ let {
 	statusColor = IndicatorDotColor.Green,
 	draggable = false,
 	isDropTarget = false,
-	onclick,
+	onpointerdown,
 	onStatusClick,
 	onDragStart,
 	onDragEnd,
@@ -114,7 +114,7 @@ function handleDrop(event: DragEvent) {
 	class:ring-inset={isDraggedOver}
 	class:cursor-grab={draggable && !isDragging}
 	class:cursor-grabbing={isDragging}
-	{onclick}
+	{onpointerdown}
 	draggable={draggable ? "true" : "false"}
 	ondragstart={handleDragStart}
 	ondragend={handleDragEnd}
@@ -122,13 +122,11 @@ function handleDrop(event: DragEvent) {
 	ondragleave={handleDragLeave}
 	ondrop={handleDrop}
 >
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<span
 		class="flex items-center justify-center p-1 -m-1 rounded transition-colors order-last md:order-first"
 		class:hover:bg-bg-elevated={onStatusClick}
 		class:cursor-pointer={onStatusClick}
-		onclick={handleStatusClick}
+		onpointerdown={handleStatusClick}
 		title={onStatusClick ? "Click to reconnect" : undefined}
 	>
 		<IndicatorDot color={statusColor} glow pulse={isActive} />

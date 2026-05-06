@@ -29,6 +29,7 @@ interface Props {
 	onSplitDrop?: (droppedItemId: string, targetContainerId: string, position: LayoutDropZonePosition) => void;
 	onAddItem?: (containerId: string, itemType: AddItemType) => void;
 	onItemRename?: (containerId: string, itemId: string) => void;
+	onItemResetAutomaticTitle?: (containerId: string, itemId: string) => void;
 	onItemChangeUrl?: (containerId: string, itemId: string) => void;
 	onItemClose?: (containerId: string, itemId: string) => void;
 	onFileDrop?: (filePath: string, targetContainerId: string, position: LayoutDropZonePosition) => void;
@@ -48,6 +49,7 @@ let {
 	onSplitDrop,
 	onAddItem,
 	onItemRename,
+	onItemResetAutomaticTitle,
 	onItemChangeUrl,
 	onItemClose,
 	onFileDrop,
@@ -67,6 +69,7 @@ let {
 		{onSplitDrop}
 		{onAddItem}
 		{onItemRename}
+		{onItemResetAutomaticTitle}
 		{onItemChangeUrl}
 		{onItemClose}
 		{onFileDrop}
@@ -86,6 +89,7 @@ let {
 		{onSplitDrop}
 		{onAddItem}
 		{onItemRename}
+		{onItemResetAutomaticTitle}
 		{onItemChangeUrl}
 		{onItemClose}
 		{onFileDrop}

@@ -222,7 +222,7 @@ onMount(() => {
 	<div class="flex border-b border-border-default">
 		<button
 			type="button"
-			onclick={() => (activeTab = "files")}
+			onpointerdown={() => (activeTab = "files")}
 			class="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider transition-colors
 				{activeTab === 'files'
 				? 'bg-bg-elevated border-b-2 border-terminal-green text-text-primary -mb-px'
@@ -236,7 +236,7 @@ onMount(() => {
 		</button>
 		<button
 			type="button"
-			onclick={() => (activeTab = "git")}
+			onpointerdown={() => (activeTab = "git")}
 			class="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider transition-colors
 				{activeTab === 'git'
 				? 'bg-bg-elevated border-b-2 border-terminal-green text-text-primary -mb-px'

@@ -14,7 +14,11 @@ import type { TerminalId } from "@claude-manager/common/src/terminal/terminal.ty
 import type { LayoutDropZonePosition } from "../../dropzone/dropzone.lib";
 import type { ContextMenuPosition } from "$lib/common/contextMenu/contextMenu.lib";
 import { FILETREE_FILE_DRAG_MIME } from "$lib/fileTree/fileTree.lib";
-import { terminalInstanceAttentionClear, terminalInstanceGet } from "$lib/terminal/terminal.service.svelte";
+import {
+	terminalDisplayTitleGet,
+	terminalInstanceAttentionClear,
+	terminalInstanceGet,
+} from "$lib/terminal/terminal.service.svelte";
 import LayoutItem_ from "../../item/_LayoutItem.svelte";
 import LayoutDropZone from "../../dropzone/LayoutDropZone.component.svelte";
 import LayoutContainerTabsContextMenu from "./LayoutContainerTabsContextMenu.component.svelte";
@@ -33,6 +37,7 @@ interface Props {
 	onSplitDrop?: (droppedItemId: string, targetContainerId: string, position: LayoutDropZonePosition) => void;
 	onAddItem?: (containerId: string, itemType: AddItemType) => void;
 	onItemRename?: (containerId: string, itemId: string) => void;
+	onItemResetAutomaticTitle?: (containerId: string, itemId: string) => void;
 	onItemChangeUrl?: (containerId: string, itemId: string) => void;
 	onItemClose?: (containerId: string, itemId: string) => void;
 	onFileDrop?: (filePath: string, targetContainerId: string, position: LayoutDropZonePosition) => void;
@@ -50,6 +55,7 @@ let {
 	onSplitDrop,
 	onAddItem,
 	onItemRename,
+	onItemResetAutomaticTitle,
 	onItemChangeUrl,
 	onItemClose,
 	onFileDrop,
@@ -59,6 +65,14 @@ function dragHasDroppableData(dataTransfer: DataTransfer): boolean {
 	return (
 		dataTransfer.types.includes("application/x-layout-item") || dataTransfer.types.includes(FILETREE_FILE_DRAG_MIME)
 	);
+}
+
+function itemLabelGet(item: LayoutItem, automaticTitle?: string | null): string {
+	if (item.type === "terminal") {
+		return terminalDisplayTitleGet(item.label, item.labelIsCustom, automaticTitle, "shell");
+	}
+
+	return item.label ?? item.type;
 }
 
 const activeTabId = $derived(container.activeTabId ?? container.childIds[0] ?? null);
@@ -136,6 +150,13 @@ function handleContextMenuClose() {
 function handleContextMenuRename() {
 	if (contextMenuItemId) {
 		onItemRename?.(container.id, contextMenuItemId);
+	}
+	handleContextMenuClose();
+}
+
+function handleContextMenuResetAutomaticTitle() {
+	if (contextMenuItemId) {
+		onItemResetAutomaticTitle?.(container.id, contextMenuItemId);
 	}
 	handleContextMenuClose();
 }
@@ -317,14 +338,14 @@ function handleDropZoneDrop(containerId: string, zone: LayoutDropZonePosition, e
 							{dragOverTabId === childId ? 'ring-1 ring-terminal-green ring-inset' : ''}
 							{showNotification ? 'ring-1 ring-terminal-green/30 ring-inset' : ''}"
 						draggable="true"
-						onclick={() => handleTabClick(childId)}
+						onpointerdown={() => handleTabClick(childId)}
 						oncontextmenu={(e) => handleTabContextMenu(childId, e)}
 						ondragstart={(e) => handleTabDragStart(childId, e)}
 						ondragover={(e) => handleTabDragOver(childId, e)}
 						ondragleave={(e) => handleTabDragLeave(childId, e)}
 						ondrop={(e) => handleTabDrop(childId, e)}
 					>
-						{item.label ?? item.type}
+						{itemLabelGet(item, terminalInstance?.windowTitle ?? terminalInstance?.screenTitle)}
 						{#if terminalInstance}
 							<span
 								class="inline-block size-1 rounded-full bg-terminal-green shadow-[0_0_4px_var(--color-terminal-green)] transition-opacity duration-300
@@ -348,7 +369,7 @@ function handleDropZoneDrop(containerId: string, zone: LayoutDropZonePosition, e
 			<button
 				type="button"
 				class="shrink-0 flex size-5 items-center justify-center text-[10px] text-text-tertiary hover:text-terminal-green hover:bg-bg-elevated/50 transition-colors duration-100"
-				onclick={handleAddButtonClick}
+				onpointerdown={handleAddButtonClick}
 				title="Add item"
 			>
 				+
@@ -378,7 +399,7 @@ function handleDropZoneDrop(containerId: string, zone: LayoutDropZonePosition, e
 						isActive={activeItemId === childId}
 						draggable={true}
 						isDropTarget={true}
-						onclick={handleItemClick(childId)}
+						onpointerdown={handleItemClick(childId)}
 						onDragStart={handleTabDragStart}
 						onDrop={(droppedId, _targetId, e) => handleTabDrop(childId, e)}
 					/>
@@ -399,6 +420,7 @@ function handleDropZoneDrop(containerId: string, zone: LayoutDropZonePosition, e
 		position={contextMenuPosition}
 		itemType={items[contextMenuItemId]?.type}
 		onRename={handleContextMenuRename}
+		onResetAutomaticTitle={handleContextMenuResetAutomaticTitle}
 		onChangeUrl={handleContextMenuChangeUrl}
 		onClose={handleContextMenuCloseItem}
 		onMenuClose={handleContextMenuClose}

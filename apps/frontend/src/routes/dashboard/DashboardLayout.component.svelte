@@ -993,6 +993,7 @@ async function handleAddItem(containerId: string, itemType: AddItemType) {
 			newItem = {
 				id: terminal.id,
 				label: terminalName,
+				labelIsCustom: false,
 				type: "terminal",
 			};
 			break;
@@ -1086,11 +1087,24 @@ function handleItemRename(_containerId: string, itemId: string) {
 	const newLabel = prompt("Enter new name:", item.label);
 	if (newLabel && newLabel !== item.label) {
 		item.label = newLabel;
+		item.labelIsCustom = true;
 		data = {
 			...data,
 		};
 		markDirty();
 	}
+}
+
+function handleItemResetAutomaticTitle(_containerId: string, itemId: string) {
+	const item = data.items[itemId];
+	if (!item || item.type !== "terminal") return;
+
+	item.label = "shell";
+	item.labelIsCustom = false;
+	data = {
+		...data,
+	};
+	markDirty();
 }
 
 function handleItemChangeUrl(_containerId: string, itemId: string) {
@@ -1168,6 +1182,7 @@ async function handleAddItemToEmptyLayout(itemType: AddItemType) {
 			newItem = {
 				id: terminal.id,
 				label: terminalName,
+				labelIsCustom: false,
 				type: "terminal",
 			};
 			break;
@@ -1286,6 +1301,7 @@ async function handleAddItemToEmptyLayout(itemType: AddItemType) {
 			onSplitDrop={isMobile ? undefined : handleSplitDrop}
 			onAddItem={isMobile ? undefined : handleAddItem}
 			onItemRename={isMobile ? undefined : handleItemRename}
+			onItemResetAutomaticTitle={isMobile ? undefined : handleItemResetAutomaticTitle}
 			onItemChangeUrl={isMobile ? undefined : handleItemChangeUrl}
 			onItemClose={isMobile ? undefined : handleItemClose}
 			onAddItemToEmptyLayout={isMobile ? undefined : handleAddItemToEmptyLayout}

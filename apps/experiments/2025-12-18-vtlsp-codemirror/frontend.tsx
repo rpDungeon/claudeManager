@@ -241,7 +241,7 @@ function App() {
 						{status === "error" && `Error: ${errorMsg}`}
 					</span>
 					{status !== "connecting" && (
-						<button className="reconnect-btn" onClick={connect} type="button">
+						<button className="reconnect-btn" onPointerDown={connect} type="button">
 							{status === "connected" ? "Reconnect" : "Connect"}
 						</button>
 					)}

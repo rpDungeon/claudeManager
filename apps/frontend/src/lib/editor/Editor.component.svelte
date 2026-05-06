@@ -32,7 +32,7 @@ interface Props {
 	draggable?: boolean;
 	isDropTarget?: boolean;
 	enableLsp?: boolean;
-	onclick?: (event: MouseEvent) => void;
+	onpointerdown?: (event: MouseEvent) => void;
 	onHeaderClick?: (event: MouseEvent) => void;
 	onBodyClick?: (event: MouseEvent) => void;
 	onDragStart?: (itemId: string, event: DragEvent) => void;
@@ -49,7 +49,7 @@ let {
 	draggable = false,
 	isDropTarget = false,
 	enableLsp = false,
-	onclick,
+	onpointerdown,
 	onHeaderClick,
 	onBodyClick,
 	onDragStart,
@@ -87,7 +87,7 @@ const statusColor = $derived.by(() => {
 });
 
 function handleClick(event: MouseEvent) {
-	onclick?.(event);
+	onpointerdown?.(event);
 }
 
 function handleHeaderClick(event: MouseEvent) {
@@ -191,7 +191,7 @@ onDestroy(() => {
 		class:ring-inset={isDraggedOver}
 		class:cursor-grab={draggable && !isDragging}
 		class:cursor-grabbing={isDragging}
-		onclick={handleHeaderClick}
+		onpointerdown={handleHeaderClick}
 		draggable={draggable ? "true" : "false"}
 		ondragstart={handleDragStart}
 		ondragend={handleDragEnd}
@@ -219,8 +219,8 @@ onDestroy(() => {
 		class:hover:ring-border-active={!isActive}
 		role="button"
 		tabindex="0"
-		onclick={handleBodyClick}
-		onkeydown={(e) => e.key === "Enter" && handleBodyClick(new MouseEvent("click"))}
+		onpointerdown={handleBodyClick}
+		onkeydown={(e) => e.key === "Enter" && handleBodyClick(new PointerEvent("pointerdown"))}
 	>
 		<div bind:this={containerRef} class="editor-container relative z-0 flex-1 overflow-hidden">
 		</div>

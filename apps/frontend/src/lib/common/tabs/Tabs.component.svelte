@@ -42,7 +42,7 @@ function handleKeyDown(event: KeyboardEvent, id: string, disabled?: boolean) {
 				? 'bg-bg-elevated text-text-primary'
 				: 'text-text-secondary hover:text-text-primary'}
 				{item.disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}"
-			onclick={() => handleClick(item.id, item.disabled)}
+			onpointerdown={() => handleClick(item.id, item.disabled)}
 			onkeydown={(e) => handleKeyDown(e, item.id, item.disabled)}
 			disabled={item.disabled}
 		>

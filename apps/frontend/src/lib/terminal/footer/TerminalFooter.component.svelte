@@ -24,7 +24,7 @@ let { isExpanded = false, shortcuts = [], onToggle, onShortcutClick }: Props = $
 		<button
 			type="button"
 			class="flex items-center justify-center size-[11px] text-[8px] text-terminal-green hover:bg-bg-elevated transition-colors shrink-0"
-			onclick={onToggle}
+			onpointerdown={onToggle}
 			title="Collapse bar"
 		>▼</button>
 		{#each shortcuts as shortcut (shortcut.id)}
@@ -33,7 +33,7 @@ let { isExpanded = false, shortcuts = [], onToggle, onShortcutClick }: Props = $
 				class="px-1.5 py-0 text-[10px] leading-[18px] hover:bg-bg-elevated transition-colors truncate max-w-24"
 				style:color={shortcut.color ?? undefined}
 				class:text-text-secondary={!shortcut.color}
-				onclick={() => onShortcutClick?.(shortcut)}
+				onpointerdown={() => onShortcutClick?.(shortcut)}
 				title={shortcut.command}
 			>{shortcut.label}</button>
 		{/each}
@@ -42,7 +42,7 @@ let { isExpanded = false, shortcuts = [], onToggle, onShortcutClick }: Props = $
 	<button
 		type="button"
 		class="absolute bottom-0 left-0 z-10 flex items-center justify-center size-[11px] text-[8px] text-text-tertiary hover:text-terminal-green hover:bg-bg-elevated transition-colors"
-		onclick={onToggle}
+		onpointerdown={onToggle}
 		title="Expand bar"
 	>▲</button>
 {/if}

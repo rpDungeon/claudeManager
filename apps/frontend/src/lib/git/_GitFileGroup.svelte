@@ -29,7 +29,7 @@ function fileNameGet(path: string): string {
 	<div class="border-b border-border-default">
 		<button
 			type="button"
-			onclick={handleToggle}
+			onpointerdown={handleToggle}
 			class="flex w-full items-center gap-1.5 px-3 py-1.5 text-left hover:bg-bg-elevated transition-colors"
 		>
 			{#if isExpanded}
@@ -56,7 +56,7 @@ function fileNameGet(path: string): string {
 					>
 						<button
 							type="button"
-							onclick={() => onFileClick?.(file.path, area)}
+							onpointerdown={() => onFileClick?.(file.path, area)}
 							class="flex flex-1 items-center gap-1.5 min-w-0"
 							title={file.path}
 						>
@@ -74,7 +74,7 @@ function fileNameGet(path: string): string {
 						{#if area === "staged"}
 							<button
 								type="button"
-								onclick={() => onUnstage?.(file.path)}
+								onpointerdown={() => onUnstage?.(file.path)}
 								class="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-bg-void transition-all"
 								title="Unstage"
 							>
@@ -83,7 +83,7 @@ function fileNameGet(path: string): string {
 						{:else}
 							<button
 								type="button"
-								onclick={() => onStage?.(file.path)}
+								onpointerdown={() => onStage?.(file.path)}
 								class="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-bg-void transition-all"
 								title="Stage"
 							>

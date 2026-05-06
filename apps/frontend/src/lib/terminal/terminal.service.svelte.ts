@@ -39,16 +39,104 @@ type TerminalInstance = {
 	dismissedAt: number;
 	needsAttention: boolean;
 	outputIdle: boolean;
+	screenTitle: string | null;
+	screenTitleScanTimer: ReturnType<typeof setTimeout> | null;
 	settledAt: number;
 	onDataDisposable: {
+		dispose: () => void;
+	} | null;
+	onTitleChangeDisposable: {
 		dispose: () => void;
 	} | null;
 	scrollLock: boolean;
 	terminal: Terminal;
 	websocket: EdenWebSocket | null;
+	windowTitle: string | null;
 };
 
 const instances = new SvelteMap<TerminalId, TerminalInstance>();
+const TERMINAL_AUTOMATIC_TITLE_REGEX = /^shell(?: \d+)?$/i;
+const TERMINAL_RIGHT_SIDEBAR_SEGMENT_REGEX = / {8,}(\S(?:.*\S)?)$/;
+const TERMINAL_SCREEN_TITLE_MAX_LENGTH = 80;
+
+function terminalWindowTitleNormalize(title: string): string | null {
+	const normalized = title
+		.split("")
+		.filter((char) => {
+			const code = char.charCodeAt(0);
+			return code >= 32 && code !== 127;
+		})
+		.join("")
+		.replace(/\s+/g, " ")
+		.trim();
+
+	if (!normalized) return null;
+	if (normalized.length <= TERMINAL_SCREEN_TITLE_MAX_LENGTH) return normalized;
+
+	return `${normalized.slice(0, TERMINAL_SCREEN_TITLE_MAX_LENGTH - 3)}...`;
+}
+
+function terminalRightSidebarSegmentGet(line: string, cols: number): string | null {
+	const match = TERMINAL_RIGHT_SIDEBAR_SEGMENT_REGEX.exec(line);
+	if (!match) return null;
+
+	const segment = terminalWindowTitleNormalize(match[1] ?? "");
+	if (!segment) return null;
+
+	const startColumn = line.length - segment.length;
+	if (startColumn < cols * 0.55) return null;
+
+	return segment;
+}
+
+function terminalScreenTitleExtract(terminal: Terminal): string | null {
+	const buffer = terminal.buffer.active;
+	const rows: string[] = [];
+
+	for (let i = buffer.viewportY; i < buffer.viewportY + terminal.rows; i++) {
+		const line = buffer.getLine(i);
+		rows.push(line ? line.translateToString(true) : "");
+	}
+
+	const rightSegments = rows.map((line) => terminalRightSidebarSegmentGet(line, terminal.cols));
+	const contextIndex = rightSegments.indexOf("Context");
+	if (contextIndex === -1) return null;
+
+	for (let i = contextIndex - 1; i >= 0; i--) {
+		const candidate = rightSegments[i];
+		if (candidate) return candidate;
+	}
+
+	return null;
+}
+
+function terminalScreenTitleScanQueue(terminalId: TerminalId): void {
+	const instance = instances.get(terminalId);
+	if (!instance || instance.screenTitleScanTimer) return;
+
+	instance.screenTitleScanTimer = setTimeout(() => {
+		const current = instances.get(terminalId);
+		if (!current) return;
+
+		current.screenTitleScanTimer = null;
+		current.screenTitle = terminalScreenTitleExtract(current.terminal);
+	}, 500);
+}
+
+export function terminalDisplayTitleGet(
+	label: string | undefined,
+	labelIsCustom: boolean | undefined,
+	automaticTitle: string | null | undefined,
+	fallback = "shell",
+): string {
+	const baseTitle = label?.trim();
+	if (labelIsCustom === true) return baseTitle || fallback;
+
+	const canUseAutomaticTitle = labelIsCustom === false || !baseTitle || TERMINAL_AUTOMATIC_TITLE_REGEX.test(baseTitle);
+	if (canUseAutomaticTitle && automaticTitle) return automaticTitle;
+
+	return baseTitle || fallback;
+}
 
 export function terminalInstanceGet(terminalId: TerminalId): TerminalInstance | undefined {
 	return instances.get(terminalId);
@@ -104,11 +192,18 @@ export function terminalInstanceCreate(terminalId: TerminalId): TerminalInstance
 		lastError: null,
 		needsAttention: false,
 		onDataDisposable: null,
+		onTitleChangeDisposable: null,
 		outputIdle: false,
+		screenTitle: null,
+		screenTitleScanTimer: null,
 		scrollLock: false,
 		settledAt: 0,
 		terminal,
 		websocket: null,
+		windowTitle: null,
+	});
+	instance.onTitleChangeDisposable = terminal.onTitleChange((title) => {
+		instance.windowTitle = terminalWindowTitleNormalize(title);
 	});
 
 	instances.set(terminalId, instance);
@@ -132,6 +227,12 @@ export function terminalInstanceDestroy(terminalId: TerminalId): void {
 	terminalWebsocketClose(terminalId);
 	if (instance.onDataDisposable) {
 		instance.onDataDisposable.dispose();
+	}
+	if (instance.onTitleChangeDisposable) {
+		instance.onTitleChangeDisposable.dispose();
+	}
+	if (instance.screenTitleScanTimer) {
+		clearTimeout(instance.screenTitleScanTimer);
 	}
 	instance.terminal.dispose();
 	instances.delete(terminalId);
@@ -503,6 +604,7 @@ function terminalDispatchServerMessage(terminalId: TerminalId, message: ServerMe
 				}
 			});
 			terminalStatusLineScanThrottled(terminalId);
+			terminalScreenTitleScanQueue(terminalId);
 			break;
 		}
 

@@ -16,7 +16,7 @@ interface Props {
 	draggable?: boolean;
 	isActive?: boolean;
 	isDropTarget?: boolean;
-	onclick?: (event: MouseEvent) => void;
+	onpointerdown?: (event: MouseEvent) => void;
 	onDragStart?: (itemId: string, event: DragEvent) => void;
 	onDragEnd?: (itemId: string, event: DragEvent) => void;
 	onDrop?: (droppedItemId: string, targetItemId: string, event: DragEvent) => void;
@@ -31,7 +31,7 @@ let {
 	draggable = true,
 	isActive = false,
 	isDropTarget = false,
-	onclick,
+	onpointerdown,
 	onDragStart,
 	onDragEnd,
 	onDrop,
@@ -105,7 +105,7 @@ function handleDrop(event: DragEvent) {
 	class:ring-inset={isDraggedOver}
 	class:cursor-grab={draggable && !isDragging}
 	class:cursor-grabbing={isDragging}
-	{onclick}
+	{onpointerdown}
 	draggable={draggable ? "true" : "false"}
 	ondragstart={handleDragStart}
 	ondragend={handleDragEnd}

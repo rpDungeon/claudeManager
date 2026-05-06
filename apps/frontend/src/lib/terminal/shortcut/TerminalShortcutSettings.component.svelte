@@ -201,13 +201,13 @@ function handleDragEnd() {
 					<button
 						type="button"
 						class={shortcut.sendCtrlC ? TOGGLE_ON_CTRLC : TOGGLE_OFF}
-						onclick={() => handleToggleCtrlC(shortcut)}
+						onpointerdown={() => handleToggleCtrlC(shortcut)}
 						title="Send Ctrl+C twice before command"
 					>^C</button>
 					<button
 						type="button"
 						class={shortcut.sendEnter ? TOGGLE_ON_ENTER : TOGGLE_OFF}
-						onclick={() => handleToggleEnter(shortcut)}
+						onpointerdown={() => handleToggleEnter(shortcut)}
 						title="Send Enter after command"
 					>{"\u23CE"}</button>
 				</div>
@@ -220,14 +220,14 @@ function handleDragEnd() {
 							class:border-transparent={shortcut.color !== color}
 							class:scale-125={shortcut.color === color}
 							style:background-color={color ?? "#555555"}
-							onclick={() => handleColorChange(shortcut, color)}
+							onpointerdown={() => handleColorChange(shortcut, color)}
 							title={color ?? "default"}
 						></button>
 					{/each}
 				</div>
 				<button
 					type="button"
-					onclick={() => handleDelete(shortcut.id)}
+					onpointerdown={() => handleDelete(shortcut.id)}
 					class="ml-1 shrink-0 rounded p-0.5 text-text-tertiary hover:bg-bg-elevated hover:text-terminal-red transition-colors"
 				>
 					<X class="size-3" />
@@ -258,13 +258,13 @@ function handleDragEnd() {
 			<button
 				type="button"
 				class={newSendCtrlC ? TOGGLE_ON_CTRLC : TOGGLE_OFF}
-				onclick={() => (newSendCtrlC = !newSendCtrlC)}
+				onpointerdown={() => (newSendCtrlC = !newSendCtrlC)}
 				title="Send Ctrl+C twice before command"
 			>^C</button>
 			<button
 				type="button"
 				class={newSendEnter ? TOGGLE_ON_ENTER : TOGGLE_OFF}
-				onclick={() => (newSendEnter = !newSendEnter)}
+				onpointerdown={() => (newSendEnter = !newSendEnter)}
 				title="Send Enter after command"
 			>{"\u23CE"}</button>
 		</div>
@@ -277,14 +277,14 @@ function handleDragEnd() {
 					class:border-transparent={newColor !== color}
 					class:scale-125={newColor === color}
 					style:background-color={color ?? "#555555"}
-					onclick={() => (newColor = color)}
+					onpointerdown={() => (newColor = color)}
 					title={color ?? "default"}
 				></button>
 			{/each}
 		</div>
 		<button
 			type="button"
-			onclick={handleAdd}
+			onpointerdown={handleAdd}
 			disabled={!(newLabel.trim() && newCommand.trim())}
 			class="ml-1 shrink-0 rounded p-0.5 text-text-tertiary hover:bg-bg-elevated hover:text-terminal-green disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
 		>

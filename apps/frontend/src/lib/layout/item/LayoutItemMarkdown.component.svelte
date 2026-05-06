@@ -16,7 +16,7 @@ interface Props {
 	isActive?: boolean;
 	draggable?: boolean;
 	isDropTarget?: boolean;
-	onclick?: (event: MouseEvent) => void;
+	onpointerdown?: (event: MouseEvent) => void;
 	onDragStart?: (itemId: string, event: DragEvent) => void;
 	onDragEnd?: (itemId: string, event: DragEvent) => void;
 	onDrop?: (droppedItemId: string, targetItemId: string, event: DragEvent) => void;
@@ -27,7 +27,7 @@ let {
 	isActive = false,
 	draggable = true,
 	isDropTarget = false,
-	onclick,
+	onpointerdown,
 	onDragStart,
 	onDragEnd,
 	onDrop,
@@ -46,7 +46,7 @@ const renderedContent = $derived(
 	{isActive}
 	{draggable}
 	{isDropTarget}
-	onHeaderClick={onclick}
+	onHeaderClick={onpointerdown}
 	{onDragStart}
 	{onDragEnd}
 	{onDrop}

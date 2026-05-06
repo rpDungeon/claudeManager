@@ -1,0 +1,26 @@
+{
+	"description": "",
+	"hubUrl": "http://localhost:4200",
+	"injections": [
+		{
+			"id": "role-default-1",
+			"priority": "high",
+			"source": "role:worker",
+			"text": "Focus on your assigned domain. Report progress to the orchestrator via mesh_send when you have findings or complete a task."
+		},
+		{
+			"id": "role-default-2",
+			"priority": "normal",
+			"source": "role:worker",
+			"text": "If your work overlaps with another worker, coordinate with them directly via mesh_send before making changes."
+		},
+		{
+			"id": "role-default-3",
+			"priority": "normal",
+			"source": "role:worker",
+			"text": "When you finish a task, call mesh_task_update to mark it done and notify the orchestrator."
+		}
+	],
+	"name": "main-4kb9",
+	"role": "worker"
+}

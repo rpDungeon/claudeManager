@@ -613,7 +613,7 @@ function handleReconnect() {
 		</span>
 		<button
 			type="button"
-			onclick={handleReconnect}
+			onpointerdown={handleReconnect}
 			class="flex items-center justify-center p-1 -m-1 rounded transition-colors hover:bg-bg-elevated cursor-pointer"
 			title="Click to reconnect"
 		>
@@ -659,7 +659,7 @@ function handleReconnect() {
 			class="flex-1 h-6 bg-bg-elevated border border-border-default rounded px-2 text-[11px] text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-terminal-green"
 		/>
 		<button
-			onclick={voiceInputToggle}
+			onpointerdown={voiceInputToggle}
 			class="flex items-center justify-center size-6 rounded border transition-colors {isRecording
 				? 'bg-terminal-red/20 border-terminal-red text-terminal-red'
 				: 'bg-bg-elevated border-border-default text-text-secondary hover:border-border-active hover:text-text-primary'}"

@@ -141,7 +141,7 @@ function handleClose() {
 				</Dialog.Title>
 				<Dialog.Close
 					class="rounded p-1 text-text-tertiary hover:bg-bg-elevated hover:text-text-secondary transition-colors"
-					onclick={handleClose}
+					onpointerdown={handleClose}
 				>
 					<X class="size-4" />
 				</Dialog.Close>
@@ -168,7 +168,7 @@ function handleClose() {
 				<div class="flex flex-col gap-2">
 					<button
 						type="button"
-						onclick={handleDuplicate}
+						onpointerdown={handleDuplicate}
 						disabled={isDuplicating}
 						class="flex items-center gap-2 rounded border border-border-default bg-bg-void px-3 py-2 text-xs text-text-secondary hover:bg-bg-elevated hover:text-text-primary disabled:opacity-50 transition-colors"
 					>
@@ -183,7 +183,7 @@ function handleClose() {
 							<span class="text-xs text-terminal-red">Delete this layout?</span>
 							<button
 								type="button"
-								onclick={handleDelete}
+								onpointerdown={handleDelete}
 								disabled={isDeleting}
 								class="rounded bg-terminal-red/20 px-3 py-1.5 text-xs font-medium text-terminal-red hover:bg-terminal-red/30 disabled:opacity-50 transition-colors"
 							>
@@ -191,7 +191,7 @@ function handleClose() {
 							</button>
 							<button
 								type="button"
-								onclick={() => (showDeleteConfirm = false)}
+								onpointerdown={() => (showDeleteConfirm = false)}
 								class="rounded bg-bg-elevated px-3 py-1.5 text-xs text-text-secondary hover:bg-bg-void transition-colors"
 							>
 								Cancel
@@ -200,7 +200,7 @@ function handleClose() {
 					{:else}
 						<button
 							type="button"
-							onclick={() => (showDeleteConfirm = true)}
+							onpointerdown={() => (showDeleteConfirm = true)}
 							class="flex items-center gap-1.5 rounded px-2 py-1.5 text-xs text-terminal-red hover:bg-terminal-red/10 transition-colors"
 						>
 							<Trash2 class="size-3.5" />
@@ -212,14 +212,14 @@ function handleClose() {
 						<div class="flex gap-2">
 							<button
 								type="button"
-								onclick={handleClose}
+								onpointerdown={handleClose}
 								class="rounded bg-bg-elevated px-4 py-1.5 text-xs text-text-secondary hover:bg-bg-void transition-colors"
 							>
 								Cancel
 							</button>
 							<button
 								type="button"
-								onclick={handleSave}
+								onpointerdown={handleSave}
 								disabled={isSaving || !name.trim()}
 								class="rounded bg-terminal-green/20 px-4 py-1.5 text-xs font-medium text-terminal-green hover:bg-terminal-green/30 disabled:opacity-50 transition-colors"
 							>

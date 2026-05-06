@@ -69,7 +69,7 @@ function handleChange(event: Event) {
 				hover:bg-bg-elevated hover:text-terminal-green
 				transition-colors duration-100"
 			title="Add new"
-			onclick={onAddClick}
+			onpointerdown={onAddClick}
 		>
 			<span class="text-[12px]">+</span>
 		</button>
@@ -82,7 +82,7 @@ function handleChange(event: Event) {
 				hover:bg-bg-elevated hover:text-text-secondary
 				transition-colors duration-100"
 			title="Settings"
-			onclick={onSettingsClick}
+			onpointerdown={onSettingsClick}
 			disabled={!value}
 		>
 			<Settings class="size-3" />

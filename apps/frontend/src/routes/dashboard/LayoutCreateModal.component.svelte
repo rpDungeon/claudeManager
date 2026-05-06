@@ -89,7 +89,7 @@ function handleClose() {
 				</Dialog.Title>
 				<Dialog.Close
 					class="rounded p-1 text-text-tertiary hover:bg-bg-elevated hover:text-text-secondary transition-colors"
-					onclick={handleClose}
+					onpointerdown={handleClose}
 				>
 					<X class="size-4" />
 				</Dialog.Close>
@@ -122,7 +122,7 @@ function handleClose() {
 				<div class="flex justify-end gap-2 pt-2 border-t border-border-default">
 					<button
 						type="button"
-						onclick={handleClose}
+						onpointerdown={handleClose}
 						class="rounded bg-bg-elevated px-4 py-1.5 text-xs text-text-secondary hover:bg-bg-void transition-colors"
 					>
 						Cancel

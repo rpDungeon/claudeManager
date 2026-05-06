@@ -45,7 +45,7 @@ function handleBackdropClick() {
 
 <div
 	class="fixed inset-0 z-50"
-	onclick={handleBackdropClick}
+	onpointerdown={handleBackdropClick}
 	onkeydown={handleKeyDown}
 	role="presentation"
 >
@@ -55,7 +55,7 @@ function handleBackdropClick() {
 		style:top="{position.y}px"
 		role="menu"
 		tabindex="-1"
-		onclick={(e) => e.stopPropagation()}
+		onpointerdown={(e) => e.stopPropagation()}
 		onkeydown={(e) => e.stopPropagation()}
 	>
 		{#each items as item, index (item.type === ContextMenuItemType.Divider ? `divider-${index}` : item.type === ContextMenuItemType.Action ? item.id : item.id)}
@@ -69,7 +69,7 @@ function handleBackdropClick() {
 					class="flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-[11px] transition-colors
 						{item.danger ? 'text-terminal-red hover:bg-terminal-red/10' : 'text-text-primary hover:bg-bg-surface'}
 						{item.disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}"
-					onclick={() => handleAction(item.id, item.disabled)}
+					onpointerdown={() => handleAction(item.id, item.disabled)}
 				>
 					<span>{item.label}</span>
 					{#if item.shortcut}
@@ -84,7 +84,7 @@ function handleBackdropClick() {
 					disabled={item.disabled}
 					class="flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-[11px] text-text-primary transition-colors hover:bg-bg-surface
 						{item.disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}"
-					onclick={() => handleToggle(item.id, item.checked, item.disabled)}
+					onpointerdown={() => handleToggle(item.id, item.checked, item.disabled)}
 				>
 					<span>{item.label}</span>
 					<span

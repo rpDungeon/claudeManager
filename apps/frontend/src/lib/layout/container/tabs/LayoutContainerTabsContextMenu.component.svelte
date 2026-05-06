@@ -19,12 +19,13 @@ interface Props {
 	position: ContextMenuPosition;
 	itemType?: string;
 	onRename?: () => void;
+	onResetAutomaticTitle?: () => void;
 	onChangeUrl?: () => void;
 	onClose?: () => void;
 	onMenuClose?: () => void;
 }
 
-let { position, itemType, onRename, onChangeUrl, onClose, onMenuClose }: Props = $props();
+let { position, itemType, onRename, onResetAutomaticTitle, onChangeUrl, onClose, onMenuClose }: Props = $props();
 
 const menuItems = $derived.by(() => {
 	const items: ContextMenuItem<TabActionId>[] = [
@@ -39,6 +40,14 @@ const menuItems = $derived.by(() => {
 		items.push({
 			id: TabActionId.ChangeUrl,
 			label: "Change URL",
+			type: ContextMenuItemType.Action,
+		});
+	}
+
+	if (itemType === "terminal") {
+		items.push({
+			id: TabActionId.ResetAutomaticTitle,
+			label: "Reset to automatic",
 			type: ContextMenuItemType.Action,
 		});
 	}
@@ -65,6 +74,9 @@ function handleAction(actionId: TabActionId) {
 			break;
 		case TabActionId.ChangeUrl:
 			onChangeUrl?.();
+			break;
+		case TabActionId.ResetAutomaticTitle:
+			onResetAutomaticTitle?.();
 			break;
 		case TabActionId.Close:
 			onClose?.();

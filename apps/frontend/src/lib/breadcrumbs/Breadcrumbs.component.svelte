@@ -37,7 +37,7 @@ function handleSegmentClick(segment: BreadcrumbSegment) {
 			<button
 				type="button"
 				class="shrink-0 text-text-tertiary hover:text-terminal-green transition-colors"
-				onclick={(e) => { e.stopPropagation(); handleSegmentClick(segment); }}
+				onpointerdown={(e) => { e.stopPropagation(); handleSegmentClick(segment); }}
 				title="Reveal in Explorer: {segment.path}"
 			>
 				{segment.name}

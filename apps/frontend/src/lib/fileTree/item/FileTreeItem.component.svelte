@@ -27,7 +27,7 @@ interface Props {
 	isActive?: boolean;
 	hasChildren?: boolean;
 	draggable?: boolean;
-	onclick?: () => void;
+	onpointerdown?: () => void;
 	ondblclick?: (event: MouseEvent) => void;
 	onToggle?: () => void;
 	ondragstart?: (event: DragEvent) => void;
@@ -50,7 +50,7 @@ let {
 	isActive = false,
 	hasChildren: _hasChildren = false,
 	draggable = false,
-	onclick,
+	onpointerdown,
 	ondblclick,
 	onToggle,
 	ondragstart,
@@ -69,7 +69,7 @@ const showStatusIndicator = $derived(status && status !== "clean" && status !== 
 const statusColor = $derived(status ? fileStatusColorMap[status] : IndicatorDotColor.Gray);
 
 function handleClick() {
-	onclick?.();
+	onpointerdown?.();
 }
 
 function handleDoubleClick(event: MouseEvent) {
@@ -84,7 +84,7 @@ function handleToggleClick(event: Event) {
 function handleKeyDown(event: KeyboardEvent) {
 	if (event.key === "Enter" || event.key === " ") {
 		event.preventDefault();
-		onclick?.();
+		onpointerdown?.();
 	}
 	if (event.key === "ArrowRight" && isFolder && !isExpanded) {
 		event.preventDefault();
@@ -134,7 +134,7 @@ function handleContextMenu(event: MouseEvent) {
 	draggable={isError ? false : draggable}
 	disabled={isError}
 	title={errorMessage}
-	onclick={handleClick}
+	onpointerdown={handleClick}
 	ondblclick={handleDoubleClick}
 	onkeydown={handleKeyDown}
 	ondragstart={handleDragStart}
@@ -148,7 +148,7 @@ function handleContextMenu(event: MouseEvent) {
 		class="flex size-3 shrink-0 items-center justify-center text-text-tertiary transition-transform duration-150"
 		class:-rotate-90={!isExpanded}
 		class:invisible={!showChevron}
-		onclick={handleToggleClick}
+		onpointerdown={handleToggleClick}
 		onkeydown={(e) => e.key === "Enter" && handleToggleClick(e)}
 		role="button"
 		tabindex="-1"

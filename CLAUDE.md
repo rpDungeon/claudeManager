@@ -290,3 +290,7 @@ The `EnvValidator` in `src/common/common.env.ts` collects all env arrays and val
 2. **Projects**: Organize terminals by project with configurable working directories
 3. **Terminals**: xterm.js with WebSocket PTY, resizable panes (paneforge), tabs
 4. **Claude Sessions**: Track Claude Code chat IDs per project
+
+## TODO
+
+- **Mute detection**: Detect when the microphone is muted (e.g. silence / very low audio levels) in the transcription flow and warn the user instead of sending silent audio to the API

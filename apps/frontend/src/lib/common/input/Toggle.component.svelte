@@ -47,7 +47,7 @@ function handleKeyDown(event: KeyboardEvent) {
 			? 'border-terminal-green/50 bg-terminal-green/20'
 			: 'border-border-default bg-bg-surface'}
 			{disabled ? 'cursor-not-allowed opacity-50' : ''}"
-		onclick={handleToggle}
+		onpointerdown={handleToggle}
 		onkeydown={handleKeyDown}
 	>
 		<span
@@ -62,7 +62,7 @@ function handleKeyDown(event: KeyboardEvent) {
 			id="{inputId}-label"
 			for={inputId}
 			class="text-[11px] text-text-secondary {disabled ? 'opacity-50' : 'cursor-pointer'}"
-			onclick={handleToggle}
+			onpointerdown={handleToggle}
 			onkeydown={handleKeyDown}
 			role="presentation"
 		>
