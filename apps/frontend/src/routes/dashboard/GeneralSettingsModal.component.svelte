@@ -53,13 +53,13 @@ function handleClose() {
 			class="fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
 		/>
 		<Dialog.Content
-			class="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 border border-border-default bg-bg-surface p-4 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+			class="fixed left-1/2 top-1/2 z-50 w-[calc(100vw-1rem)] max-w-lg max-h-[calc(100dvh-1rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto border border-border-default bg-bg-surface p-4 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
 		>
 			<div class="flex items-center justify-between mb-4">
 				<Dialog.Title class="text-sm font-medium text-text-primary">Settings</Dialog.Title>
 				<Dialog.Close
 					class="rounded p-1 text-text-tertiary hover:bg-bg-elevated hover:text-text-secondary transition-colors"
-					onclick={handleClose}
+					onpointerdown={handleClose}
 				>
 					<X class="size-4" />
 				</Dialog.Close>
@@ -76,7 +76,7 @@ function handleClose() {
 					class:border-transparent={activeTab !== "general"}
 					class:text-text-tertiary={activeTab !== "general"}
 					class:hover:text-text-secondary={activeTab !== "general"}
-					onclick={() => (activeTab = "general")}
+					onpointerdown={() => (activeTab = "general")}
 				>
 					General
 				</button>
@@ -88,7 +88,7 @@ function handleClose() {
 					class:border-transparent={activeTab !== "shortcuts"}
 					class:text-text-tertiary={activeTab !== "shortcuts"}
 					class:hover:text-text-secondary={activeTab !== "shortcuts"}
-					onclick={() => (activeTab = "shortcuts")}
+					onpointerdown={() => (activeTab = "shortcuts")}
 				>
 					Terminal Shortcuts
 				</button>
@@ -103,7 +103,7 @@ function handleClose() {
 						<div class="flex items-center gap-3">
 							<button
 								type="button"
-								onclick={() => handleFontSizeChange(fontSize - 1)}
+								onpointerdown={() => handleFontSizeChange(fontSize - 1)}
 								disabled={fontSize <= MIN_FONT_SIZE}
 								class="flex size-7 items-center justify-center rounded border border-border-default bg-bg-void text-text-secondary hover:bg-bg-elevated hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
 							>
@@ -121,7 +121,7 @@ function handleClose() {
 							/>
 							<button
 								type="button"
-								onclick={() => handleFontSizeChange(fontSize + 1)}
+								onpointerdown={() => handleFontSizeChange(fontSize + 1)}
 								disabled={fontSize >= MAX_FONT_SIZE}
 								class="flex size-7 items-center justify-center rounded border border-border-default bg-bg-void text-text-secondary hover:bg-bg-elevated hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
 							>

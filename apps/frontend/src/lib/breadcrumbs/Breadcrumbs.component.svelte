@@ -32,12 +32,12 @@ function handleSegmentClick(segment: BreadcrumbSegment) {
 </script>
 
 {#if folderSegments.length > 0}
-	<span class="flex items-center gap-0.5 overflow-hidden text-[9px]">
+	<span class="flex min-w-0 items-center gap-0.5 overflow-hidden text-[9px]">
 		{#each folderSegments as segment, _index (segment.path)}
 			<button
 				type="button"
 				class="shrink-0 text-text-tertiary hover:text-terminal-green transition-colors"
-				onclick={(e) => { e.stopPropagation(); handleSegmentClick(segment); }}
+				onpointerdown={(e) => { e.stopPropagation(); handleSegmentClick(segment); }}
 				title="Reveal in Explorer: {segment.path}"
 			>
 				{segment.name}

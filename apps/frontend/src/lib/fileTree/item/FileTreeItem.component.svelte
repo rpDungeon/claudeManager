@@ -27,7 +27,7 @@ interface Props {
 	isActive?: boolean;
 	hasChildren?: boolean;
 	draggable?: boolean;
-	onclick?: () => void;
+	onpointerdown?: () => void;
 	ondblclick?: (event: MouseEvent) => void;
 	onToggle?: () => void;
 	ondragstart?: (event: DragEvent) => void;
@@ -50,7 +50,7 @@ let {
 	isActive = false,
 	hasChildren: _hasChildren = false,
 	draggable = false,
-	onclick,
+	onpointerdown,
 	ondblclick,
 	onToggle,
 	ondragstart,
@@ -61,6 +61,9 @@ let {
 }: Props = $props();
 
 let isDragOver = $state(false);
+let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+let longPressStartX = 0;
+let longPressStartY = 0;
 
 const isError = $derived(type === FileTreeItemType.Error);
 const isFolder = $derived(type === FileTreeItemType.Folder);
@@ -68,8 +71,31 @@ const showChevron = $derived(isFolder && !isError);
 const showStatusIndicator = $derived(status && status !== "clean" && status !== "ignored");
 const statusColor = $derived(status ? fileStatusColorMap[status] : IndicatorDotColor.Gray);
 
-function handleClick() {
-	onclick?.();
+function clearLongPress() {
+	if (longPressTimer) {
+		clearTimeout(longPressTimer);
+		longPressTimer = null;
+	}
+}
+
+function handlePointerDown(event: PointerEvent) {
+	if (event.pointerType === "touch") {
+		clearLongPress();
+		longPressStartX = event.clientX;
+		longPressStartY = event.clientY;
+		longPressTimer = setTimeout(() => handleContextMenu(event), 550);
+	}
+	onpointerdown?.();
+}
+
+function handlePointerMove(event: PointerEvent) {
+	if (!longPressTimer) return;
+
+	const deltaX = Math.abs(event.clientX - longPressStartX);
+	const deltaY = Math.abs(event.clientY - longPressStartY);
+	if (deltaX > 8 || deltaY > 8) {
+		clearLongPress();
+	}
 }
 
 function handleDoubleClick(event: MouseEvent) {
@@ -84,7 +110,7 @@ function handleToggleClick(event: Event) {
 function handleKeyDown(event: KeyboardEvent) {
 	if (event.key === "Enter" || event.key === " ") {
 		event.preventDefault();
-		onclick?.();
+		onpointerdown?.();
 	}
 	if (event.key === "ArrowRight" && isFolder && !isExpanded) {
 		event.preventDefault();
@@ -97,6 +123,7 @@ function handleKeyDown(event: KeyboardEvent) {
 }
 
 function handleDragStart(event: DragEvent) {
+	clearLongPress();
 	ondragstart?.(event);
 }
 
@@ -134,7 +161,10 @@ function handleContextMenu(event: MouseEvent) {
 	draggable={isError ? false : draggable}
 	disabled={isError}
 	title={errorMessage}
-	onclick={handleClick}
+	onpointerdown={handlePointerDown}
+	onpointermove={handlePointerMove}
+	onpointerup={clearLongPress}
+	onpointercancel={clearLongPress}
 	ondblclick={handleDoubleClick}
 	onkeydown={handleKeyDown}
 	ondragstart={handleDragStart}
@@ -148,7 +178,7 @@ function handleContextMenu(event: MouseEvent) {
 		class="flex size-3 shrink-0 items-center justify-center text-text-tertiary transition-transform duration-150"
 		class:-rotate-90={!isExpanded}
 		class:invisible={!showChevron}
-		onclick={handleToggleClick}
+		onpointerdown={handleToggleClick}
 		onkeydown={(e) => e.key === "Enter" && handleToggleClick(e)}
 		role="button"
 		tabindex="-1"

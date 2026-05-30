@@ -44,7 +44,7 @@ $effect(() => {
 </svelte:head>
 
 {#if isCheckingAuth}
-	<div class="flex h-[100dvh] w-screen items-center justify-center bg-bg-void">
+	<div class="flex h-[100dvh] w-full min-w-0 items-center justify-center bg-bg-void">
 		<div class="font-mono text-xs text-text-tertiary">Verifying session...</div>
 	</div>
 {:else if isAuthenticated}

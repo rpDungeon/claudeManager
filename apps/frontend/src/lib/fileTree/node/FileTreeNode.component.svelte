@@ -151,7 +151,7 @@ function handleContextMenu(event: MouseEvent) {
 		isLoading={item.isLoading}
 		{hasChildren}
 		{draggable}
-		onclick={handleClick}
+		onpointerdown={handleClick}
 		ondblclick={handleDoubleClick}
 		onToggle={handleToggle}
 		ondragstart={handleDragStart}
@@ -160,7 +160,7 @@ function handleContextMenu(event: MouseEvent) {
 	/>
 
 	{#if canExpand && isExpanded && hasChildren}
-		<div class="ml-3 border-l border-border-default pl-1">
+		<div class="ml-1.5 border-l border-border-default pl-1 sm:ml-3">
 			{#each childIds as childId (childId)}
 				<Self
 					itemId={childId}

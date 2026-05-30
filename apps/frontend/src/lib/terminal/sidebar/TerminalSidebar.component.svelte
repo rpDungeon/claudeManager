@@ -187,14 +187,14 @@ async function handleColorSelect(color: TerminalColor) {
 <div
   class="pointer-events-none absolute inset-0 z-20 overflow-hidden"
   class:pointer-events-auto={isOpen}
-  onclick={handleBackdropClick}
+  onpointerdown={handleBackdropClick}
   onkeydown={(e) => e.key === "Escape" && onclose()}
   role="dialog"
   aria-modal="true"
   tabindex="-1"
 >
   <div
-    class="absolute right-0 top-0 bottom-0 w-72 bg-bg-surface border-l border-border-default transition-transform duration-200 ease-out pointer-events-auto"
+    class="absolute right-0 top-0 bottom-0 w-[min(18rem,100%)] bg-bg-surface border-l border-border-default transition-transform duration-200 ease-out pointer-events-auto"
     class:translate-x-0={isOpen}
     class:translate-x-full={!isOpen}
   >
@@ -206,7 +206,7 @@ async function handleColorSelect(color: TerminalColor) {
           class:text-terminal-green={activeTab === TerminalSidebarTab.Activity}
           class:bg-bg-elevated={activeTab === TerminalSidebarTab.Activity}
           class:text-text-tertiary={activeTab !== TerminalSidebarTab.Activity}
-          onclick={() => (activeTab = TerminalSidebarTab.Activity)}
+          onpointerdown={() => (activeTab = TerminalSidebarTab.Activity)}
         >
           Activity
         </button>
@@ -218,7 +218,7 @@ async function handleColorSelect(color: TerminalColor) {
           class:bg-bg-elevated={activeTab === TerminalSidebarTab.Transcriptions}
           class:text-text-tertiary={activeTab !==
             TerminalSidebarTab.Transcriptions}
-          onclick={() => (activeTab = TerminalSidebarTab.Transcriptions)}
+          onpointerdown={() => (activeTab = TerminalSidebarTab.Transcriptions)}
         >
           Voice
         </button>
@@ -228,7 +228,7 @@ async function handleColorSelect(color: TerminalColor) {
           class:text-terminal-green={activeTab === TerminalSidebarTab.Claude}
           class:bg-bg-elevated={activeTab === TerminalSidebarTab.Claude}
           class:text-text-tertiary={activeTab !== TerminalSidebarTab.Claude}
-          onclick={() => (activeTab = TerminalSidebarTab.Claude)}
+          onpointerdown={() => (activeTab = TerminalSidebarTab.Claude)}
         >
           Claude
         </button>
@@ -238,7 +238,7 @@ async function handleColorSelect(color: TerminalColor) {
           class:text-terminal-green={activeTab === TerminalSidebarTab.Settings}
           class:bg-bg-elevated={activeTab === TerminalSidebarTab.Settings}
           class:text-text-tertiary={activeTab !== TerminalSidebarTab.Settings}
-          onclick={() => (activeTab = TerminalSidebarTab.Settings)}
+          onpointerdown={() => (activeTab = TerminalSidebarTab.Settings)}
         >
           Settings
         </button>
@@ -250,7 +250,7 @@ async function handleColorSelect(color: TerminalColor) {
             class:text-text-tertiary={!copyFlash}
             class:hover:text-terminal-green={!copyFlash}
             class:hover:bg-bg-elevated={!copyFlash}
-            onclick={onCopyViewport}
+            onpointerdown={onCopyViewport}
             title="Copy viewport to clipboard"
           >
             ⎘
@@ -259,7 +259,7 @@ async function handleColorSelect(color: TerminalColor) {
         <button
           type="button"
           class="flex h-full w-6 items-center justify-center text-[10px] text-text-tertiary hover:text-terminal-green hover:bg-bg-elevated transition-colors border-l border-border-default"
-          onclick={onclose}
+          onpointerdown={onclose}
           title="Close panel"
         >
           ✕
@@ -335,7 +335,7 @@ async function handleColorSelect(color: TerminalColor) {
                       class:bg-bg-elevated={copiedId !== entry.id}
                       class:text-text-secondary={copiedId !== entry.id}
                       class:hover:text-terminal-green={copiedId !== entry.id}
-                      onclick={() => copyTranscription(entry)}
+                      onpointerdown={() => copyTranscription(entry)}
                     >
                       {copiedId === entry.id ? "Copied" : "Copy"}
                     </button>
@@ -352,11 +352,11 @@ async function handleColorSelect(color: TerminalColor) {
             </div>
           {:else}
             <div class="flex flex-col">
-              {#each sessions as entry (entry.sessionId)}
+              {#each sessions as entry (entry.externalSessionId)}
                 <div class="border-b border-border-default px-2 py-2 hover:bg-bg-elevated">
                   <div class="flex items-center gap-2 mb-1">
                     <span class="text-[9px] text-text-tertiary font-mono shrink-0">
-                      {entry.sessionId.slice(0, 8)}
+                      {entry.externalSessionId.slice(0, 8)}
                     </span>
                     {#if entry.model}
                       <span class="text-[9px] text-cyan-400">{entry.model}</span>
@@ -376,7 +376,7 @@ async function handleColorSelect(color: TerminalColor) {
                   <button
                     type="button"
                     class="w-full h-5 rounded bg-terminal-green/20 border border-terminal-green/40 text-[9px] text-terminal-green font-medium hover:bg-terminal-green/30 transition-colors"
-                    onclick={() => handleResume(entry.sessionId)}
+                    onpointerdown={() => handleResume(entry.externalSessionId)}
                   >
                     ▶ Resume
                   </button>
@@ -406,7 +406,7 @@ async function handleColorSelect(color: TerminalColor) {
                     class:border-border-active={currentColor !== color}
                     class:border-transparent={currentColor === color}
                     style:background-color={color ?? "transparent"}
-                    onclick={() => handleColorSelect(color)}
+                    onpointerdown={() => handleColorSelect(color)}
                     title={color ?? "None"}
                   >
                     {#if color === null}

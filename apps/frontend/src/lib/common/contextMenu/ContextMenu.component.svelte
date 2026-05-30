@@ -7,6 +7,7 @@ description: Floating context menu with action items, toggles, and dividers
 usage: Pass items array and position to render a context menu at specific coordinates
 -->
 <script lang="ts" generics="TId extends string = string">
+import { tick } from "svelte";
 import { ContextMenuItemType, type ContextMenuItem, type ContextMenuPosition } from "./contextMenu.lib";
 
 interface Props {
@@ -18,6 +19,43 @@ interface Props {
 }
 
 let { items, position, onAction, onToggle, onClose }: Props = $props();
+let menuRef: HTMLDivElement | undefined = $state();
+let menuX = $state<number | null>(null);
+let menuY = $state<number | null>(null);
+
+function updateMenuPosition() {
+	if (!menuRef) {
+		menuX = position.x;
+		menuY = position.y;
+		return;
+	}
+
+	const margin = 8;
+	const rect = menuRef.getBoundingClientRect();
+	const maxX = Math.max(margin, window.innerWidth - rect.width - margin);
+	const maxY = Math.max(margin, window.innerHeight - rect.height - margin);
+	menuX = Math.min(Math.max(position.x, margin), maxX);
+	menuY = Math.min(Math.max(position.y, margin), maxY);
+}
+
+$effect(() => {
+	position.x;
+	position.y;
+	items;
+
+	void tick().then(updateMenuPosition);
+	window.addEventListener("resize", updateMenuPosition);
+
+	const resizeObserver = new ResizeObserver(updateMenuPosition);
+	if (menuRef) {
+		resizeObserver.observe(menuRef);
+	}
+
+	return () => {
+		window.removeEventListener("resize", updateMenuPosition);
+		resizeObserver.disconnect();
+	};
+});
 
 function handleAction(id: TId, disabled?: boolean) {
 	if (disabled) return;
@@ -45,17 +83,18 @@ function handleBackdropClick() {
 
 <div
 	class="fixed inset-0 z-50"
-	onclick={handleBackdropClick}
+	onpointerdown={handleBackdropClick}
 	onkeydown={handleKeyDown}
 	role="presentation"
 >
 	<div
-		class="absolute min-w-[160px] rounded border border-border-default bg-bg-elevated py-1 shadow-lg shadow-black/50"
-		style:left="{position.x}px"
-		style:top="{position.y}px"
+		bind:this={menuRef}
+		class="absolute min-w-[160px] max-h-[calc(100dvh-1rem)] max-w-[calc(100vw-1rem)] overflow-y-auto rounded border border-border-default bg-bg-elevated py-1 shadow-lg shadow-black/50"
+		style:left="{menuX ?? position.x}px"
+		style:top="{menuY ?? position.y}px"
 		role="menu"
 		tabindex="-1"
-		onclick={(e) => e.stopPropagation()}
+		onpointerdown={(e) => e.stopPropagation()}
 		onkeydown={(e) => e.stopPropagation()}
 	>
 		{#each items as item, index (item.type === ContextMenuItemType.Divider ? `divider-${index}` : item.type === ContextMenuItemType.Action ? item.id : item.id)}
@@ -69,7 +108,7 @@ function handleBackdropClick() {
 					class="flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-[11px] transition-colors
 						{item.danger ? 'text-terminal-red hover:bg-terminal-red/10' : 'text-text-primary hover:bg-bg-surface'}
 						{item.disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}"
-					onclick={() => handleAction(item.id, item.disabled)}
+					onpointerdown={() => handleAction(item.id, item.disabled)}
 				>
 					<span>{item.label}</span>
 					{#if item.shortcut}
@@ -84,7 +123,7 @@ function handleBackdropClick() {
 					disabled={item.disabled}
 					class="flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-[11px] text-text-primary transition-colors hover:bg-bg-surface
 						{item.disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}"
-					onclick={() => handleToggle(item.id, item.checked, item.disabled)}
+					onpointerdown={() => handleToggle(item.id, item.checked, item.disabled)}
 				>
 					<span>{item.label}</span>
 					<span

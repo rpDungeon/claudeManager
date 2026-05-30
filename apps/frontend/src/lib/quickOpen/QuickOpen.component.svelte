@@ -226,7 +226,7 @@ function selectResult(result: QuickOpenResult | undefined) {
 			class="fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
 		/>
 		<Dialog.Content
-			class="fixed left-1/2 top-[15%] z-50 w-full max-w-xl -translate-x-1/2 border border-border-default bg-bg-surface shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+			class="fixed left-1/2 top-[15%] z-50 w-[calc(100vw-1rem)] max-w-xl max-h-[calc(100dvh-2rem)] -translate-x-1/2 overflow-hidden border border-border-default bg-bg-surface shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
 			onkeydown={handleKeyDown}
 		>
 			<Dialog.Title class="sr-only">Quick Open</Dialog.Title>
@@ -251,7 +251,7 @@ function selectResult(result: QuickOpenResult | undefined) {
 				{/if}
 			</div>
 
-			<div bind:this={resultsContainer} class="max-h-80 overflow-y-auto">
+			<div bind:this={resultsContainer} class="max-h-[50dvh] overflow-y-auto">
 				{#if results.length === 0}
 					<div class="px-3 py-8 text-center text-sm text-text-tertiary">
 						{config.emptyMessage}
@@ -261,19 +261,19 @@ function selectResult(result: QuickOpenResult | undefined) {
 						<QuickOpenResultItem
 							{result}
 							isSelected={index === selectedIndex}
-							onclick={() => selectResult(result)}
+							onpointerdown={() => selectResult(result)}
 						/>
 					{/each}
 				{/if}
 			</div>
 
-			<div class="flex items-center justify-between border-t border-border-default px-3 py-1.5 text-[10px] text-text-tertiary">
-				<div class="flex items-center gap-3">
+			<div class="flex flex-wrap items-center justify-between gap-2 border-t border-border-default px-3 py-1.5 text-[10px] text-text-tertiary">
+				<div class="flex flex-wrap items-center gap-3">
 					<span><kbd class="rounded bg-bg-elevated px-1">↑↓</kbd> navigate</span>
 					<span><kbd class="rounded bg-bg-elevated px-1">↵</kbd> select</span>
 					<span><kbd class="rounded bg-bg-elevated px-1">esc</kbd> close</span>
 				</div>
-				<div class="flex items-center gap-3">
+				<div class="flex flex-wrap items-center gap-3">
 					<span><kbd class="rounded bg-bg-elevated px-1">&gt;</kbd> command</span>
 					<span><kbd class="rounded bg-bg-elevated px-1">:</kbd> line</span>
 					<span><kbd class="rounded bg-bg-elevated px-1">@</kbd> symbol</span>

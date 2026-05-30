@@ -26,7 +26,25 @@ const initialState = browser
 let selectedProjectId = $state<ProjectId | null>(initialState.projectId);
 let selectedLayoutId = $state<LayoutId | null>(initialState.layoutId);
 let sidebarWidth = $state(initialState.sidebarWidth);
-let isSidebarCollapsed = $state(initialState.sidebarCollapsed);
+const initialSidebarCollapsed = browser
+	? window.matchMedia("(max-width: 767px)").matches || initialState.sidebarCollapsed
+	: initialState.sidebarCollapsed;
+let isSidebarCollapsed = $state(initialSidebarCollapsed);
+
+$effect(() => {
+	if (!browser) return;
+
+	const mediaQuery = window.matchMedia("(max-width: 767px)");
+	function handleViewportChange() {
+		if (mediaQuery.matches) {
+			isSidebarCollapsed = true;
+		}
+	}
+
+	handleViewportChange();
+	mediaQuery.addEventListener("change", handleViewportChange);
+	return () => mediaQuery.removeEventListener("change", handleViewportChange);
+});
 
 $effect(() => {
 	if (browser) {
@@ -94,27 +112,34 @@ $effect(() => {
 const MIN_SIDEBAR_WIDTH = 200;
 const MAX_SIDEBAR_WIDTH = 500;
 
-function handleResizeStart(event: MouseEvent) {
+function handleResizeStart(event: PointerEvent) {
 	event.preventDefault();
+	const target = event.currentTarget as HTMLElement;
+	target.setPointerCapture(event.pointerId);
 	isResizing = true;
 
 	const startX = event.clientX;
 	const startWidth = sidebarWidth;
 
-	function onMouseMove(e: MouseEvent) {
+	function onPointerMove(e: PointerEvent) {
 		const delta = e.clientX - startX;
 		const newWidth = Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, startWidth + delta));
 		sidebarWidth = newWidth;
 	}
 
-	function onMouseUp() {
+	function onPointerEnd() {
 		isResizing = false;
-		document.removeEventListener("mousemove", onMouseMove);
-		document.removeEventListener("mouseup", onMouseUp);
+		if (target.hasPointerCapture(event.pointerId)) {
+			target.releasePointerCapture(event.pointerId);
+		}
+		document.removeEventListener("pointermove", onPointerMove);
+		document.removeEventListener("pointerup", onPointerEnd);
+		document.removeEventListener("pointercancel", onPointerEnd);
 	}
 
-	document.addEventListener("mousemove", onMouseMove);
-	document.addEventListener("mouseup", onMouseUp);
+	document.addEventListener("pointermove", onPointerMove);
+	document.addEventListener("pointerup", onPointerEnd);
+	document.addEventListener("pointercancel", onPointerEnd);
 }
 
 interface Layout {
@@ -223,14 +248,14 @@ function handleDiffOpen(filePath: string, repoPath: string, staged: boolean) {
 	<title>Dashboard | Claude Manager</title>
 </svelte:head>
 
-<div class="flex h-[100dvh] w-screen flex-col bg-bg-void">
+<div class="flex h-[100dvh] w-full min-w-0 flex-col overflow-x-hidden bg-bg-void">
 	<div class="flex flex-1 overflow-hidden" class:select-none={isResizing}>
 		<!-- Mobile sidebar backdrop -->
 		{#if !isSidebarCollapsed}
 			<button
 				type="button"
 				class="fixed inset-0 z-40 bg-black/50 md:hidden"
-				onclick={() => (isSidebarCollapsed = true)}
+				onpointerdown={() => (isSidebarCollapsed = true)}
 				aria-label="Close sidebar"
 			></button>
 		{/if}
@@ -270,7 +295,6 @@ function handleDiffOpen(filePath: string, repoPath: string, staged: boolean) {
 
 			<!-- Resize handle (desktop only) -->
 			{#if !isSidebarCollapsed}
-				<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 				<div
 					role="separator"
 					aria-orientation="vertical"
@@ -278,20 +302,20 @@ function handleDiffOpen(filePath: string, repoPath: string, staged: boolean) {
 					aria-valuemin={MIN_SIDEBAR_WIDTH}
 					aria-valuemax={MAX_SIDEBAR_WIDTH}
 					tabindex="-1"
-					class="hidden md:block absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-terminal-green/30 transition-colors z-20 {isResizing ? 'bg-terminal-green/50' : ''}"
-					onmousedown={handleResizeStart}
+					class="hidden md:block absolute top-0 right-0 h-full w-1 cursor-col-resize touch-none hover:bg-terminal-green/30 transition-colors z-20 {isResizing ? 'bg-terminal-green/50' : ''}"
+					onpointerdown={handleResizeStart}
 				></div>
 			{/if}
 
 			<!-- Sidebar toggle button -->
 			<button
 				type="button"
-				class="absolute top-2 left-full z-[60] flex items-center justify-center transition-colors
+				class="fixed top-2 z-[60] flex items-center justify-center transition-colors md:absolute md:left-full
 					h-10 w-10 text-base md:h-5 md:w-5 md:text-[8px]
-					text-text-tertiary hover:text-terminal-green hover:bg-bg-elevated"
+					text-text-tertiary hover:text-terminal-green hover:bg-bg-elevated {isSidebarCollapsed ? 'left-0' : 'left-[min(85vw,320px)]'}"
 				class:text-terminal-green={!isSidebarCollapsed}
 				class:bg-bg-elevated={!isSidebarCollapsed}
-				onclick={() => (isSidebarCollapsed = !isSidebarCollapsed)}
+				onpointerdown={() => (isSidebarCollapsed = !isSidebarCollapsed)}
 				title="Toggle sidebar"
 			>
 				{isSidebarCollapsed ? '▶' : '◀'}

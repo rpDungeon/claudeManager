@@ -77,6 +77,9 @@ let isDragOverContent = $state(false);
 let contextMenuPosition = $state<ContextMenuPosition | null>(null);
 let contextMenuItemId = $state<string | null>(null);
 let addMenuPosition = $state<ContextMenuPosition | null>(null);
+let tabLongPressTimer: ReturnType<typeof setTimeout> | null = null;
+let tabLongPressStartX = 0;
+let tabLongPressStartY = 0;
 
 let tabListEl = $state<HTMLElement | null>(null);
 let canScrollLeft = $state(false);
@@ -111,6 +114,33 @@ function handleTabClick(itemId: string) {
 		terminalInstanceAttentionClear(itemId as TerminalId);
 	}
 	onTabSelect?.(container.id, itemId);
+}
+
+function clearTabLongPress() {
+	if (tabLongPressTimer) {
+		clearTimeout(tabLongPressTimer);
+		tabLongPressTimer = null;
+	}
+}
+
+function handleTabPointerDown(itemId: string, event: PointerEvent) {
+	handleTabClick(itemId);
+	if (event.pointerType !== "touch") return;
+
+	clearTabLongPress();
+	tabLongPressStartX = event.clientX;
+	tabLongPressStartY = event.clientY;
+	tabLongPressTimer = setTimeout(() => handleTabContextMenu(itemId, event), 550);
+}
+
+function handleTabPointerMove(event: PointerEvent) {
+	if (!tabLongPressTimer) return;
+
+	const deltaX = Math.abs(event.clientX - tabLongPressStartX);
+	const deltaY = Math.abs(event.clientY - tabLongPressStartY);
+	if (deltaX > 8 || deltaY > 8) {
+		clearTabLongPress();
+	}
 }
 
 function handleItemClick(itemId: string) {
@@ -173,6 +203,7 @@ function handleAddItem(itemType: AddItemType) {
 }
 
 function handleTabDragStart(itemId: string, event: DragEvent) {
+	clearTabLongPress();
 	event.dataTransfer?.setData("text/plain", itemId);
 	event.dataTransfer?.setData("application/x-layout-item", itemId);
 	event.dataTransfer?.setData("application/x-source-container", container.id);
@@ -317,7 +348,10 @@ function handleDropZoneDrop(containerId: string, zone: LayoutDropZonePosition, e
 							{dragOverTabId === childId ? 'ring-1 ring-terminal-green ring-inset' : ''}
 							{showNotification ? 'ring-1 ring-terminal-green/30 ring-inset' : ''}"
 						draggable="true"
-						onclick={() => handleTabClick(childId)}
+						onpointerdown={(e) => handleTabPointerDown(childId, e)}
+						onpointermove={handleTabPointerMove}
+						onpointerup={clearTabLongPress}
+						onpointercancel={clearTabLongPress}
 						oncontextmenu={(e) => handleTabContextMenu(childId, e)}
 						ondragstart={(e) => handleTabDragStart(childId, e)}
 						ondragover={(e) => handleTabDragOver(childId, e)}
@@ -348,7 +382,7 @@ function handleDropZoneDrop(containerId: string, zone: LayoutDropZonePosition, e
 			<button
 				type="button"
 				class="shrink-0 flex size-5 items-center justify-center text-[10px] text-text-tertiary hover:text-terminal-green hover:bg-bg-elevated/50 transition-colors duration-100"
-				onclick={handleAddButtonClick}
+				onpointerdown={handleAddButtonClick}
 				title="Add item"
 			>
 				+
@@ -378,7 +412,7 @@ function handleDropZoneDrop(containerId: string, zone: LayoutDropZonePosition, e
 						isActive={activeItemId === childId}
 						draggable={true}
 						isDropTarget={true}
-						onclick={handleItemClick(childId)}
+						onpointerdown={handleItemClick(childId)}
 						onDragStart={handleTabDragStart}
 						onDrop={(droppedId, _targetId, e) => handleTabDrop(childId, e)}
 					/>

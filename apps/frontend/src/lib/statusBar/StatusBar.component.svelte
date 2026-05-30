@@ -18,16 +18,16 @@ let { left, right }: Props = $props();
 </script>
 
 <footer
-	class="flex h-[22px] items-center gap-4 border-t border-border-default bg-bg-surface px-3 text-[10px] text-text-secondary"
+	class="scrollbar-none flex h-[22px] min-w-0 items-center gap-2 overflow-x-auto whitespace-nowrap border-t border-border-default bg-bg-surface px-2 text-[10px] text-text-secondary md:gap-4 md:px-3"
 >
 	{#if left}
-		<div class="flex items-center gap-4">
+		<div class="flex shrink-0 items-center gap-2 md:gap-4">
 			{@render left()}
 		</div>
 	{/if}
 
 	{#if right}
-		<div class="ml-auto flex items-center gap-4">
+		<div class="ml-auto flex shrink-0 items-center gap-2 md:gap-4">
 			{@render right()}
 		</div>
 	{/if}

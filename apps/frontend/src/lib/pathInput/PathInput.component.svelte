@@ -248,7 +248,7 @@ $effect(() => {
 					type="button"
 					class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition-colors
 						{index === selectedIndex ? 'bg-bg-elevated text-text-primary' : 'text-text-secondary hover:bg-bg-elevated hover:text-text-primary'}"
-					onmousedown={() => selectSuggestion(suggestion)}
+					onpointerdown={() => selectSuggestion(suggestion)}
 					onmouseenter={() => (selectedIndex = index)}
 				>
 					<Folder class="size-4 shrink-0 text-terminal-amber" />
