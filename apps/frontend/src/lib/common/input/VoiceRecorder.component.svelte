@@ -18,37 +18,67 @@ interface Props {
 }
 
 let { state = VoiceRecorderState.Idle, disabled = false, onpointerdown, onStopAndSend }: Props = $props();
+let lastHandledAt = 0;
 
 const stateClass = $derived(voiceRecorderStateClasses[state]);
 const isDisabled = $derived(disabled || state === VoiceRecorderState.Processing);
 const isRecording = $derived(state === VoiceRecorderState.Recording);
 
-function pointerEventStop(event: PointerEvent) {
+function interactionStop(event: Event) {
 	event.preventDefault();
 	event.stopPropagation();
+	if ("stopImmediatePropagation" in event) {
+		event.stopImmediatePropagation();
+	}
 }
 
-function handlePointerDown(event: PointerEvent) {
-	pointerEventStop(event);
+function shouldHandleInteraction() {
+	const now = Date.now();
+	if (now - lastHandledAt < 350) return false;
+	lastHandledAt = now;
+	return true;
+}
+
+function handleRecord(event: Event) {
+	interactionStop(event);
 	if (isDisabled) return;
+	if (!shouldHandleInteraction()) return;
 	onpointerdown?.();
 }
 
-function handleStopAndSend(event: PointerEvent) {
-	pointerEventStop(event);
+function handleStopAndSend(event: Event) {
+	interactionStop(event);
 	if (isDisabled) return;
+	if (!shouldHandleInteraction()) return;
 	onStopAndSend?.();
 }
 </script>
 
-<div class="flex flex-col items-center gap-3 sm:gap-2">
+<div
+	class="flex flex-col items-center gap-3 sm:gap-2"
+	onclick={interactionStop}
+	onmousedown={interactionStop}
+	onmouseup={interactionStop}
+	onkeydown={interactionStop}
+	onpointerdown={interactionStop}
+	onpointerup={interactionStop}
+	role="presentation"
+	ontouchend={interactionStop}
+	ontouchstart={interactionStop}
+>
 	{#if isRecording}
 		<button
 			type="button"
 			class="flex size-14 sm:size-8 items-center justify-center rounded-full transition-all duration-150
 				bg-terminal-green/20 text-terminal-green border border-terminal-green shadow-[0_0_12px_var(--color-terminal-green)/40]
 				hover:bg-terminal-green/30 cursor-pointer touch-manipulation"
+			onclick={handleStopAndSend}
+			onmousedown={interactionStop}
+			onmouseup={interactionStop}
 			onpointerdown={handleStopAndSend}
+			onpointerup={interactionStop}
+			ontouchend={interactionStop}
+			ontouchstart={handleStopAndSend}
 			aria-label="Stop recording and send"
 			title="Stop and send"
 		>
@@ -73,7 +103,13 @@ function handleStopAndSend(event: PointerEvent) {
 		class="relative flex size-14 sm:size-8 items-center justify-center rounded-full transition-all duration-150 touch-manipulation
 			{stateClass}
 			{isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}"
-		onpointerdown={handlePointerDown}
+		onclick={handleRecord}
+		onmousedown={interactionStop}
+		onmouseup={interactionStop}
+		onpointerdown={handleRecord}
+		onpointerup={interactionStop}
+		ontouchend={interactionStop}
+		ontouchstart={handleRecord}
 		aria-label={isRecording ? "Recording... Click to stop" : "Click to record"}
 	>
 		{#if state === VoiceRecorderState.Processing}

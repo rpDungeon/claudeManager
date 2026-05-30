@@ -528,6 +528,7 @@ export function terminalWebsocketConnect(terminalId: TerminalId): void {
 			data,
 			type: "input",
 		});
+		instance.terminal.scrollToBottom();
 		terminalStatusLineOnInput(terminalId, data);
 	});
 }
@@ -597,7 +598,7 @@ function terminalDispatchServerMessage(terminalId: TerminalId, message: ServerMe
 			const scrollPos = instance.terminal.buffer.active.viewportY;
 
 			instance.terminal.write(message.data, () => {
-				if (instance.scrollLock) {
+				if (instance.scrollLock || wasNearBottom) {
 					instance.terminal.scrollToBottom();
 				} else if (!wasNearBottom) {
 					instance.terminal.scrollToLine(scrollPos);
