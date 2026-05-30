@@ -53,7 +53,7 @@ $effect(() => {
 >
 	<div class="scanlines pointer-events-none absolute inset-0 z-10 opacity-50"></div>
 
-	<div bind:this={containerRef} class="xterm-container relative z-0 flex-1 overflow-hidden p-3">
+	<div bind:this={containerRef} class="xterm-container relative z-0 flex-1 overflow-hidden p-1 sm:p-3">
 	</div>
 </div>
 

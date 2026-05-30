@@ -184,7 +184,7 @@ onDestroy(() => {
 <div class="relative flex h-full flex-col">
 	<button
 		type="button"
-		class="flex h-5 w-full items-center gap-1.5 border-b border-border-default bg-bg-surface px-2 text-[10px] hover:bg-bg-elevated transition-colors duration-100"
+		class="flex h-5 w-full min-w-0 items-center gap-1.5 border-b border-border-default bg-bg-surface px-2 text-[10px] hover:bg-bg-elevated transition-colors duration-100"
 		class:opacity-50={isDragging}
 		class:ring-1={isDraggedOver}
 		class:ring-terminal-green={isDraggedOver}
@@ -199,14 +199,16 @@ onDestroy(() => {
 		ondragleave={handleDragLeave}
 		ondrop={handleDrop}
 	>
-		<IndicatorDot color={statusColor} glow pulse={isActive} />
+		<span class="shrink-0"><IndicatorDot color={statusColor} glow pulse={isActive} /></span>
 		{#if isDirty}
-			<span class="text-terminal-amber">●</span>
+			<span class="shrink-0 text-terminal-amber">●</span>
 		{/if}
-		{#if projectPath}
-			<Breadcrumbs {filePath} {projectPath} />
-		{/if}
-		<span class="ml-auto text-[9px] text-text-tertiary uppercase">{languageId}</span>
+		<span class="min-w-0 flex-1 overflow-hidden">
+			{#if projectPath}
+				<Breadcrumbs {filePath} {projectPath} />
+			{/if}
+		</span>
+		<span class="shrink-0 text-[9px] text-text-tertiary uppercase">{languageId}</span>
 	</button>
 
 	<div

@@ -32,7 +32,7 @@ function handleSegmentClick(segment: BreadcrumbSegment) {
 </script>
 
 {#if folderSegments.length > 0}
-	<span class="flex items-center gap-0.5 overflow-hidden text-[9px]">
+	<span class="flex min-w-0 items-center gap-0.5 overflow-hidden text-[9px]">
 		{#each folderSegments as segment, _index (segment.path)}
 			<button
 				type="button"

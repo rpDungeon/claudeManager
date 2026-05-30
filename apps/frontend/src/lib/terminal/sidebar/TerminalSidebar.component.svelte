@@ -187,7 +187,7 @@ async function handleColorSelect(color: TerminalColor) {
   tabindex="-1"
 >
   <div
-    class="absolute right-0 top-0 bottom-0 w-72 bg-bg-surface border-l border-border-default transition-transform duration-200 ease-out pointer-events-auto"
+    class="absolute right-0 top-0 bottom-0 w-[min(18rem,100%)] bg-bg-surface border-l border-border-default transition-transform duration-200 ease-out pointer-events-auto"
     class:translate-x-0={isOpen}
     class:translate-x-full={!isOpen}
   >
@@ -349,7 +349,7 @@ async function handleColorSelect(color: TerminalColor) {
                 <div class="border-b border-border-default px-2 py-2 hover:bg-bg-elevated">
                   <div class="flex items-center gap-2 mb-1">
                     <span class="text-[9px] text-text-tertiary font-mono shrink-0">
-                      {entry.externalSessionId}
+                      {entry.externalSessionId.slice(0, 8)}
                     </span>
                     {#if entry.model}
                       <span class="text-[9px] text-cyan-400">{entry.model}</span>

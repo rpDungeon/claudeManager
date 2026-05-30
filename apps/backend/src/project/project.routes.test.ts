@@ -69,8 +69,12 @@ describe("project routes", () => {
 			expect(data.name).toBe("Test Project");
 			expect(data.path).toBe("/tmp/test-project");
 			expect(data.layoutId).toMatch(LAYOUT_ID_PATTERN);
-			expect(data.layout).toBeDefined();
-			expect(data.layout?.name).toBe("Default");
+			expect("layout" in data).toBe(true);
+			if (!("layout" in data)) throw new Error("Expected auto-created layout");
+			const layout = data.layout as {
+				name: string;
+			};
+			expect(layout.name).toBe("Default");
 
 			TEST_PROJECT_IDS.push(data.id);
 		});
