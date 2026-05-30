@@ -23,9 +23,21 @@ const stateClass = $derived(voiceRecorderStateClasses[state]);
 const isDisabled = $derived(disabled || state === VoiceRecorderState.Processing);
 const isRecording = $derived(state === VoiceRecorderState.Recording);
 
-function handleClick() {
+function pointerEventStop(event: PointerEvent) {
+	event.preventDefault();
+	event.stopPropagation();
+}
+
+function handlePointerDown(event: PointerEvent) {
+	pointerEventStop(event);
 	if (isDisabled) return;
 	onpointerdown?.();
+}
+
+function handleStopAndSend(event: PointerEvent) {
+	pointerEventStop(event);
+	if (isDisabled) return;
+	onStopAndSend?.();
 }
 </script>
 
@@ -36,7 +48,7 @@ function handleClick() {
 			class="flex size-14 sm:size-8 items-center justify-center rounded-full transition-all duration-150
 				bg-terminal-green/20 text-terminal-green border border-terminal-green shadow-[0_0_12px_var(--color-terminal-green)/40]
 				hover:bg-terminal-green/30 cursor-pointer touch-manipulation"
-			onpointerup={onStopAndSend}
+			onpointerdown={handleStopAndSend}
 			aria-label="Stop recording and send"
 			title="Stop and send"
 		>
@@ -61,7 +73,7 @@ function handleClick() {
 		class="relative flex size-14 sm:size-8 items-center justify-center rounded-full transition-all duration-150 touch-manipulation
 			{stateClass}
 			{isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}"
-		onpointerup={handleClick}
+		onpointerdown={handlePointerDown}
 		aria-label={isRecording ? "Recording... Click to stop" : "Click to record"}
 	>
 		{#if state === VoiceRecorderState.Processing}
