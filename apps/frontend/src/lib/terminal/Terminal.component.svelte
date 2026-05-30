@@ -108,6 +108,15 @@ let contextMenuPosition = $state<ContextMenuPosition | null>(null);
 let hasSelection = $state(false);
 let borderColor = $state<string | null>(null);
 
+function portalToBody(node: HTMLElement) {
+	document.body.appendChild(node);
+	return {
+		destroy() {
+			node.remove();
+		},
+	};
+}
+
 $effect(() => {
 	if (terminalId) {
 		api
@@ -579,13 +588,15 @@ onDestroy(() => {
       {copyFlash}
     />
 
-    <div class="pointer-events-auto fixed right-3 bottom-8 z-[9999] md:absolute md:bottom-3 md:right-3 md:z-30">
+    {#if isActive}
+    <div use:portalToBody class="pointer-events-auto fixed right-3 bottom-[calc(env(safe-area-inset-bottom)+2rem)] z-[2147483647]">
       <VoiceRecorder
         state={voiceRecorderState}
         onpointerdown={handleVoiceToggle}
         onStopAndSend={handleVoiceStopAndSend}
       />
     </div>
+    {/if}
 
     <button
       type="button"

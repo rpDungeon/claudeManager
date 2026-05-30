@@ -256,6 +256,11 @@ export function terminalInstanceMount(terminalId: TerminalId, container: HTMLEle
 
 	const textarea = container.querySelector("textarea.xterm-helper-textarea");
 	if (textarea) {
+		textarea.setAttribute("autocapitalize", "off");
+		textarea.setAttribute("autocomplete", "off");
+		textarea.setAttribute("autocorrect", "off");
+		textarea.setAttribute("inputmode", "text");
+		textarea.setAttribute("spellcheck", "false");
 		textarea.addEventListener(
 			"paste",
 			(event) => {

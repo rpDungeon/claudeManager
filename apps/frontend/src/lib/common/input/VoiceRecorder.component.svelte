@@ -125,12 +125,15 @@ $effect(() => {
 			class="flex size-14 sm:size-8 items-center justify-center rounded-full transition-all duration-150
 				bg-terminal-green/20 text-terminal-green border border-terminal-green shadow-[0_0_12px_var(--color-terminal-green)/40]
 				hover:bg-terminal-green/30 cursor-pointer touch-manipulation"
+			onclickcapture={handleStopAndSend}
 			onclick={handleStopAndSend}
 			onmousedown={interactionStop}
 			onmouseup={interactionStop}
+			onpointerdowncapture={handleStopAndSend}
 			onpointerdown={handleStopAndSend}
 			onpointerup={interactionStop}
 			ontouchend={interactionStop}
+			ontouchstartcapture={handleStopAndSend}
 			ontouchstart={handleStopAndSend}
 			aria-label="Stop recording and send"
 			title="Stop and send"
@@ -156,12 +159,15 @@ $effect(() => {
 		class="relative flex size-14 sm:size-8 items-center justify-center rounded-full transition-all duration-150 touch-manipulation
 			{stateClass}
 			{isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}"
+		onclickcapture={handleRecord}
 		onclick={handleRecord}
 		onmousedown={interactionStop}
 		onmouseup={interactionStop}
+		onpointerdowncapture={handleRecord}
 		onpointerdown={handleRecord}
 		onpointerup={interactionStop}
 		ontouchend={interactionStop}
+		ontouchstartcapture={handleRecord}
 		ontouchstart={handleRecord}
 		aria-label={isRecording ? "Recording... Click to stop" : "Click to record"}
 	>
