@@ -75,33 +75,72 @@ function isInsideRoot(clientX: number, clientY: number) {
 
 function handleDocumentPointer(event: PointerEvent) {
 	if (isInsideRoot(event.clientX, event.clientY)) {
-		handlePrimaryAction(event);
+		if (event.type === "pointerdown") {
+			handlePrimaryAction(event);
+		} else {
+			interactionStop(event);
+		}
+	}
+}
+
+function handleDocumentMouse(event: MouseEvent) {
+	if (isInsideRoot(event.clientX, event.clientY)) {
+		if (event.type === "click") {
+			handlePrimaryAction(event);
+		} else {
+			interactionStop(event);
+		}
 	}
 }
 
 function handleDocumentTouch(event: TouchEvent) {
 	const touch = event.touches[0] ?? event.changedTouches[0];
 	if (touch && isInsideRoot(touch.clientX, touch.clientY)) {
-		handlePrimaryAction(event);
+		if (event.type === "touchstart") {
+			handlePrimaryAction(event);
+		} else {
+			interactionStop(event);
+		}
 	}
 }
 
 $effect(() => {
 	if (!rootRef) return;
+	const captureOptions = {
+		capture: true,
+	};
+	const touchCaptureOptions = {
+		capture: true,
+		passive: false,
+	};
 	document.addEventListener("pointerdown", handleDocumentPointer, {
 		capture: true,
 	});
+	document.addEventListener("pointerup", handleDocumentPointer, captureOptions);
+	document.addEventListener("pointercancel", handleDocumentPointer, captureOptions);
+	document.addEventListener("mousedown", handleDocumentMouse, captureOptions);
+	document.addEventListener("mouseup", handleDocumentMouse, captureOptions);
+	document.addEventListener("click", handleDocumentMouse, captureOptions);
 	document.addEventListener("touchstart", handleDocumentTouch, {
 		capture: true,
 		passive: false,
 	});
+	document.addEventListener("touchend", handleDocumentTouch, touchCaptureOptions);
+	document.addEventListener("touchcancel", handleDocumentTouch, touchCaptureOptions);
 	return () => {
 		document.removeEventListener("pointerdown", handleDocumentPointer, {
 			capture: true,
 		});
+		document.removeEventListener("pointerup", handleDocumentPointer, captureOptions);
+		document.removeEventListener("pointercancel", handleDocumentPointer, captureOptions);
+		document.removeEventListener("mousedown", handleDocumentMouse, captureOptions);
+		document.removeEventListener("mouseup", handleDocumentMouse, captureOptions);
+		document.removeEventListener("click", handleDocumentMouse, captureOptions);
 		document.removeEventListener("touchstart", handleDocumentTouch, {
 			capture: true,
 		});
+		document.removeEventListener("touchend", handleDocumentTouch, touchCaptureOptions);
+		document.removeEventListener("touchcancel", handleDocumentTouch, touchCaptureOptions);
 	};
 });
 </script>
