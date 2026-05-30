@@ -17,12 +17,18 @@ interface Props {
 	onStopAndSend?: () => void;
 }
 
-let { state = VoiceRecorderState.Idle, disabled = false, onpointerdown, onStopAndSend }: Props = $props();
+let {
+	state: recorderState = VoiceRecorderState.Idle,
+	disabled = false,
+	onpointerdown,
+	onStopAndSend,
+}: Props = $props();
 let lastHandledAt = 0;
+let rootRef: HTMLDivElement | undefined = $state();
 
-const stateClass = $derived(voiceRecorderStateClasses[state]);
-const isDisabled = $derived(disabled || state === VoiceRecorderState.Processing);
-const isRecording = $derived(state === VoiceRecorderState.Recording);
+const stateClass = $derived(voiceRecorderStateClasses[recorderState]);
+const isDisabled = $derived(disabled || recorderState === VoiceRecorderState.Processing);
+const isRecording = $derived(recorderState === VoiceRecorderState.Recording);
 
 function interactionStop(event: Event) {
 	event.preventDefault();
@@ -52,9 +58,56 @@ function handleStopAndSend(event: Event) {
 	if (!shouldHandleInteraction()) return;
 	onStopAndSend?.();
 }
+
+function handlePrimaryAction(event: Event) {
+	if (isRecording) {
+		handleStopAndSend(event);
+	} else {
+		handleRecord(event);
+	}
+}
+
+function isInsideRoot(clientX: number, clientY: number) {
+	if (!rootRef) return false;
+	const rect = rootRef.getBoundingClientRect();
+	return clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
+}
+
+function handleDocumentPointer(event: PointerEvent) {
+	if (isInsideRoot(event.clientX, event.clientY)) {
+		handlePrimaryAction(event);
+	}
+}
+
+function handleDocumentTouch(event: TouchEvent) {
+	const touch = event.touches[0] ?? event.changedTouches[0];
+	if (touch && isInsideRoot(touch.clientX, touch.clientY)) {
+		handlePrimaryAction(event);
+	}
+}
+
+$effect(() => {
+	if (!rootRef) return;
+	document.addEventListener("pointerdown", handleDocumentPointer, {
+		capture: true,
+	});
+	document.addEventListener("touchstart", handleDocumentTouch, {
+		capture: true,
+		passive: false,
+	});
+	return () => {
+		document.removeEventListener("pointerdown", handleDocumentPointer, {
+			capture: true,
+		});
+		document.removeEventListener("touchstart", handleDocumentTouch, {
+			capture: true,
+		});
+	};
+});
 </script>
 
 <div
+	bind:this={rootRef}
 	class="flex flex-col items-center gap-3 sm:gap-2"
 	onclick={interactionStop}
 	onmousedown={interactionStop}
@@ -112,7 +165,7 @@ function handleStopAndSend(event: Event) {
 		ontouchstart={handleRecord}
 		aria-label={isRecording ? "Recording... Click to stop" : "Click to record"}
 	>
-		{#if state === VoiceRecorderState.Processing}
+		{#if recorderState === VoiceRecorderState.Processing}
 			<span class="size-5 sm:size-3 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
 		{:else}
 			<svg

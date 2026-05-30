@@ -579,7 +579,7 @@ onDestroy(() => {
       {copyFlash}
     />
 
-    <div class="pointer-events-auto absolute bottom-3 right-3 z-30">
+    <div class="pointer-events-auto fixed right-3 bottom-8 z-[9999] md:absolute md:bottom-3 md:right-3 md:z-30">
       <VoiceRecorder
         state={voiceRecorderState}
         onpointerdown={handleVoiceToggle}
