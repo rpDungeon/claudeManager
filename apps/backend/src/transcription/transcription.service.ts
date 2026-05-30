@@ -84,14 +84,19 @@ class TranscriptionService {
 	}
 
 	private get useLegacy(): boolean {
-		return Bun.env.TRANSCRIPTION_USE_LEGACY === "true";
+		return Bun.env.TRANSCRIPTION_USE_LEGACY !== "false";
 	}
 
 	async transcriptionFromBuffer(audioBuffer: Buffer, language?: string): Promise<string> {
 		const mp3Buffer = await audioConvertToMp3(audioBuffer);
 
 		if (this.useLegacy) {
-			return this.transcriptionLegacyChat(mp3Buffer.toString("base64"), language);
+			try {
+				return await this.transcriptionLegacyChat(mp3Buffer.toString("base64"), language);
+			} catch (error) {
+				console.error("[Transcription] Legacy failed, falling back to transcription endpoint:", error);
+				return this.transcriptionEndpoint(mp3Buffer, language);
+			}
 		}
 
 		return this.transcriptionEndpoint(mp3Buffer, language);
