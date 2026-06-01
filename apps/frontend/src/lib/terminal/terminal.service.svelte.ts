@@ -58,6 +58,8 @@ const instances = new SvelteMap<TerminalId, TerminalInstance>();
 const TERMINAL_AUTOMATIC_TITLE_REGEX = /^shell(?: \d+)?$/i;
 const TERMINAL_RIGHT_SIDEBAR_SEGMENT_REGEX = / {8,}(\S(?:.*\S)?)$/;
 const TERMINAL_SCREEN_TITLE_MAX_LENGTH = 80;
+const TERMINAL_TOUCH_SCROLL_DELTA_LINES = 3;
+const TERMINAL_TOUCH_SCROLL_TICKS = 6;
 
 function terminalWindowTitleNormalize(title: string): string | null {
 	const normalized = title
@@ -591,6 +593,40 @@ export function terminalScrollLockToggle(terminalId: TerminalId): void {
 
 export function terminalScrollLockGet(terminalId: TerminalId): boolean {
 	return instances.get(terminalId)?.scrollLock ?? false;
+}
+
+export function terminalInstanceScrollPage(terminalId: TerminalId, direction: number): void {
+	const instance = instances.get(terminalId);
+	if (!instance) return;
+
+	const terminal = instance.terminal;
+	const element = instance.container?.querySelector<HTMLElement>(".xterm");
+	const screen = instance.container?.querySelector<HTMLElement>(".xterm-screen");
+
+	if (element && screen) {
+		const rect = screen.getBoundingClientRect();
+		const clientX = rect.left + rect.width / 2;
+		const clientY = rect.top + rect.height * 0.45;
+
+		for (let i = 0; i < TERMINAL_TOUCH_SCROLL_TICKS; i++) {
+			element.dispatchEvent(
+				new WheelEvent("wheel", {
+					bubbles: true,
+					cancelable: true,
+					clientX,
+					clientY,
+					deltaMode: WheelEvent.DOM_DELTA_LINE,
+					deltaY: direction * TERMINAL_TOUCH_SCROLL_DELTA_LINES,
+				}),
+			);
+		}
+		return;
+	}
+
+	const buffer = terminal.buffer.active;
+	const scrollAmount = Math.max(1, Math.floor(terminal.rows * 0.65)) * direction;
+	const nextViewportY = Math.max(0, Math.min(buffer.baseY, buffer.viewportY + scrollAmount));
+	terminal.scrollToLine(nextViewportY);
 }
 
 function terminalDispatchServerMessage(terminalId: TerminalId, message: ServerMessage): void {

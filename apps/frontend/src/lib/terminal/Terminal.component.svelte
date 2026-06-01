@@ -26,6 +26,7 @@ import {
 	terminalInstanceGetSelection,
 	terminalInstanceMount,
 	terminalInstancePaste,
+	terminalInstanceScrollPage,
 	terminalInstanceSelectAll,
 	terminalDisplayTitleGet,
 	terminalScrollLockGet,
@@ -366,6 +367,14 @@ function handleScrollLockToggle() {
 	}
 }
 
+function handleScrollPage(event: Event, direction: number) {
+	event.preventDefault();
+	event.stopPropagation();
+	if (terminalId) {
+		terminalInstanceScrollPage(terminalId, direction);
+	}
+}
+
 async function handleVoiceToggle() {
 	if (voiceRecorderState === VoiceRecorderState.Recording) {
 		if (mediaRecorder) {
@@ -589,7 +598,51 @@ onDestroy(() => {
     />
 
     {#if isActive}
-    <div use:portalToBody class="pointer-events-auto fixed right-3 bottom-[calc(env(safe-area-inset-bottom)+2rem)] z-[2147483647]">
+    <div use:portalToBody class="pointer-events-auto fixed right-3 bottom-[calc(env(safe-area-inset-bottom)+2rem)] z-[2147483647] flex flex-col items-end gap-3 sm:hidden">
+      <div class="flex flex-col gap-2 sm:hidden">
+        <button
+          type="button"
+          class="flex size-12 touch-manipulation items-center justify-center rounded-full border border-border-default bg-bg-elevated/90 text-terminal-green shadow-[0_0_10px_rgba(0,255,65,0.18)] backdrop-blur transition-colors active:bg-terminal-green/20"
+          onpointerdown={(event) => handleScrollPage(event, -1)}
+          aria-label="Scroll chat up"
+          title="Scroll chat up"
+        >
+          <svg
+            class="size-6"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 19V5" />
+            <path d="M5 12L12 5L19 12" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          class="flex size-12 touch-manipulation items-center justify-center rounded-full border border-border-default bg-bg-elevated/90 text-terminal-green shadow-[0_0_10px_rgba(0,255,65,0.18)] backdrop-blur transition-colors active:bg-terminal-green/20"
+          onpointerdown={(event) => handleScrollPage(event, 1)}
+          aria-label="Scroll chat down"
+          title="Scroll chat down"
+        >
+          <svg
+            class="size-6"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 5V19" />
+            <path d="M5 12L12 19L19 12" />
+          </svg>
+        </button>
+      </div>
       <VoiceRecorder
         state={voiceRecorderState}
         onpointerdown={handleVoiceToggle}
@@ -597,6 +650,14 @@ onDestroy(() => {
       />
     </div>
     {/if}
+
+    <div class="pointer-events-auto absolute bottom-3 right-3 z-30 hidden sm:block">
+      <VoiceRecorder
+        state={voiceRecorderState}
+        onpointerdown={handleVoiceToggle}
+        onStopAndSend={handleVoiceStopAndSend}
+      />
+    </div>
 
     <button
       type="button"
