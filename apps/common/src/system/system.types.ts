@@ -1,30 +1,36 @@
 import { z } from "zod";
 
-export type SystemMemoryStats = {
-	free: number;
-	total: number;
-	used: number;
-	usedPercentage: number;
-};
+export const systemDiskStatsSchema = z.object({
+	free: z.number(),
+	total: z.number(),
+	used: z.number(),
+	usedPercentage: z.number(),
+});
 
-export type SystemStats = {
-	cpuPercentage: number;
-	memory: SystemMemoryStats;
-	ptyCount: number;
-	uptime: number;
-};
+export type SystemDiskStats = z.infer<typeof systemDiskStatsSchema>;
+
+export const systemMemoryStatsSchema = z.object({
+	free: z.number(),
+	total: z.number(),
+	used: z.number(),
+	usedPercentage: z.number(),
+});
+
+export type SystemMemoryStats = z.infer<typeof systemMemoryStatsSchema>;
+
+export const systemStatsSchema = z.object({
+	cpuPercentage: z.number(),
+	disk: systemDiskStatsSchema,
+	memory: systemMemoryStatsSchema,
+	ptyCount: z.number(),
+	uptime: z.number(),
+});
+
+export type SystemStats = z.infer<typeof systemStatsSchema>;
 
 export const systemStatsMessageSchema = z.object({
-	cpuPercentage: z.number(),
-	memory: z.object({
-		free: z.number(),
-		total: z.number(),
-		used: z.number(),
-		usedPercentage: z.number(),
-	}),
-	ptyCount: z.number(),
+	...systemStatsSchema.shape,
 	type: z.literal("stats"),
-	uptime: z.number(),
 });
 
 export type SystemStatsMessage = z.infer<typeof systemStatsMessageSchema>;

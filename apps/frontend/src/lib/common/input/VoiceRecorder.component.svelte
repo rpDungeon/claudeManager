@@ -60,7 +60,9 @@ function handleStopAndSend(event: Event) {
 }
 
 function handlePrimaryAction(event: Event) {
-	if (isRecording) {
+	const target = event.target;
+	const isStopAndSend = target instanceof Element && target.closest("[data-stop-and-send]") !== null;
+	if (isStopAndSend) {
 		handleStopAndSend(event);
 	} else {
 		handleRecord(event);
@@ -161,6 +163,7 @@ $effect(() => {
 	{#if isRecording}
 		<button
 			type="button"
+			data-stop-and-send
 			class="flex size-14 sm:size-8 items-center justify-center rounded-full transition-all duration-150
 				bg-terminal-green/20 text-terminal-green border border-terminal-green shadow-[0_0_12px_var(--color-terminal-green)/40]
 				hover:bg-terminal-green/30 cursor-pointer touch-manipulation"

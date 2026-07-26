@@ -1,8 +1,10 @@
 import * as fs from "node:fs";
 import * as os from "node:os";
-import type { SystemMemoryStats, SystemStats } from "@claude-manager/common/src/system/system.types";
+import process from "node:process";
+import type { SystemDiskStats, SystemMemoryStats, SystemStats } from "@claude-manager/common/src/system/system.types";
 import { terminalPtyService } from "../terminal/pty/pty.service";
 
+const DISK_STATS_REFRESH_INTERVAL_MS = 60_000;
 const MEM_AVAILABLE_REGEX = /MemAvailable:\s+(\d+)\s+kB/;
 
 type CpuTimes = {
@@ -11,6 +13,8 @@ type CpuTimes = {
 };
 
 class SystemService {
+	private diskStats: SystemDiskStats | null = null;
+	private diskStatsReadAt = 0;
 	private previousCpuTimes: CpuTimes | null = null;
 
 	private cpuTimesGet(): CpuTimes {
@@ -48,6 +52,28 @@ class SystemService {
 		return Math.round(usage * 10) / 10;
 	}
 
+	diskGet(): SystemDiskStats {
+		const now = Date.now();
+		if (this.diskStats && now - this.diskStatsReadAt < DISK_STATS_REFRESH_INTERVAL_MS) {
+			return this.diskStats;
+		}
+
+		const stats = fs.statfsSync(process.cwd());
+		const total = stats.blocks * stats.bsize;
+		const free = Math.max(0, stats.bavail * stats.bsize);
+		const used = Math.max(0, total - free);
+		const usedPercentage = total === 0 ? 0 : Math.round((used / total) * 1000) / 10;
+
+		this.diskStats = {
+			free,
+			total,
+			used,
+			usedPercentage,
+		};
+		this.diskStatsReadAt = now;
+		return this.diskStats;
+	}
+
 	private memoryAvailableFromProcMeminfo(): number | null {
 		if (os.platform() !== "linux") return null;
 
@@ -80,6 +106,7 @@ class SystemService {
 	statsGet(): SystemStats {
 		return {
 			cpuPercentage: this.cpuPercentageGet(),
+			disk: this.diskGet(),
 			memory: this.memoryGet(),
 			ptyCount: terminalPtyService.instancesCount(),
 			uptime: os.uptime(),

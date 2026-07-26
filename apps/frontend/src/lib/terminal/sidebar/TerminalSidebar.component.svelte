@@ -9,6 +9,10 @@ usage: Display terminal activity logs and other info in a sliding panel
 <script lang="ts">
 import type { TerminalId } from "@claude-manager/common/src/terminal/terminal.types";
 import type { TerminalInputLogEntry } from "@claude-manager/common/src/terminal/terminalInputLog.ws.types";
+import {
+	type TranscriptionRecording,
+	TranscriptionRecordingStatus,
+} from "@claude-manager/common/src/transcription/transcription.types";
 import { onDestroy } from "svelte";
 import {
 	TerminalSidebarTab,
@@ -18,7 +22,7 @@ import {
 	type TranscriptionEntry,
 } from "./terminalSidebar.lib.svelte";
 import { claudeSessionHistoryGet } from "../statusLine/claudeSessionHistory.service.svelte";
-import { api, authTokenQueryGet } from "$lib/api/api.client";
+import { api, authTokenQueryGet, backendUrl } from "$lib/api/api.client";
 import { terminalInstancePaste } from "../terminal.service.svelte";
 
 type EdenWebSocket = ReturnType<ReturnType<typeof api.ws.terminal>["input-logs"]["subscribe"]>;
@@ -41,6 +45,10 @@ let websocket: EdenWebSocket | null = null;
 let currentColor = $state<TerminalColor>(null);
 let isLoadingSettings = $state(false);
 let copiedId = $state<string | null>(null);
+let transcriptionRecordings = $state<TranscriptionRecording[]>([]);
+let transcriptionRecordingsError = $state("");
+let transcriptionRecordingsLoading = $state(false);
+let transcriptionRecordingActionId = $state<string | null>(null);
 
 function handleResume(sessionId: string) {
 	terminalInstancePaste(terminalId, `claude --resume ${sessionId}\r`);
@@ -48,15 +56,94 @@ function handleResume(sessionId: string) {
 }
 
 function transcriptions(): TranscriptionEntry[] {
-	return transcriptionHistoryGet();
+	const persistedIds = new Set(transcriptionRecordings.map((recording) => recording.id));
+	return transcriptionHistoryGet().filter((entry) => !(entry.recordingId && persistedIds.has(entry.recordingId)));
 }
 
-async function copyTranscription(entry: TranscriptionEntry) {
-	await navigator.clipboard.writeText(entry.text);
-	copiedId = entry.id;
+async function transcriptionCopy(id: string, text: string) {
+	await navigator.clipboard.writeText(text);
+	copiedId = id;
 	setTimeout(() => {
-		if (copiedId === entry.id) copiedId = null;
+		if (copiedId === id) copiedId = null;
 	}, 2000);
+}
+
+async function transcriptionRecordingsLoad() {
+	if (transcriptionRecordings.length === 0) {
+		transcriptionRecordingsLoading = true;
+	}
+	try {
+		const { data, error } = await api.transcription.get({
+			query: {
+				limit: 100,
+				terminalId,
+			},
+		});
+		if (error || !data) {
+			transcriptionRecordingsError = "Could not load saved recordings";
+			return;
+		}
+		transcriptionRecordings = data;
+		transcriptionRecordingsError = "";
+	} catch {
+		transcriptionRecordingsError = "Could not load saved recordings";
+	} finally {
+		transcriptionRecordingsLoading = false;
+	}
+}
+
+async function transcriptionRecordingRegenerate(recordingId: string) {
+	transcriptionRecordingActionId = recordingId;
+	transcriptionRecordingsError = "";
+	try {
+		const { error } = await api
+			.transcription({
+				recordingId,
+			})
+			.regenerate.post();
+		if (error) {
+			transcriptionRecordingsError = "Regeneration failed. Audio remains saved.";
+		}
+		await transcriptionRecordingsLoad();
+	} catch {
+		transcriptionRecordingsError = "Regeneration failed. Audio remains saved.";
+	} finally {
+		transcriptionRecordingActionId = null;
+	}
+}
+
+async function transcriptionRecordingDownload(recording: TranscriptionRecording) {
+	transcriptionRecordingActionId = recording.id;
+	transcriptionRecordingsError = "";
+	try {
+		const token = localStorage.getItem("auth_token");
+		const response = await fetch(`${backendUrl}/transcription/${recording.id}/audio`, {
+			headers: token
+				? {
+						authorization: `Bearer ${token}`,
+					}
+				: undefined,
+		});
+		if (!response.ok) {
+			transcriptionRecordingsError = "Download failed. Audio remains saved.";
+			return;
+		}
+		const url = URL.createObjectURL(await response.blob());
+		const anchor = document.createElement("a");
+		anchor.href = url;
+		anchor.download = recording.audioFileName;
+		anchor.click();
+		setTimeout(() => URL.revokeObjectURL(url), 1000);
+	} catch {
+		transcriptionRecordingsError = "Download failed. Audio remains saved.";
+	} finally {
+		transcriptionRecordingActionId = null;
+	}
+}
+
+function transcriptionRecordingSizeFormat(sizeBytes: number): string {
+	if (sizeBytes >= 1024 * 1024) return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
+	return `${(sizeBytes / 1024).toFixed(1)} KB`;
 }
 
 function connectWebSocket() {
@@ -105,18 +192,26 @@ function disconnectWebSocket() {
 }
 
 $effect(() => {
+	let recordingRefreshInterval: ReturnType<typeof setInterval> | undefined;
 	if (isOpen && terminalId) {
 		if (activeTab === TerminalSidebarTab.Activity) {
 			connectWebSocket();
 		} else {
 			disconnectWebSocket();
 		}
+		if (activeTab === TerminalSidebarTab.Transcriptions) {
+			void transcriptionRecordingsLoad();
+			recordingRefreshInterval = setInterval(() => void transcriptionRecordingsLoad(), 5000);
+		}
 		if (activeTab === TerminalSidebarTab.Settings) {
-			loadTerminalSettings();
+			void loadTerminalSettings();
 		}
 	} else {
 		disconnectWebSocket();
 	}
+	return () => {
+		if (recordingRefreshInterval) clearInterval(recordingRefreshInterval);
+	};
 });
 
 onDestroy(() => {
@@ -129,7 +224,7 @@ function handleBackdropClick(event: MouseEvent) {
 	}
 }
 
-function formatTimestamp(timestamp: Date) {
+function formatTimestamp(timestamp: Date | string) {
 	const date = new Date(timestamp);
 	return date.toLocaleTimeString("en-US", {
 		hour: "2-digit",
@@ -296,16 +391,82 @@ async function handleColorSelect(color: TerminalColor) {
             </div>
           {/if}
         {:else if activeTab === TerminalSidebarTab.Transcriptions}
-          {@const items = transcriptions()}
-          {#if items.length === 0}
+          {@const sessionItems = transcriptions()}
+          {#if transcriptionRecordingsError}
+            <div class="border-b border-terminal-red/30 bg-terminal-red/10 px-2 py-1.5 text-[9px] text-terminal-red">
+              {transcriptionRecordingsError}
+            </div>
+          {/if}
+          {#if transcriptionRecordingsLoading && transcriptionRecordings.length === 0 && sessionItems.length === 0}
             <div
               class="flex items-center justify-center p-4 text-[10px] text-text-tertiary"
             >
-              No transcriptions yet
+              Loading saved recordings...
+            </div>
+          {:else if transcriptionRecordings.length === 0 && sessionItems.length === 0}
+            <div class="flex items-center justify-center p-4 text-[10px] text-text-tertiary">
+              No voice recordings yet
             </div>
           {:else}
             <div class="flex flex-col">
-              {#each items as entry (entry.id)}
+              {#each transcriptionRecordings as recording (recording.id)}
+                <div class="border-b border-border-default px-2 py-2 hover:bg-bg-elevated group">
+                  <div class="mb-1 flex items-center gap-2 text-[9px] font-mono text-text-tertiary">
+                    <span>{formatTimestamp(recording.createdAt)}</span>
+                    <span>{transcriptionRecordingSizeFormat(recording.sizeBytes)}</span>
+                    <span
+                      class:text-terminal-green={recording.status === TranscriptionRecordingStatus.Complete}
+                      class:text-terminal-red={recording.status === TranscriptionRecordingStatus.Failed}
+                      class:text-terminal-amber={recording.status === TranscriptionRecordingStatus.Processing}
+                    >
+                      {recording.status}
+                    </span>
+                  </div>
+                  {#if recording.transcription}
+                    <div class="mb-2 text-[10px] text-text-primary font-mono break-words whitespace-pre-wrap">
+                      {recording.transcription}
+                    </div>
+                  {:else if recording.error}
+                    <div class="mb-2 text-[10px] text-terminal-red font-mono break-words whitespace-pre-wrap">
+                      {recording.error}
+                    </div>
+                  {:else}
+                    <div class="mb-2 text-[10px] text-terminal-amber font-mono">
+                      Processing audio...
+                    </div>
+                  {/if}
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    {#if recording.transcription}
+                      <button
+                        type="button"
+                        class="px-1.5 py-0.5 text-[9px] rounded bg-bg-elevated text-text-secondary hover:text-terminal-green transition-colors"
+                        class:bg-terminal-green={copiedId === recording.id}
+                        class:text-bg-void={copiedId === recording.id}
+                        onpointerdown={() => void transcriptionCopy(recording.id, recording.transcription ?? "")}
+                      >
+                        {copiedId === recording.id ? "Copied" : "Copy"}
+                      </button>
+                    {/if}
+                    <button
+                      type="button"
+                      disabled={transcriptionRecordingActionId === recording.id}
+                      class="px-1.5 py-0.5 text-[9px] rounded bg-bg-elevated text-text-secondary hover:text-terminal-amber transition-colors disabled:opacity-50"
+                      onpointerdown={() => void transcriptionRecordingDownload(recording)}
+                    >
+                      Download audio
+                    </button>
+                    <button
+                      type="button"
+                      disabled={transcriptionRecordingActionId === recording.id}
+                      class="px-1.5 py-0.5 text-[9px] rounded bg-terminal-green/15 text-terminal-green hover:bg-terminal-green/25 transition-colors disabled:opacity-50"
+                      onpointerdown={() => void transcriptionRecordingRegenerate(recording.id)}
+                    >
+                      {transcriptionRecordingActionId === recording.id ? "Working..." : "Regenerate"}
+                    </button>
+                  </div>
+                </div>
+              {/each}
+              {#each sessionItems as entry (entry.id)}
                 <div
                   class="border-b border-border-default px-2 py-2 hover:bg-bg-elevated group"
                 >
@@ -326,10 +487,10 @@ async function handleColorSelect(color: TerminalColor) {
                       class:bg-terminal-green={copiedId === entry.id}
                       class:text-bg-void={copiedId === entry.id}
                       class:bg-bg-elevated={copiedId !== entry.id}
-                      class:text-text-secondary={copiedId !== entry.id}
-                      class:hover:text-terminal-green={copiedId !== entry.id}
-                      onpointerdown={() => copyTranscription(entry)}
-                    >
+                       class:text-text-secondary={copiedId !== entry.id}
+                       class:hover:text-terminal-green={copiedId !== entry.id}
+                       onpointerdown={() => void transcriptionCopy(entry.id, entry.text)}
+                     >
                       {copiedId === entry.id ? "Copied" : "Copy"}
                     </button>
                   </div>

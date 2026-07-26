@@ -1,0 +1,21 @@
+[Unit]
+Description=Claude Manager
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=__CLAUDE_MANAGER_ROOT__
+Environment="HOME=__HOME__"
+Environment="BUN_INSTALL=__BUN_INSTALL__"
+Environment="TERM=xterm-256color"
+Environment="PATH=__BUN_BIN__:__HOME__/.opencode/bin:__HOME__/.local/bin:__HOME__/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart="__BUN_EXECUTABLE__" run start
+ExecStop=__CLAUDE_MANAGER_ROOT__/scripts/service-stop.sh ${MAINPID}
+Restart=on-failure
+RestartSec=5s
+KillMode=process
+KillSignal=SIGINT
+TimeoutStopSec=20s
+
+[Install]
+WantedBy=default.target

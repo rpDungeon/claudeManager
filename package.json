@@ -33,6 +33,7 @@
 	"scripts": {
 		"build": "bun run --filter '*' build",
 		"check": "bun run --filter '*' check",
+		"deploy": "./scripts/deploy.sh",
 		"dev": "bun-tasks dev:backend ::: dev:frontend",
 		"dev:backend": "bun run --filter '@claude-manager/backend' dev",
 		"dev:caddy": "caddy run --config Caddyfile",

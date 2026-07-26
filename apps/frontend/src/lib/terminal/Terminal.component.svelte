@@ -53,8 +53,6 @@ import {
 	settingsTerminalFooterExpandedSet,
 } from "$lib/settings/settings.service.svelte";
 
-const WHITESPACE_REGEX = /\s+/;
-
 interface Props {
 	terminalId?: TerminalId;
 	title?: string | Snippet;
@@ -72,6 +70,12 @@ interface Props {
 	onDragStart?: (itemId: string, event: DragEvent) => void;
 	onDragEnd?: (itemId: string, event: DragEvent) => void;
 	onDrop?: (droppedItemId: string, targetItemId: string, event: DragEvent) => void;
+}
+
+interface RecordingDownload {
+	fileName: string;
+	id: string;
+	url: string;
 }
 
 let {
@@ -104,6 +108,7 @@ let scrollLockEnabled = $derived(terminalId ? terminalScrollLockGet(terminalId) 
 const footerShortcuts = $derived(terminalShortcutsGet());
 let mediaRecorder: MediaRecorder | null = null;
 let audioChunks: Blob[] = [];
+let recordingDownloads = $state<RecordingDownload[]>([]);
 
 let contextMenuPosition = $state<ContextMenuPosition | null>(null);
 let hasSelection = $state(false);
@@ -350,6 +355,45 @@ function handleVoiceStopAndSend() {
 	}
 }
 
+function recordingExtensionGet(mimeType: string): string {
+	if (mimeType.includes("mp4")) return "mp4";
+	if (mimeType.includes("mpeg")) return "mp3";
+	if (mimeType.includes("ogg")) return "ogg";
+	if (mimeType.includes("wav")) return "wav";
+	return "webm";
+}
+
+function recordingDownloadAdd(audioBlob: Blob, mimeType: string): RecordingDownload {
+	const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+	const recordingDownload = {
+		fileName: `transcription-${timestamp}.${recordingExtensionGet(mimeType)}`,
+		id: crypto.randomUUID(),
+		url: URL.createObjectURL(audioBlob),
+	};
+	recordingDownloads = [
+		recordingDownload,
+		...recordingDownloads,
+	];
+	return recordingDownload;
+}
+
+function recordingDownloadDiscard(recordingDownloadId: string) {
+	const recordingDownload = recordingDownloads.find((item) => item.id === recordingDownloadId);
+	if (!recordingDownload) return;
+	recordingDownloads = recordingDownloads.filter((item) => item.id !== recordingDownloadId);
+	URL.revokeObjectURL(recordingDownload.url);
+}
+
+function handleRecordingDownload(event: MouseEvent, recordingDownloadId: string) {
+	event.stopPropagation();
+	const recordingDownload = recordingDownloads.find((item) => item.id === recordingDownloadId);
+	if (!recordingDownload) return;
+	setTimeout(() => {
+		recordingDownloads = recordingDownloads.filter((item) => item.id !== recordingDownloadId);
+	}, 0);
+	setTimeout(() => URL.revokeObjectURL(recordingDownload.url), 1000);
+}
+
 async function handleCopyViewport() {
 	if (!terminalId) return;
 	const success = await terminalInstanceCopyViewport(terminalId);
@@ -385,6 +429,7 @@ async function handleVoiceToggle() {
 	}
 
 	if (voiceRecorderState !== VoiceRecorderState.Idle) return;
+	shouldAutoSendOnStop = false;
 
 	try {
 		audioStream = await navigator.mediaDevices.getUserMedia({
@@ -424,9 +469,11 @@ async function handleVoiceToggle() {
 			}
 
 			voiceRecorderState = VoiceRecorderState.Processing;
+			const recordingMimeType = mediaRecorder?.mimeType || mimeType || "audio/webm";
 			const audioBlob = new Blob(audioChunks, {
-				type: "audio/webm",
+				type: recordingMimeType,
 			});
+			const recordingDownload = recordingDownloadAdd(audioBlob, recordingMimeType);
 
 			try {
 				const { data, error } = await api.transcription.post({
@@ -434,11 +481,12 @@ async function handleVoiceToggle() {
 						[
 							audioBlob,
 						],
-						"recording.webm",
+						recordingDownload.fileName,
 						{
-							type: "audio/webm",
+							type: recordingMimeType,
 						},
 					),
+					terminalId: recordingTerminalId,
 				});
 
 				if (error || !data) {
@@ -452,43 +500,24 @@ async function handleVoiceToggle() {
 							: JSON.stringify(error);
 					console.error("[VoiceRecorder] Transcription error:", errorMsg);
 				} else if (recordingTerminalId) {
-					let text = data.transcription.trim();
-					transcriptionHistoryAdd(text, recordingTerminalId);
-					let autoSend = shouldAutoSendOnStop;
-
-					if (!autoSend) {
-						const words = text.split(WHITESPACE_REGEX);
-						const lastWord = words[words.length - 1]?.toLowerCase();
-
-						// Auto-send: saying "send" at the end triggers Enter. Variants handle common transcription errors.
-						if (
-							lastWord === "send" ||
-							lastWord === "send." ||
-							lastWord === "cent" ||
-							lastWord === "cent." ||
-							lastWord === "sent" ||
-							lastWord === "sent."
-						) {
-							words.pop();
-							text = words.join(" ");
-							autoSend = true;
-						}
-					}
+					const text = data.transcription.trim();
+					transcriptionHistoryAdd(text, recordingTerminalId, data.recording.id);
 
 					const targetId = recordingTerminalId;
 					terminalInstancePaste(targetId, text);
 					terminalInstanceFocus(targetId);
 
-					if (autoSend) {
+					if (shouldAutoSendOnStop) {
 						setTimeout(() => {
 							terminalInstancePaste(targetId, "\r");
 						}, 500);
 					}
+					recordingDownloadDiscard(recordingDownload.id);
 				}
-				shouldAutoSendOnStop = false;
 			} catch (err) {
 				console.error("[VoiceRecorder] Transcription failed:", err);
 			} finally {
+				shouldAutoSendOnStop = false;
 				voiceRecorderState = VoiceRecorderState.Idle;
 			}
 		};
@@ -531,18 +560,54 @@ function handleShortcutClick(
 onMount(() => {
 	console.log("[Terminal] onMount:", terminalId);
 	if (!terminalShortcutsIsLoaded()) {
-		terminalShortcutsLoad();
+		void terminalShortcutsLoad();
 	}
 });
 
 onDestroy(() => {
 	console.log("[Terminal] onDestroy:", terminalId);
+	for (const recordingDownload of recordingDownloads) {
+		URL.revokeObjectURL(recordingDownload.url);
+	}
 	resizeObserver?.disconnect();
 	if (terminalId) {
 		terminalInstanceDestroy(terminalId);
 	}
 });
 </script>
+
+{#snippet recordingDownloadButtons()}
+	{#if recordingDownloads.length > 0}
+		<div class="flex flex-col items-end gap-2">
+			{#each recordingDownloads as recordingDownload (recordingDownload.id)}
+				<a
+				href={recordingDownload.url}
+				download={recordingDownload.fileName}
+				class="flex h-12 md:h-8 items-center gap-2 rounded-full border border-terminal-amber bg-bg-elevated/95 px-3 text-[11px] md:text-[10px] text-terminal-amber shadow-[0_0_10px_rgba(255,176,0,0.2)] backdrop-blur transition-colors hover:bg-terminal-amber/15 touch-manipulation"
+				onpointerdown={(event) => event.stopPropagation()}
+				onclick={(event) => handleRecordingDownload(event, recordingDownload.id)}
+				title="Download recording audio"
+				>
+					<svg
+						class="size-5 md:size-4"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<path d="M12 3v12" />
+						<path d="m7 10 5 5 5-5" />
+						<path d="M5 21h14" />
+					</svg>
+					<span>Download audio</span>
+				</a>
+			{/each}
+		</div>
+	{/if}
+{/snippet}
 
 <div class="relative flex h-full flex-col">
   <TerminalHeader
@@ -598,8 +663,8 @@ onDestroy(() => {
     />
 
     {#if isActive}
-    <div use:portalToBody class="pointer-events-auto fixed right-3 bottom-[calc(env(safe-area-inset-bottom)+2rem)] z-[2147483647] flex flex-col items-end gap-3 sm:hidden">
-      <div class="flex flex-col gap-2 sm:hidden">
+    <div use:portalToBody class="pointer-events-auto fixed right-3 bottom-[calc(env(safe-area-inset-bottom)+2rem)] z-[2147483647] flex flex-col items-end gap-3 md:hidden">
+      <div class="flex flex-col gap-2 md:hidden">
         <button
           type="button"
           class="flex size-12 touch-manipulation items-center justify-center rounded-full border border-border-default bg-bg-elevated/90 text-terminal-green shadow-[0_0_10px_rgba(0,255,65,0.18)] backdrop-blur transition-colors active:bg-terminal-green/20"
@@ -643,6 +708,7 @@ onDestroy(() => {
           </svg>
         </button>
       </div>
+      {@render recordingDownloadButtons()}
       <VoiceRecorder
         state={voiceRecorderState}
         onpointerdown={handleVoiceToggle}
@@ -651,7 +717,8 @@ onDestroy(() => {
     </div>
     {/if}
 
-    <div class="pointer-events-auto absolute bottom-3 right-3 z-30 hidden sm:block">
+    <div class="pointer-events-auto absolute bottom-3 right-3 z-30 hidden md:flex flex-col items-end gap-2">
+      {@render recordingDownloadButtons()}
       <VoiceRecorder
         state={voiceRecorderState}
         onpointerdown={handleVoiceToggle}

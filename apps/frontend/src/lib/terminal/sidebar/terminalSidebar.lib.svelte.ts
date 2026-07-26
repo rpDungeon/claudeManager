@@ -7,6 +7,7 @@ export enum TerminalSidebarTab {
 
 export interface TranscriptionEntry {
 	id: string;
+	recordingId?: string;
 	text: string;
 	timestamp: Date;
 	terminalId?: string;
@@ -14,10 +15,11 @@ export interface TranscriptionEntry {
 
 let transcriptionHistory = $state<TranscriptionEntry[]>([]);
 
-export function transcriptionHistoryAdd(text: string, terminalId?: string) {
+export function transcriptionHistoryAdd(text: string, terminalId?: string, recordingId?: string) {
 	transcriptionHistory = [
 		{
 			id: crypto.randomUUID(),
+			recordingId,
 			terminalId,
 			text,
 			timestamp: new Date(),

@@ -2,6 +2,14 @@ import { Mistral } from "@mistralai/mistralai";
 
 const TRANSCRIPTION_MODEL_ID = "voxtral-mini-latest";
 const LEGACY_MODEL_ID = "voxtral-small-latest";
+const TRANSCRIPTION_MAX_CHARACTERS = 50_000;
+const TRANSCRIPTION_MAX_CHARACTERS_PER_SOURCE_BYTE = 0.025;
+const TRANSCRIPTION_MIN_DYNAMIC_MAX_CHARACTERS = 500;
+const TRANSCRIPTION_REPEATED_SENTENCE_LIMIT = 8;
+const TRANSCRIPTION_SENTENCE_SPLIT_REGEX = /[.!?]+/;
+const TRANSCRIPTION_WHITESPACE_REGEX = /\s+/g;
+const TRANSCRIPTION_MAX_VOLUME_REGEX = /max_volume:\s*(-?\d+(?:\.\d+)?) dB/;
+const TRANSCRIPTION_SILENCE_MAX_DB = -60;
 
 const CONTEXT_BIAS_TERMS = [
 	"Claude",
@@ -21,6 +29,35 @@ const CONTEXT_BIAS_TERMS = [
 	"SQLite",
 	"Tailwind",
 ];
+
+export function transcriptionTextIsPathological(transcription: string, sourceAudioSizeBytes?: number): boolean {
+	if (transcription.length > TRANSCRIPTION_MAX_CHARACTERS) return true;
+	if (
+		sourceAudioSizeBytes &&
+		transcription.length >
+			Math.max(
+				TRANSCRIPTION_MIN_DYNAMIC_MAX_CHARACTERS,
+				sourceAudioSizeBytes * TRANSCRIPTION_MAX_CHARACTERS_PER_SOURCE_BYTE,
+			)
+	) {
+		return true;
+	}
+	const sentences = transcription
+		.toLowerCase()
+		.split(TRANSCRIPTION_SENTENCE_SPLIT_REGEX)
+		.map((sentence) => sentence.trim().replace(TRANSCRIPTION_WHITESPACE_REGEX, " "))
+		.filter((sentence) => sentence.length > 0);
+	let repeatedSentenceCount = 1;
+	for (let index = 1; index < sentences.length; index++) {
+		if (sentences[index] === sentences[index - 1]) {
+			repeatedSentenceCount++;
+			if (repeatedSentenceCount >= TRANSCRIPTION_REPEATED_SENTENCE_LIMIT) return true;
+		} else {
+			repeatedSentenceCount = 1;
+		}
+	}
+	return false;
+}
 
 async function audioConvertToMp3(inputBuffer: Buffer): Promise<Buffer> {
 	if (inputBuffer.length === 0) {
@@ -44,6 +81,8 @@ async function audioConvertToMp3(inputBuffer: Buffer): Promise<Buffer> {
 			"128k",
 			"-ar",
 			"44100",
+			"-af",
+			"volumedetect",
 			"pipe:1",
 		],
 		{
@@ -64,6 +103,10 @@ async function audioConvertToMp3(inputBuffer: Buffer): Promise<Buffer> {
 
 	if (exitCode !== 0) {
 		throw new Error(`FFmpeg exited with code ${exitCode}: ${stderrData.slice(0, 500)}`);
+	}
+	const maxVolumeMatch = stderrData.match(TRANSCRIPTION_MAX_VOLUME_REGEX);
+	if (maxVolumeMatch && Number.parseFloat(maxVolumeMatch[1]) <= TRANSCRIPTION_SILENCE_MAX_DB) {
+		throw new Error("Recording contains no audible audio");
 	}
 
 	const mp3Buffer = Buffer.from(output);
@@ -91,12 +134,23 @@ class TranscriptionService {
 		const mp3Buffer = await audioConvertToMp3(audioBuffer);
 
 		if (this.useLegacy) {
+			let transcription: string;
+			const audioBase64 = mp3Buffer.toString("base64");
 			try {
-				return await this.transcriptionLegacyChat(mp3Buffer.toString("base64"), language);
+				transcription = await this.transcriptionLegacyChat(audioBase64, language);
 			} catch (error) {
 				console.error("[Transcription] Legacy failed, falling back to transcription endpoint:", error);
 				return this.transcriptionEndpoint(mp3Buffer, language);
 			}
+			if (!transcriptionTextIsPathological(transcription, audioBuffer.length)) return transcription;
+			console.error("[Transcription] Legacy response was pathological, retrying without context bias");
+			try {
+				const minimalTranscription = await this.transcriptionLegacyChat(audioBase64, language, false);
+				if (!transcriptionTextIsPathological(minimalTranscription, audioBuffer.length)) return minimalTranscription;
+			} catch (error) {
+				console.error("[Transcription] Minimal legacy retry failed:", error);
+			}
+			return this.transcriptionEndpoint(mp3Buffer, language);
 		}
 
 		return this.transcriptionEndpoint(mp3Buffer, language);
@@ -124,15 +178,24 @@ class TranscriptionService {
 		if (!response.text) {
 			throw new Error("Failed to get transcription response");
 		}
+		if (transcriptionTextIsPathological(response.text)) {
+			throw new Error("Transcription response was pathologically repetitive");
+		}
 
 		return response.text;
 	}
 
-	private async transcriptionLegacyChat(audioBase64: string, language?: string): Promise<string> {
-		let prompt = `Transcribe this audio exactly as spoken.
+	private async transcriptionLegacyChat(
+		audioBase64: string,
+		language?: string,
+		includeContextBias = true,
+	): Promise<string> {
+		let prompt = includeContextBias
+			? `Transcribe this audio exactly as spoken.
 The speaker is a native German speaker with a strong accent speaking English in a programming context.
 Phonetically ambiguous words should be interpreted as programming terms when plausible (e.g. "commit", "component", "comment", "command" may sound similar).
-Common vocabulary: git, commit, push, pull, merge, branch, rebase, TypeScript, Svelte, SvelteKit, Bun, ElysiaJS, Drizzle, xterm, paneforge, WebSocket, PTY, SQLite, Tailwind, Claude, FFmpeg, npm, API, endpoint, schema, router, service, middleware, terminal, transcription.`;
+Common vocabulary: git, commit, push, pull, merge, branch, rebase, TypeScript, Svelte, SvelteKit, Bun, ElysiaJS, Drizzle, xterm, paneforge, WebSocket, PTY, SQLite, Tailwind, Claude, FFmpeg, npm, API, endpoint, schema, router, service, middleware, terminal, transcription.`
+			: "Transcribe this audio exactly as spoken. Output only words that are clearly audible.";
 		if (language) {
 			prompt += ` The audio is in ${language}.`;
 		}

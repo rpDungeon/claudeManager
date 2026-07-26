@@ -58,6 +58,19 @@ describe("system routes", () => {
 			expect(data.memory.used).toBe(expectedUsed);
 		});
 
+		it("returns disk stats with correct values", async () => {
+			const { data, error } = await api.system.stats.get();
+
+			expect(error).toBeNull();
+			if (error) throw error;
+
+			expect(data.disk.total).toBeGreaterThan(0);
+			expect(data.disk.free).toBeGreaterThanOrEqual(0);
+			expect(data.disk.used).toBe(data.disk.total - data.disk.free);
+			expect(data.disk.usedPercentage).toBeGreaterThanOrEqual(0);
+			expect(data.disk.usedPercentage).toBeLessThanOrEqual(100);
+		});
+
 		it("returns ptyCount as a non-negative number", async () => {
 			const { data, error } = await api.system.stats.get();
 

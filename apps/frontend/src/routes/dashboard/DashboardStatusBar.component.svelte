@@ -20,6 +20,8 @@ import GeneralSettingsModal from "./GeneralSettingsModal.component.svelte";
 
 let currentTime = $state(new Date().toLocaleTimeString());
 let cpuPercent = $state(0);
+let diskFree = $state(0);
+let diskUsedPercent = $state(0);
 let memoryPercent = $state(0);
 let ptyCount = $state(0);
 let isConnected = $state(false);
@@ -48,6 +50,8 @@ onMount(() => {
 
 		ws.subscribe((message) => {
 			cpuPercent = message.data.cpuPercentage;
+			diskFree = message.data.disk.free;
+			diskUsedPercent = message.data.disk.usedPercentage;
 			memoryPercent = message.data.memory.usedPercentage;
 			ptyCount = message.data.ptyCount;
 		});
@@ -94,7 +98,15 @@ function formatPercent(value: number): string {
 	return value.toFixed(1).padStart(4, "0");
 }
 
+function formatBytes(value: number): string {
+	const tebibyte = 1024 ** 4;
+	const gibibyte = 1024 ** 3;
+	if (value >= tebibyte) return `${(value / tebibyte).toFixed(1)} TiB`;
+	return `${(value / gibibyte).toFixed(1)} GiB`;
+}
+
 const cpuFormatted = $derived(formatPercent(cpuPercent));
+const diskFreeFormatted = $derived(formatBytes(diskFree));
 const memFormatted = $derived(formatPercent(memoryPercent));
 
 const cpuIndicator = $derived(
@@ -103,6 +115,14 @@ const cpuIndicator = $derived(
 
 const memIndicator = $derived(
 	memoryPercent > 80 ? IndicatorDotColor.Red : memoryPercent > 50 ? IndicatorDotColor.Amber : IndicatorDotColor.Green,
+);
+
+const diskIndicator = $derived(
+	diskUsedPercent > 90
+		? IndicatorDotColor.Red
+		: diskUsedPercent > 75
+			? IndicatorDotColor.Amber
+			: IndicatorDotColor.Green,
 );
 
 const connectionIndicator = $derived(isConnected ? IndicatorDotColor.Green : IndicatorDotColor.Red);
@@ -120,6 +140,8 @@ function handleLogout() {
 		<StatusBarItem indicator={cpuIndicator}>CPU {cpuFormatted}%</StatusBarItem>
 		<StatusBarSeparator />
 		<StatusBarItem indicator={memIndicator}>MEM {memFormatted}%</StatusBarItem>
+		<StatusBarSeparator />
+		<StatusBarItem indicator={diskIndicator}>DISK {diskFreeFormatted} free</StatusBarItem>
 	{/snippet}
 	{#snippet right()}
 		<button
