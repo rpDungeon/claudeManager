@@ -39,6 +39,20 @@ bun --watch src/index.ts # Run with watch mode
 - `bun run --filter` - Workspace script execution
 - `bun build` - Fast bundling
 
+## Production Deployment (IMPORTANT)
+
+**Always deploy with:**
+
+```bash
+bun run deploy
+```
+
+The deploy script installs locked dependencies, builds all workspaces, installs the tracked systemd user-service template, reloads systemd, and restarts only `claude-manager.service`.
+
+Active terminal sessions survive this service restart. `dtach` places each terminal in a separate session and process group; the service uses `ExecStop` to stop only the app process group and `KillMode=process` to leave detached terminal processes running. The restarted backend reattaches through the existing `dtach` sockets.
+
+Do not replace the deploy script with `pkill`, broad process termination, stopping `user@.service`, or a machine reboot. Those actions can kill active terminals, agents, and unrelated user services.
+
 ## Skills Reference
 
 When working on this project, use these skills:
@@ -288,7 +302,7 @@ The `EnvValidator` in `src/common/common.env.ts` collects all env arrays and val
 
 1. **Auth**: Single master password with JWT sessions
 2. **Projects**: Organize terminals by project with configurable working directories
-3. **Terminals**: xterm.js with WebSocket PTY, resizable panes (paneforge), tabs
+3. **Terminals**: xterm.js with WebSocket PTY, resizable panes (paneforge), tabs, and browser image paste that stores validated images under terminal data and inserts the absolute path without submitting
 4. **Claude Sessions**: Track Claude Code chat IDs per project
 
 ## TODO

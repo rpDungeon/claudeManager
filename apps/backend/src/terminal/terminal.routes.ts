@@ -7,7 +7,20 @@ import { Elysia } from "elysia";
 import { z } from "zod";
 
 import { db } from "../db/db.client";
+import { terminalPasteImageCreate, terminalPasteImagesDelete } from "./paste.service";
 import { terminalPtyService } from "./pty/pty.service";
+
+const terminalPasteImageBody = z.object({
+	image: z.instanceof(File),
+});
+
+const terminalPasteImageResponse = z.object({
+	path: z.string(),
+});
+
+const terminalPasteImageError = z.object({
+	message: z.string(),
+});
 
 export const terminalRoutes = new Elysia({
 	prefix: "/terminals",
@@ -104,6 +117,7 @@ export const terminalRoutes = new Elysia({
 			}
 
 			terminalPtyService.instanceKill(params.id);
+			await terminalPasteImagesDelete(params.id);
 
 			return {
 				deleted: true,
@@ -149,6 +163,41 @@ export const terminalRoutes = new Elysia({
 			query: z.object({
 				limit: z.coerce.number().optional(),
 			}),
+		},
+	)
+	.post(
+		"/:id/paste-image",
+		async ({ body, params, status }) => {
+			const terminal = await db.query.terminal.findFirst({
+				where: eq(terminalSchema.id, params.id),
+			});
+
+			if (!terminal) {
+				return status(404, {
+					message: "Terminal not found",
+				});
+			}
+
+			const result = await terminalPasteImageCreate(params.id, body.image);
+			if (!result.ok) {
+				return status(result.status, {
+					message: result.error,
+				});
+			}
+
+			return result.data;
+		},
+		{
+			body: terminalPasteImageBody,
+			params: z.object({
+				id: terminalIdSchema,
+			}),
+			response: {
+				200: terminalPasteImageResponse,
+				400: terminalPasteImageError,
+				404: terminalPasteImageError,
+				500: terminalPasteImageError,
+			},
 		},
 	)
 	.post(

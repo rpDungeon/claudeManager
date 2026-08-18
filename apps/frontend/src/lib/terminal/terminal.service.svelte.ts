@@ -60,6 +60,52 @@ const TERMINAL_RIGHT_SIDEBAR_SEGMENT_REGEX = / {8,}(\S(?:.*\S)?)$/;
 const TERMINAL_SCREEN_TITLE_MAX_LENGTH = 80;
 const TERMINAL_TOUCH_SCROLL_DELTA_LINES = 3;
 const TERMINAL_TOUCH_SCROLL_TICKS = 6;
+function terminalInstancePasteErrorReport(instance: TerminalInstance, error: unknown): void {
+	let detail = "Unable to upload image";
+	if (error instanceof Error && error.message) {
+		detail = error.message;
+	} else if (typeof error === "object" && error !== null) {
+		const value = "value" in error ? error.value : error;
+		if (typeof value === "object" && value !== null) {
+			if ("message" in value && typeof value.message === "string") {
+				detail = value.message;
+			} else if ("error" in value && typeof value.error === "string") {
+				detail = value.error;
+			}
+		} else if (typeof value === "string") {
+			detail = value;
+		}
+	}
+
+	instance.lastError = `Image paste failed: ${detail}`;
+	console.error("[Terminal] Image paste failed:", detail);
+}
+
+async function terminalInstancePasteImage(terminalId: TerminalId, image: File): Promise<void> {
+	const instance = instances.get(terminalId);
+	if (!instance) return;
+
+	try {
+		const { data, error } = await api
+			.terminals({
+				id: terminalId,
+			})
+			["paste-image"].post({
+				image,
+			});
+		if (instances.get(terminalId) !== instance) return;
+		if (error || !data || !data.path) {
+			terminalInstancePasteErrorReport(instance, error);
+			return;
+		}
+
+		terminalInstancePaste(terminalId, `\x1b[200~${data.path}\x1b[201~`);
+	} catch (error: unknown) {
+		if (instances.get(terminalId) === instance) {
+			terminalInstancePasteErrorReport(instance, error);
+		}
+	}
+}
 
 function terminalWindowTitleNormalize(title: string): string | null {
 	const normalized = title
@@ -161,7 +207,7 @@ export function terminalInstanceCreate(terminalId: TerminalId): TerminalInstance
 		convertEol: true,
 		cursorBlink: true,
 		cursorStyle: "block",
-		fontFamily: "'IBM Plex Mono', monospace",
+		fontFamily: "'BlexMono Nerd Font Mono', ui-monospace, monospace",
 		fontSize: settingsTerminalFontSizeGet(),
 		lineHeight: 1.2,
 		scrollback: 10_000,
@@ -256,7 +302,7 @@ export function terminalInstanceMount(terminalId: TerminalId, container: HTMLEle
 	instance.container = container;
 	instance.terminal.open(container);
 
-	const textarea = container.querySelector("textarea.xterm-helper-textarea");
+	const textarea = container.querySelector<HTMLTextAreaElement>("textarea.xterm-helper-textarea");
 	if (textarea) {
 		textarea.setAttribute("autocapitalize", "off");
 		textarea.setAttribute("autocomplete", "off");
@@ -268,6 +314,28 @@ export function terminalInstanceMount(terminalId: TerminalId, container: HTMLEle
 			(event) => {
 				event.preventDefault();
 				event.stopImmediatePropagation();
+
+				const imageItem = Array.from(event.clipboardData?.items ?? []).find((item) =>
+					item.type.toLowerCase().startsWith("image/"),
+				);
+				if (!imageItem) {
+					const text = event.clipboardData?.getData("text/plain") ?? "";
+					if (text && instance.websocket) {
+						instance.websocket.send({
+							data: text,
+							type: "input",
+						});
+					}
+					return;
+				}
+
+				const image = imageItem.getAsFile();
+				if (!image) {
+					terminalInstancePasteErrorReport(instance, new Error("Clipboard image is unavailable"));
+					return;
+				}
+
+				void terminalInstancePasteImage(terminalId, image);
 			},
 			{
 				capture: true,
@@ -306,14 +374,6 @@ export function terminalInstanceMount(terminalId: TerminalId, container: HTMLEle
 		}
 
 		if (event.ctrlKey && !event.shiftKey && event.code === "KeyV") {
-			navigator.clipboard.readText().then((text) => {
-				if (text && instance.websocket) {
-					instance.websocket.send({
-						data: text,
-						type: "input",
-					});
-				}
-			});
 			return false;
 		}
 
@@ -388,13 +448,24 @@ export function terminalInstanceMount(terminalId: TerminalId, container: HTMLEle
 
 		return true;
 	});
+	terminalInstanceFit(terminalId);
 
-	instance.addons.fit.fit();
+	void document.fonts
+		.load("400 16px 'BlexMono Nerd Font Mono'")
+		.then(() => {
+			const current = instances.get(terminalId);
+			if (current !== instance || current.container !== container) return;
+
+			current.terminal.options.fontFamily = '"BlexMono Nerd Font Mono", ui-monospace, monospace';
+			terminalInstanceFit(terminalId);
+		})
+		.catch(() => {});
 }
 
 export function terminalInstanceFit(terminalId: TerminalId): void {
 	const instance = instances.get(terminalId);
 	if (!instance) return;
+	if (!instance.terminal.element) return;
 
 	instance.addons.fit.fit();
 
