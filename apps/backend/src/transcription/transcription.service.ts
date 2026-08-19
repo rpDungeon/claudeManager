@@ -13,6 +13,10 @@ const TRANSCRIPTION_SILENCE_MAX_DB = -60;
 
 const CONTEXT_BIAS_TERMS = [
 	"Claude",
+	"OMP",
+	"Oh My Pi",
+	"workflow",
+	"workflowz",
 	"TypeScript",
 	"Svelte",
 	"SvelteKit",
@@ -194,7 +198,7 @@ class TranscriptionService {
 			? `Transcribe this audio exactly as spoken.
 The speaker is a native German speaker with a strong accent speaking English in a programming context.
 Phonetically ambiguous words should be interpreted as programming terms when plausible (e.g. "commit", "component", "comment", "command" may sound similar).
-Common vocabulary: git, commit, push, pull, merge, branch, rebase, TypeScript, Svelte, SvelteKit, Bun, ElysiaJS, Drizzle, xterm, paneforge, WebSocket, PTY, SQLite, Tailwind, Claude, FFmpeg, npm, API, endpoint, schema, router, service, middleware, terminal, transcription.`
+Common vocabulary: OMP, Oh My Pi, workflow, workflowz, git, commit, push, pull, merge, branch, rebase, TypeScript, Svelte, SvelteKit, Bun, ElysiaJS, Drizzle, xterm, paneforge, WebSocket, PTY, SQLite, Tailwind, Claude, FFmpeg, npm, API, endpoint, schema, router, service, middleware, terminal, transcription.`
 			: "Transcribe this audio exactly as spoken. Output only words that are clearly audible.";
 		if (language) {
 			prompt += ` The audio is in ${language}.`;

@@ -94,7 +94,7 @@ export const editorThemeTomorrowNightBright = createTheme({
 	settings: {
 		background: "#0a0a0a",
 		caret: "#00ff41",
-		fontFamily: "'IBM Plex Mono', monospace",
+		fontFamily: "'BlexMono Nerd Font Mono', ui-monospace, monospace",
 		foreground: "#eaeaea",
 		gutterBackground: "#0a0a0a",
 		gutterBorder: "#222222",

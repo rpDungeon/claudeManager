@@ -418,6 +418,7 @@ async function handleColorSelect(color: TerminalColor) {
                       class:text-terminal-green={recording.status === TranscriptionRecordingStatus.Complete}
                       class:text-terminal-red={recording.status === TranscriptionRecordingStatus.Failed}
                       class:text-terminal-amber={recording.status === TranscriptionRecordingStatus.Processing}
+                      class:text-terminal-cyan={recording.status === TranscriptionRecordingStatus.Untranscribed}
                     >
                       {recording.status}
                     </span>
@@ -425,6 +426,10 @@ async function handleColorSelect(color: TerminalColor) {
                   {#if recording.transcription}
                     <div class="mb-2 text-[10px] text-text-primary font-mono break-words whitespace-pre-wrap">
                       {recording.transcription}
+                    </div>
+                  {:else if recording.status === TranscriptionRecordingStatus.Untranscribed}
+                    <div class="mb-2 text-[10px] text-terminal-cyan font-mono">
+                      Untranscribed audio saved.
                     </div>
                   {:else if recording.error}
                     <div class="mb-2 text-[10px] text-terminal-red font-mono break-words whitespace-pre-wrap">

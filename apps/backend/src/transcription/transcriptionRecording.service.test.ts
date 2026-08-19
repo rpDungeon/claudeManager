@@ -13,6 +13,7 @@ import {
 	transcriptionRecordingCompleteSet,
 	transcriptionRecordingCreate,
 	transcriptionRecordingFailureSet,
+	transcriptionRecordingGet,
 	transcriptionRecordingList,
 	transcriptionRecordingProcessingSet,
 } from "./transcriptionRecording.service";
@@ -83,6 +84,75 @@ describe("transcription recording service", () => {
 		expect(complete?.status).toBe(TranscriptionRecordingStatus.Complete);
 		expect(complete?.transcription).toBe("Recovered transcription");
 		expect(readFileSync(transcriptionRecordingAudioGet(recording.id)?.path ?? "")).toEqual(audioBytes);
+	});
+
+	it("saves untranscribed audio and regenerates the persisted recording", async () => {
+		const originalTranscriptionFromBuffer = transcriptionService.transcriptionFromBuffer;
+		const audioBytes = Buffer.from("raw-save-audio");
+		const terminalId = terminalIdSchema.parse("terminal:save-test");
+		let savedRecordingId = "";
+		let providerCallCount = 0;
+		let statusDuringRegeneration: TranscriptionRecordingStatus | undefined;
+		transcriptionService.transcriptionFromBuffer = async () => {
+			providerCallCount += 1;
+			statusDuringRegeneration = transcriptionRecordingGet(savedRecordingId)?.status;
+			return "Regenerated transcription";
+		};
+		try {
+			const app = new Elysia().use(transcriptionRoutes);
+			const body = new FormData();
+			body.append(
+				"audio",
+				new File(
+					[
+						audioBytes,
+					],
+					"saved-recording.webm",
+					{
+						type: "audio/webm",
+					},
+				),
+			);
+			body.append("language", "en");
+			body.append("terminalId", terminalId);
+
+			const saveResponse = await app.handle(
+				new Request("http://localhost/transcription/save", {
+					body,
+					method: "POST",
+				}),
+			);
+			const saved = await saveResponse.json();
+
+			expect(saveResponse.status).toBe(200);
+			expect(saved.status).toBe(TranscriptionRecordingStatus.Untranscribed);
+			expect(saved.error).toBeNull();
+			expect(saved.transcription).toBeNull();
+			expect(saved.language).toBe("en");
+			expect(saved.terminalId).toBe(terminalId);
+			expect(saved.sizeBytes).toBe(audioBytes.length);
+			expect(providerCallCount).toBe(0);
+			const audioResponse = await app.handle(new Request(`http://localhost/transcription/${saved.id}/audio`));
+			expect(audioResponse.status).toBe(200);
+			expect(Buffer.from(await audioResponse.arrayBuffer())).toEqual(audioBytes);
+
+			savedRecordingId = saved.id;
+			const regenerateResponse = await app.handle(
+				new Request(`http://localhost/transcription/${saved.id}/regenerate`, {
+					method: "POST",
+				}),
+			);
+			const regenerated = await regenerateResponse.json();
+
+			expect(regenerateResponse.status).toBe(200);
+			expect(statusDuringRegeneration).toBe(TranscriptionRecordingStatus.Processing);
+			expect(regenerated.recording.status).toBe(TranscriptionRecordingStatus.Complete);
+			expect(regenerated.recording.transcription).toBe("Regenerated transcription");
+			expect(transcriptionRecordingGet(saved.id)?.status).toBe(TranscriptionRecordingStatus.Complete);
+			expect(providerCallCount).toBe(1);
+		} finally {
+			transcriptionService.transcriptionFromBuffer = originalTranscriptionFromBuffer;
+		}
 	});
 
 	it("stores, lists, downloads, and regenerates through the API", async () => {

@@ -3,7 +3,8 @@ import { browser } from "$app/environment";
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { api } from "$lib/api/api.client";
-import "$lib/assets/fonts/ibm-plex-mono.css";
+import fontLicenseUrl from "$lib/assets/fonts/LICENSE.txt?url";
+import "$lib/assets/fonts/blex-mono-nerd-font-mono.css";
 import "./layout.css";
 import favicon from "$lib/assets/favicon.svg";
 
@@ -41,6 +42,7 @@ $effect(() => {
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	<link rel="license" href={fontLicenseUrl} />
 </svelte:head>
 
 {#if isCheckingAuth}

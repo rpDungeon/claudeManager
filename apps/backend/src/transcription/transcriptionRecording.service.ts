@@ -58,6 +58,7 @@ export function transcriptionRecordingCreate(
 	audio: File,
 	terminalId?: TerminalId,
 	language?: string,
+	initialStatus: TranscriptionRecordingStatus = TranscriptionRecordingStatus.Processing,
 ): TranscriptionRecording {
 	const createdAt = new Date().toISOString();
 	const id = randomUUID();
@@ -75,7 +76,7 @@ export function transcriptionRecordingCreate(
 		language: language ?? null,
 		mimeType: audio.type || "application/octet-stream",
 		sizeBytes: audioBuffer.length,
-		status: TranscriptionRecordingStatus.Processing,
+		status: initialStatus,
 		terminalId: terminalId ?? null,
 		transcription: null,
 		updatedAt: createdAt,

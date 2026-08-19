@@ -42,6 +42,14 @@ let error = $state("");
 let mediaRecorder: MediaRecorder | null = null;
 let audioStream: MediaStream | null = null;
 let chunks: Blob[] = [];
+let saveOnly = false;
+
+function handleSaveOnly() {
+	if (interactiveState === VoiceRecorderState.Recording && mediaRecorder) {
+		saveOnly = true;
+		mediaRecorder.stop();
+	}
+}
 
 async function handleToggle() {
 	if (interactiveState === VoiceRecorderState.Recording) {
@@ -72,6 +80,13 @@ async function handleToggle() {
 			}
 
 			if (chunks.length === 0) {
+				interactiveState = VoiceRecorderState.Idle;
+				return;
+			}
+
+			if (saveOnly) {
+				saveOnly = false;
+				chunks = [];
 				interactiveState = VoiceRecorderState.Idle;
 				return;
 			}
@@ -147,12 +162,13 @@ async function handleToggle() {
 {#snippet interactiveTemplate(_args: any)}
 	<div class="flex flex-col items-center gap-6 p-8">
 		<div class="text-center text-[11px] text-text-secondary">
-			Click to start recording, click again to stop and transcribe
+			Click to start recording, click again to stop and transcribe. X stops and saves without transcribing.
 		</div>
 
 		<VoiceRecorder
 			state={interactiveState}
 			onpointerdown={handleToggle}
+			onStopAndSave={handleSaveOnly}
 		/>
 
 		<div class="flex flex-col items-center gap-2">

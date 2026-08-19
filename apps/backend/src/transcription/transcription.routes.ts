@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { terminalIdSchema } from "@claude-manager/common/src/terminal/terminal.types";
 import {
 	type TranscriptionRecording,
+	TranscriptionRecordingStatus,
 	transcriptionRecordingSchema,
 } from "@claude-manager/common/src/transcription/transcription.types";
 import { Elysia } from "elysia";
@@ -50,6 +51,32 @@ export const transcriptionRoutes = new Elysia({
 			terminalId: terminalIdSchema.optional(),
 		}),
 	})
+	.post(
+		"/save",
+		async ({ body, status }) => {
+			try {
+				const audioBuffer = Buffer.from(await body.audio.arrayBuffer());
+				return transcriptionRecordingCreate(
+					audioBuffer,
+					body.audio,
+					body.terminalId,
+					body.language,
+					TranscriptionRecordingStatus.Untranscribed,
+				);
+			} catch (error) {
+				return status("Internal Server Error", {
+					error: transcriptionErrorMessageGet(error),
+				});
+			}
+		},
+		{
+			body: transcriptionBody,
+			response: {
+				200: transcriptionRecordingSchema,
+				500: transcriptionError,
+			},
+		},
+	)
 	.get(
 		"/:recordingId/audio",
 		({ params, set, status }) => {

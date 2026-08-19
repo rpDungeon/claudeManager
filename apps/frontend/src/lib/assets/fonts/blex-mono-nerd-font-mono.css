@@ -1,0 +1,31 @@
+@font-face {
+	font-family: "BlexMono Nerd Font Mono";
+	font-style: normal;
+	font-weight: 300;
+	font-display: swap;
+	src: url("./BlexMonoNerdFontMono-Light.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "BlexMono Nerd Font Mono";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url("./BlexMonoNerdFontMono-Regular.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "BlexMono Nerd Font Mono";
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	src: url("./BlexMonoNerdFontMono-Medium.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "BlexMono Nerd Font Mono";
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	src: url("./BlexMonoNerdFontMono-SemiBold.woff2") format("woff2");
+}

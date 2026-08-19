@@ -346,11 +346,20 @@ function handleColorChange(color: string | null) {
 
 let audioStream: MediaStream | null = null;
 let recordingTerminalId: TerminalId | undefined;
-let shouldAutoSendOnStop = false;
+
+type VoiceStopIntent = "transcribe" | "transcribeAndSend" | "save";
+let voiceStopIntent: VoiceStopIntent = "transcribe";
 
 function handleVoiceStopAndSend() {
 	if (voiceRecorderState === VoiceRecorderState.Recording && mediaRecorder) {
-		shouldAutoSendOnStop = true;
+		voiceStopIntent = "transcribeAndSend";
+		mediaRecorder.stop();
+	}
+}
+
+function handleVoiceStopAndSave() {
+	if (voiceRecorderState === VoiceRecorderState.Recording && mediaRecorder) {
+		voiceStopIntent = "save";
 		mediaRecorder.stop();
 	}
 }
@@ -422,14 +431,14 @@ function handleScrollPage(event: Event, direction: number) {
 async function handleVoiceToggle() {
 	if (voiceRecorderState === VoiceRecorderState.Recording) {
 		if (mediaRecorder) {
-			shouldAutoSendOnStop = false;
+			voiceStopIntent = "transcribe";
 			mediaRecorder.stop();
 		}
 		return;
 	}
 
 	if (voiceRecorderState !== VoiceRecorderState.Idle) return;
-	shouldAutoSendOnStop = false;
+	voiceStopIntent = "transcribe";
 
 	try {
 		audioStream = await navigator.mediaDevices.getUserMedia({
@@ -456,6 +465,8 @@ async function handleVoiceToggle() {
 		};
 
 		mediaRecorder.onstop = async () => {
+			const stopIntent = voiceStopIntent;
+
 			if (audioStream) {
 				for (const track of audioStream.getTracks()) {
 					track.stop();
@@ -464,6 +475,7 @@ async function handleVoiceToggle() {
 			}
 
 			if (audioChunks.length === 0) {
+				voiceStopIntent = "transcribe";
 				voiceRecorderState = VoiceRecorderState.Idle;
 				return;
 			}
@@ -474,6 +486,43 @@ async function handleVoiceToggle() {
 				type: recordingMimeType,
 			});
 			const recordingDownload = recordingDownloadAdd(audioBlob, recordingMimeType);
+
+			if (stopIntent === "save") {
+				try {
+					const { data, error } = await api.transcription.save.post({
+						audio: new File(
+							[
+								audioBlob,
+							],
+							recordingDownload.fileName,
+							{
+								type: recordingMimeType,
+							},
+						),
+						terminalId: recordingTerminalId,
+					});
+
+					if (error || !data) {
+						const errorMsg =
+							typeof error === "object" && error !== null && "error" in error
+								? (
+										error as {
+											error: string;
+										}
+									).error
+								: JSON.stringify(error);
+						console.error("[VoiceRecorder] Save error:", errorMsg);
+					} else {
+						recordingDownloadDiscard(recordingDownload.id);
+					}
+				} catch (err) {
+					console.error("[VoiceRecorder] Save failed:", err);
+				} finally {
+					voiceStopIntent = "transcribe";
+					voiceRecorderState = VoiceRecorderState.Idle;
+				}
+				return;
+			}
 
 			try {
 				const { data, error } = await api.transcription.post({
@@ -507,7 +556,7 @@ async function handleVoiceToggle() {
 					terminalInstancePaste(targetId, text);
 					terminalInstanceFocus(targetId);
 
-					if (shouldAutoSendOnStop) {
+					if (stopIntent === "transcribeAndSend") {
 						setTimeout(() => {
 							terminalInstancePaste(targetId, "\r");
 						}, 500);
@@ -517,7 +566,7 @@ async function handleVoiceToggle() {
 			} catch (err) {
 				console.error("[VoiceRecorder] Transcription failed:", err);
 			} finally {
-				shouldAutoSendOnStop = false;
+				voiceStopIntent = "transcribe";
 				voiceRecorderState = VoiceRecorderState.Idle;
 			}
 		};
@@ -713,6 +762,7 @@ onDestroy(() => {
         state={voiceRecorderState}
         onpointerdown={handleVoiceToggle}
         onStopAndSend={handleVoiceStopAndSend}
+        onStopAndSave={handleVoiceStopAndSave}
       />
     </div>
     {/if}
@@ -723,6 +773,7 @@ onDestroy(() => {
         state={voiceRecorderState}
         onpointerdown={handleVoiceToggle}
         onStopAndSend={handleVoiceStopAndSend}
+        onStopAndSave={handleVoiceStopAndSave}
       />
     </div>
 

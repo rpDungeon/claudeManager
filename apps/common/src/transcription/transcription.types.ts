@@ -6,6 +6,7 @@ export enum TranscriptionRecordingStatus {
 	Complete = "complete",
 	Failed = "failed",
 	Processing = "processing",
+	Untranscribed = "untranscribed",
 }
 
 export const transcriptionRecordingSchema = z.object({

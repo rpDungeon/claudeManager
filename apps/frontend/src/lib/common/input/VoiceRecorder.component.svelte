@@ -15,6 +15,7 @@ interface Props {
 	disabled?: boolean;
 	onpointerdown?: () => void;
 	onStopAndSend?: () => void;
+	onStopAndSave?: () => void;
 }
 
 let {
@@ -22,6 +23,7 @@ let {
 	disabled = false,
 	onpointerdown,
 	onStopAndSend,
+	onStopAndSave,
 }: Props = $props();
 let lastHandledAt = 0;
 let rootRef: HTMLDivElement | undefined = $state();
@@ -59,10 +61,20 @@ function handleStopAndSend(event: Event) {
 	onStopAndSend?.();
 }
 
+function handleStopAndSave(event: Event) {
+	interactionStop(event);
+	if (isDisabled) return;
+	if (!shouldHandleInteraction()) return;
+	onStopAndSave?.();
+}
+
 function handlePrimaryAction(event: Event) {
 	const target = event.target;
+	const isStopAndSave = target instanceof Element && target.closest("[data-stop-and-save]") !== null;
 	const isStopAndSend = target instanceof Element && target.closest("[data-stop-and-send]") !== null;
-	if (isStopAndSend) {
+	if (isStopAndSave) {
+		handleStopAndSave(event);
+	} else if (isStopAndSend) {
 		handleStopAndSend(event);
 	} else {
 		handleRecord(event);
@@ -161,6 +173,39 @@ $effect(() => {
 	ontouchstart={interactionStop}
 >
 	{#if isRecording}
+		<button
+			type="button"
+			data-stop-and-save
+			class="flex size-14 sm:size-8 items-center justify-center rounded-full transition-all duration-150
+				bg-bg-elevated text-text-secondary border border-border-default
+				hover:border-terminal-cyan hover:text-terminal-cyan cursor-pointer touch-manipulation"
+			onclickcapture={handleStopAndSave}
+			onclick={handleStopAndSave}
+			onmousedown={interactionStop}
+			onmouseup={interactionStop}
+			onpointerdowncapture={handleStopAndSave}
+			onpointerdown={handleStopAndSave}
+			onpointerup={interactionStop}
+			ontouchend={interactionStop}
+			ontouchstartcapture={handleStopAndSave}
+			ontouchstart={handleStopAndSave}
+			aria-label="Stop recording and save without transcribing"
+			title="Stop and save without transcribing"
+		>
+			<svg
+				class="size-8 sm:size-4"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
+				<path d="M18 6 6 18" />
+				<path d="m6 6 12 12" />
+			</svg>
+		</button>
+
 		<button
 			type="button"
 			data-stop-and-send
