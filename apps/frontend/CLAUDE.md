@@ -124,7 +124,7 @@ Custom theme defined in `src/routes/layout.css`:
 - `border-border-active` - Active/hover (#333333)
 
 ### Font
-- `font-mono` - IBM Plex Mono (self-hosted in `src/lib/assets/fonts/`)
+- `font-mono` - BlexMono Nerd Font Mono (self-hosted in `src/lib/assets/fonts/`; terminal-safe Nerd glyphs)
 
 ## Enum Pattern
 

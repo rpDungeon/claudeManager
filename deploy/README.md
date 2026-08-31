@@ -8,6 +8,8 @@ bun run deploy
 
 The deploy script installs dependencies from the lockfile, builds all workspaces, renders the tracked user-service template, reloads systemd, and restarts only `claude-manager.service`.
 
+The generated unit resolves Bun from `BUN_INSTALL` or `~/.bun/bin/bun` and records its canonical path. Deployment refuses temporary `/tmp` executables because they do not survive reboot.
+
 To restart the installed service without deploying:
 
 ```bash

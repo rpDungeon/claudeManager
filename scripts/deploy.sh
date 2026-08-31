@@ -6,7 +6,18 @@ export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$USER_ID}"
 export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$XDG_RUNTIME_DIR/bus}"
 
 ROOT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")"
-BUN_EXECUTABLE="$(command -v bun)"
+BUN_EXECUTABLE="${BUN_INSTALL:+$BUN_INSTALL/bin/bun}"
+if [[ ! -x "$BUN_EXECUTABLE" || "$(realpath "$BUN_EXECUTABLE")" == /tmp/* ]]; then
+	BUN_EXECUTABLE="$HOME/.bun/bin/bun"
+fi
+if [[ ! -x "$BUN_EXECUTABLE" ]]; then
+	BUN_EXECUTABLE="$(command -v bun)"
+fi
+BUN_EXECUTABLE="$(realpath "$BUN_EXECUTABLE")"
+if [[ "$BUN_EXECUTABLE" == /tmp/* ]]; then
+	printf 'Refusing deploy: Bun executable must be outside /tmp: %s\n' "$BUN_EXECUTABLE" >&2
+	exit 1
+fi
 BUN_BIN="$(dirname "$BUN_EXECUTABLE")"
 BUN_INSTALL="$(dirname "$BUN_BIN")"
 UNIT_NAME="claude-manager.service"
