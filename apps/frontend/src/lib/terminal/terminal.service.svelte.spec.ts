@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { apiTerminals, pasteImagePost } = vi.hoisted(() => {
+const { apiTerminals, apiWsTerminal, pasteImagePost } = vi.hoisted(() => {
 	const pasteImagePostMock = vi.fn();
 	return {
 		apiTerminals: vi.fn(() => ({
@@ -8,6 +8,7 @@ const { apiTerminals, pasteImagePost } = vi.hoisted(() => {
 				post: pasteImagePostMock,
 			},
 		})),
+		apiWsTerminal: vi.fn(),
 		pasteImagePost: pasteImagePostMock,
 	};
 });
@@ -16,7 +17,7 @@ vi.mock("$lib/api/api.client", () => ({
 	api: {
 		terminals: apiTerminals,
 		ws: {
-			terminal: vi.fn(),
+			terminal: apiWsTerminal,
 		},
 	},
 	authTokenQueryGet: vi.fn(),
@@ -28,6 +29,8 @@ import {
 	terminalInstanceDestroy,
 	terminalInstanceGet,
 	terminalInstanceMount,
+	terminalInstancePaste,
+	terminalWebsocketConnect,
 } from "./terminal.service.svelte";
 
 const terminalId = "terminal:paste-test" as TerminalId;
@@ -58,16 +61,32 @@ function tick(): Promise<void> {
 	return promise;
 }
 
-describe("terminal image paste", () => {
+describe("terminal paste", () => {
 	let container: HTMLDivElement;
 	let textarea: HTMLTextAreaElement;
-	let websocketSend = vi.fn();
+	let websocket = {
+		close: vi.fn(),
+		on: vi.fn(),
+		send: vi.fn(),
+		subscribe: vi.fn(),
+	};
+	let websocketSend = websocket.send;
 	let clipboardReadText = vi.fn();
 
 	beforeEach(() => {
 		pasteImagePost.mockReset();
 		apiTerminals.mockClear();
-		websocketSend = vi.fn();
+		apiWsTerminal.mockReset();
+		websocket = {
+			close: vi.fn(),
+			on: vi.fn(),
+			send: vi.fn(),
+			subscribe: vi.fn(),
+		};
+		websocketSend = websocket.send;
+		apiWsTerminal.mockReturnValue({
+			subscribe: vi.fn(() => websocket),
+		});
 		clipboardReadText = vi.fn().mockResolvedValue("clipboard text");
 		Object.defineProperty(navigator, "clipboard", {
 			configurable: true,
@@ -79,11 +98,9 @@ describe("terminal image paste", () => {
 
 		container = document.createElement("div");
 		document.body.append(container);
-		const instance = terminalInstanceCreate(terminalId);
-		instance.websocket = {
-			send: websocketSend,
-		} as never;
+		terminalInstanceCreate(terminalId);
 		terminalInstanceMount(terminalId, container);
+		terminalWebsocketConnect(terminalId);
 		const mountedTextarea = container.querySelector("textarea.xterm-helper-textarea");
 		if (!(mountedTextarea instanceof HTMLTextAreaElement)) {
 			throw new Error("Expected xterm helper textarea");
@@ -91,9 +108,8 @@ describe("terminal image paste", () => {
 		textarea = mountedTextarea;
 	});
 
-	afterEach(() => {
-		const instance = terminalInstanceGet(terminalId);
-		if (instance) instance.websocket = null;
+	afterEach(async () => {
+		await tick();
 		terminalInstanceDestroy(terminalId);
 		container.remove();
 		vi.restoreAllMocks();
@@ -141,7 +157,54 @@ describe("terminal image paste", () => {
 		});
 	});
 
-	it("keeps text-only paste on the clipboard text path", async () => {
+	it("keeps image paste to one marker pair when bracketed mode is active", async () => {
+		const instance = terminalInstanceGet(terminalId);
+		if (!instance) {
+			throw new Error("Expected terminal instance");
+		}
+		const paste = vi.spyOn(instance.terminal, "paste");
+		await new Promise<void>((resolve) => {
+			instance.terminal.write("\x1b[?2004h", resolve);
+		});
+		const image = new File(
+			[
+				"png",
+			],
+			"bracketed.png",
+			{
+				type: "image/png",
+			},
+		);
+		pasteImagePost.mockResolvedValue({
+			data: {
+				path: "/data/terminals/paste/terminal-paste-test/bracketed.png",
+			},
+			error: null,
+		});
+
+		clipboardPasteDispatch(textarea, [
+			{
+				getAsFile: () => image,
+				type: "image/png",
+			},
+		]);
+		await tick();
+
+		expect(paste).not.toHaveBeenCalled();
+		expect(websocketSend).toHaveBeenCalledTimes(1);
+		expect(websocketSend).toHaveBeenCalledWith({
+			data: "\x1b[200~/data/terminals/paste/terminal-paste-test/bracketed.png\x1b[201~",
+			type: "input",
+		});
+	});
+
+	it("routes text-only paste through xterm's paste API", () => {
+		const instance = terminalInstanceGet(terminalId);
+		if (!instance) {
+			throw new Error("Expected terminal instance");
+		}
+		const paste = vi.spyOn(instance.terminal, "paste");
+
 		clipboardPasteDispatch(
 			textarea,
 			[
@@ -152,13 +215,69 @@ describe("terminal image paste", () => {
 			],
 			"clipboard text",
 		);
-		await tick();
 
 		expect(pasteImagePost).not.toHaveBeenCalled();
 		expect(clipboardReadText).not.toHaveBeenCalled();
+		expect(paste).toHaveBeenCalledTimes(1);
+		expect(paste).toHaveBeenCalledWith("clipboard text");
 		expect(websocketSend).toHaveBeenCalledTimes(1);
 		expect(websocketSend).toHaveBeenCalledWith({
 			data: "clipboard text",
+			type: "input",
+		});
+	});
+
+	it("routes programmatic paste through xterm's paste API", () => {
+		const instance = terminalInstanceGet(terminalId);
+		if (!instance) {
+			throw new Error("Expected terminal instance");
+		}
+		const paste = vi.spyOn(instance.terminal, "paste");
+
+		terminalInstancePaste(terminalId, "programmatic text");
+
+		expect(paste).toHaveBeenCalledTimes(1);
+		expect(paste).toHaveBeenCalledWith("programmatic text");
+		expect(websocketSend).toHaveBeenCalledTimes(1);
+		expect(websocketSend).toHaveBeenCalledWith({
+			data: "programmatic text",
+			type: "input",
+		});
+	});
+
+	it("frames bracketed mode text in one xterm data event", async () => {
+		const instance = terminalInstanceGet(terminalId);
+		if (!instance) {
+			throw new Error("Expected terminal instance");
+		}
+		const paste = vi.spyOn(instance.terminal, "paste");
+
+		await new Promise<void>((resolve) => {
+			instance.terminal.write("\x1b[?2004h", resolve);
+		});
+		terminalInstancePaste(terminalId, "first line\nsecond line");
+
+		expect(paste).toHaveBeenCalledTimes(1);
+		expect(websocketSend).toHaveBeenCalledTimes(1);
+		expect(websocketSend).toHaveBeenCalledWith({
+			data: "\x1b[200~first line\rsecond line\x1b[201~",
+			type: "input",
+		});
+	});
+
+	it("delivers a large multiline paste as one complete websocket message", () => {
+		const largeText = Array.from(
+			{
+				length: 400,
+			},
+			(_, index) => `${index.toString().padStart(3, "0")}:${"x".repeat(28)}`,
+		).join("\n");
+
+		terminalInstancePaste(terminalId, largeText);
+
+		expect(websocketSend).toHaveBeenCalledTimes(1);
+		expect(websocketSend).toHaveBeenCalledWith({
+			data: largeText.replace(/\r?\n/g, "\r"),
 			type: "input",
 		});
 	});

@@ -99,7 +99,10 @@ async function terminalInstancePasteImage(terminalId: TerminalId, image: File): 
 			return;
 		}
 
-		terminalInstancePaste(terminalId, `\x1b[200~${data.path}\x1b[201~`);
+		instance.websocket?.send({
+			data: `\x1b[200~${data.path}\x1b[201~`,
+			type: "input",
+		});
 	} catch (error: unknown) {
 		if (instances.get(terminalId) === instance) {
 			terminalInstancePasteErrorReport(instance, error);
@@ -320,11 +323,8 @@ export function terminalInstanceMount(terminalId: TerminalId, container: HTMLEle
 				);
 				if (!imageItem) {
 					const text = event.clipboardData?.getData("text/plain") ?? "";
-					if (text && instance.websocket) {
-						instance.websocket.send({
-							data: text,
-							type: "input",
-						});
+					if (text) {
+						terminalInstancePaste(terminalId, text);
 					}
 					return;
 				}
@@ -815,10 +815,7 @@ export function terminalInstancePaste(terminalId: TerminalId, text: string): voi
 	const instance = instances.get(terminalId);
 	if (!instance?.websocket) return;
 
-	instance.websocket.send({
-		data: text,
-		type: "input",
-	});
+	instance.terminal.paste(text);
 }
 
 export function terminalInstanceGetSelection(terminalId: TerminalId): string {
