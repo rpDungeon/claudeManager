@@ -99,10 +99,7 @@ async function terminalInstancePasteImage(terminalId: TerminalId, image: File): 
 			return;
 		}
 
-		instance.websocket?.send({
-			data: `\x1b[200~${data.path}\x1b[201~`,
-			type: "input",
-		});
+		terminalInstanceInput(terminalId, `\x1b[200~${data.path}\x1b[201~`);
 	} catch (error: unknown) {
 		if (instances.get(terminalId) === instance) {
 			terminalInstancePasteErrorReport(instance, error);
@@ -816,6 +813,16 @@ export function terminalInstancePaste(terminalId: TerminalId, text: string): voi
 	if (!instance?.websocket) return;
 
 	instance.terminal.paste(text);
+}
+
+export function terminalInstanceInput(terminalId: TerminalId, data: string): void {
+	const instance = instances.get(terminalId);
+	if (!instance?.websocket) return;
+
+	instance.websocket.send({
+		data,
+		type: "input",
+	});
 }
 
 export function terminalInstanceGetSelection(terminalId: TerminalId): string {

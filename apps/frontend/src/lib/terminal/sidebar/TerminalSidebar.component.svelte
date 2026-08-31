@@ -23,7 +23,7 @@ import {
 } from "./terminalSidebar.lib.svelte";
 import { claudeSessionHistoryGet } from "../statusLine/claudeSessionHistory.service.svelte";
 import { api, authTokenQueryGet, backendUrl } from "$lib/api/api.client";
-import { terminalInstancePaste } from "../terminal.service.svelte";
+import { terminalInstanceInput } from "../terminal.service.svelte";
 
 type EdenWebSocket = ReturnType<ReturnType<typeof api.ws.terminal>["input-logs"]["subscribe"]>;
 
@@ -51,7 +51,7 @@ let transcriptionRecordingsLoading = $state(false);
 let transcriptionRecordingActionId = $state<string | null>(null);
 
 function handleResume(sessionId: string) {
-	terminalInstancePaste(terminalId, `claude --resume ${sessionId}\r`);
+	terminalInstanceInput(terminalId, `claude --resume ${sessionId}\r`);
 	onclose();
 }
 

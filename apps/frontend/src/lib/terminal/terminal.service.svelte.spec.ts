@@ -28,6 +28,7 @@ import {
 	terminalInstanceCreate,
 	terminalInstanceDestroy,
 	terminalInstanceGet,
+	terminalInstanceInput,
 	terminalInstanceMount,
 	terminalInstancePaste,
 	terminalWebsocketConnect,
@@ -244,8 +245,7 @@ describe("terminal paste", () => {
 			type: "input",
 		});
 	});
-
-	it("frames bracketed mode text in one xterm data event", async () => {
+	it("frames transcription text and sends raw enter separately", async () => {
 		const instance = terminalInstanceGet(terminalId);
 		if (!instance) {
 			throw new Error("Expected terminal instance");
@@ -256,11 +256,26 @@ describe("terminal paste", () => {
 			instance.terminal.write("\x1b[?2004h", resolve);
 		});
 		terminalInstancePaste(terminalId, "first line\nsecond line");
+		terminalInstanceInput(terminalId, "\r");
 
 		expect(paste).toHaveBeenCalledTimes(1);
+		expect(websocketSend).toHaveBeenCalledTimes(2);
+		expect(websocketSend).toHaveBeenNthCalledWith(1, {
+			data: "\x1b[200~first line\rsecond line\x1b[201~",
+			type: "input",
+		});
+		expect(websocketSend).toHaveBeenNthCalledWith(2, {
+			data: "\r",
+			type: "input",
+		});
+	});
+
+	it("sends raw control bytes without paste framing", () => {
+		terminalInstanceInput(terminalId, "\x03");
+
 		expect(websocketSend).toHaveBeenCalledTimes(1);
 		expect(websocketSend).toHaveBeenCalledWith({
-			data: "\x1b[200~first line\rsecond line\x1b[201~",
+			data: "\x03",
 			type: "input",
 		});
 	});

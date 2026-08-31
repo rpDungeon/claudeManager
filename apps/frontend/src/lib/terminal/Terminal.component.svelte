@@ -26,6 +26,7 @@ import {
 	terminalInstanceGetSelection,
 	terminalInstanceMount,
 	terminalInstancePaste,
+	terminalInstanceInput,
 	terminalInstanceScrollPage,
 	terminalInstanceSelectAll,
 	terminalDisplayTitleGet,
@@ -321,7 +322,8 @@ function handleContextMenuAction(actionId: TerminalContextMenuAction) {
 				})
 				.then((text) => {
 					if (text) {
-						terminalInstancePaste(id, `${text}\r`);
+						terminalInstancePaste(id, text);
+						terminalInstanceInput(id, "\r");
 					}
 				});
 			break;
@@ -558,7 +560,7 @@ async function handleVoiceToggle() {
 
 					if (stopIntent === "transcribeAndSend") {
 						setTimeout(() => {
-							terminalInstancePaste(targetId, "\r");
+							terminalInstanceInput(targetId, "\r");
 						}, 500);
 					}
 					recordingDownloadDiscard(recordingDownload.id);
@@ -586,21 +588,21 @@ function handleShortcutClick(
 	if (!terminalId) return;
 	const id = terminalId;
 	if (shortcut.sendCtrlC) {
-		terminalInstancePaste(id, "\x03");
+		terminalInstanceInput(id, "\x03");
 		setTimeout(() => {
-			terminalInstancePaste(id, "\x03");
+			terminalInstanceInput(id, "\x03");
 			setTimeout(() => {
-				terminalInstancePaste(id, shortcut.command);
+				terminalInstanceInput(id, shortcut.command);
 				if (shortcut.sendEnter) {
-					setTimeout(() => terminalInstancePaste(id, "\r"), 50);
+					setTimeout(() => terminalInstanceInput(id, "\r"), 50);
 				}
 				terminalInstanceFocus(id);
 			}, 50);
 		}, 50);
 	} else {
-		terminalInstancePaste(id, shortcut.command);
+		terminalInstanceInput(id, shortcut.command);
 		if (shortcut.sendEnter) {
-			setTimeout(() => terminalInstancePaste(id, "\r"), 50);
+			setTimeout(() => terminalInstanceInput(id, "\r"), 50);
 		}
 		terminalInstanceFocus(id);
 	}
