@@ -10,6 +10,11 @@ export default defineConfig({
 		sveltekit(),
 		devtoolsJson(),
 	],
+	resolve: {
+		dedupe: [
+			"@lezer/common",
+		],
+	},
 	server: {
 		allowedHosts: true,
 		host: "0.0.0.0",
