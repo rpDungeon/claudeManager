@@ -470,7 +470,7 @@ export function terminalInstanceFit(terminalId: TerminalId): void {
 		const dims = instance.addons.fit.proposeDimensions();
 		if (dims) {
 			instance.websocket.send({
-				cols: dims.cols - 1,
+				cols: Math.max(1, dims.cols - 2),
 				rows: dims.rows - 1,
 				type: "resize",
 			});
@@ -564,7 +564,7 @@ export function terminalWebsocketConnect(terminalId: TerminalId): void {
 		const dims = instance.addons.fit.proposeDimensions();
 		if (dims) {
 			ws.send({
-				cols: dims.cols - 1,
+				cols: Math.max(1, dims.cols - 2),
 				rows: dims.rows - 1,
 				type: "resize",
 			});

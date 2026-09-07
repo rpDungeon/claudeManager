@@ -84,6 +84,8 @@ ws.send({ data: existingInstance.getScrollback(), type: Output });
 
 ## Files Changed
 
+The frontend reports two fewer columns than xterm's fitted width to the PTY on connection and resize, with a minimum of one column. The existing one-row margin is unchanged.
+
 | File | Change |
 |------|--------|
 | `apps/backend/src/terminal/pty/pty.service.ts` | Complete rewrite: dtach + xterm-headless |

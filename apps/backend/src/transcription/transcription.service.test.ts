@@ -1,6 +1,16 @@
 import { describe, expect, it } from "bun:test";
 
-import { transcriptionTextIsPathological } from "./transcription.service";
+import { transcriptionContextBiasTerms, transcriptionTextIsPathological } from "./transcription.service";
+
+const CONTEXT_BIAS_TERM_REGEX = /^[^,\s]+$/;
+
+describe("transcription context bias", () => {
+	it("contains only nonempty terms without commas or whitespace", () => {
+		for (const term of transcriptionContextBiasTerms) {
+			expect(term).toMatch(CONTEXT_BIAS_TERM_REGEX);
+		}
+	});
+});
 
 describe("transcription response validation", () => {
 	it("rejects repeated sentence loops", () => {

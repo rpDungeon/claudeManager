@@ -27,6 +27,7 @@ import type { TerminalId } from "@claude-manager/common/src/terminal/terminal.ty
 import {
 	terminalInstanceCreate,
 	terminalInstanceDestroy,
+	terminalInstanceFit,
 	terminalInstanceGet,
 	terminalInstanceInput,
 	terminalInstanceMount,
@@ -67,7 +68,7 @@ describe("terminal paste", () => {
 	let textarea: HTMLTextAreaElement;
 	let websocket = {
 		close: vi.fn(),
-		on: vi.fn(),
+		on: vi.fn<(event: string, callback: () => void) => void>(),
 		send: vi.fn(),
 		subscribe: vi.fn(),
 	};
@@ -80,7 +81,7 @@ describe("terminal paste", () => {
 		apiWsTerminal.mockReset();
 		websocket = {
 			close: vi.fn(),
-			on: vi.fn(),
+			on: vi.fn<(event: string, callback: () => void) => void>(),
 			send: vi.fn(),
 			subscribe: vi.fn(),
 		};
@@ -114,6 +115,40 @@ describe("terminal paste", () => {
 		terminalInstanceDestroy(terminalId);
 		container.remove();
 		vi.restoreAllMocks();
+	});
+
+	it.each([
+		[
+			80,
+			78,
+		],
+		[
+			2,
+			1,
+		],
+	])("reserves two columns when fitting %i columns on connect and resize", (cols, expectedCols) => {
+		const instance = terminalInstanceGet(terminalId);
+		const onOpen = websocket.on.mock.calls.find(([event]) => event === "open")?.[1];
+		if (!(instance && onOpen)) throw new Error("Expected terminal and websocket open handler");
+		vi.spyOn(instance.addons.fit, "proposeDimensions").mockReturnValue({
+			cols,
+			rows: 24,
+		});
+		vi.spyOn(instance.addons.fit, "fit").mockImplementation(() => {});
+
+		onOpen();
+		expect(websocketSend).toHaveBeenLastCalledWith({
+			cols: expectedCols,
+			rows: 23,
+			type: "resize",
+		});
+		websocketSend.mockClear();
+		terminalInstanceFit(terminalId);
+		expect(websocketSend).toHaveBeenCalledExactlyOnceWith({
+			cols: expectedCols,
+			rows: 23,
+			type: "resize",
+		});
 	});
 
 	it("uploads the first image and frames its returned path as a terminal paste", async () => {

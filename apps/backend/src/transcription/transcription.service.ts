@@ -11,10 +11,17 @@ const TRANSCRIPTION_WHITESPACE_REGEX = /\s+/g;
 const TRANSCRIPTION_MAX_VOLUME_REGEX = /max_volume:\s*(-?\d+(?:\.\d+)?) dB/;
 const TRANSCRIPTION_SILENCE_MAX_DB = -60;
 
-const CONTEXT_BIAS_TERMS = [
+export const transcriptionContextBiasTerms = [
 	"Claude",
+	"ClaudeCode",
+	"Codex",
+	"Autumn",
 	"OMP",
-	"Oh My Pi",
+	"Electric",
+	"ElectricSQL",
+	"Convex",
+	"ACL",
+	"permission",
 	"workflow",
 	"workflowz",
 	"TypeScript",
@@ -172,7 +179,7 @@ class TranscriptionService {
 		);
 
 		const response = await this.client.audio.transcriptions.complete({
-			contextBias: CONTEXT_BIAS_TERMS,
+			contextBias: transcriptionContextBiasTerms,
 			file,
 			language: language ?? "en",
 			model: TRANSCRIPTION_MODEL_ID,
@@ -198,7 +205,7 @@ class TranscriptionService {
 			? `Transcribe this audio exactly as spoken.
 The speaker is a native German speaker with a strong accent speaking English in a programming context.
 Phonetically ambiguous words should be interpreted as programming terms when plausible (e.g. "commit", "component", "comment", "command" may sound similar).
-Common vocabulary: OMP, Oh My Pi, workflow, workflowz, git, commit, push, pull, merge, branch, rebase, TypeScript, Svelte, SvelteKit, Bun, ElysiaJS, Drizzle, xterm, paneforge, WebSocket, PTY, SQLite, Tailwind, Claude, FFmpeg, npm, API, endpoint, schema, router, service, middleware, terminal, transcription.`
+Common vocabulary: OMP, Oh My Pi, Electric, ElectricSQL, Convex, ACL, permission, Autumn, Codex, ClaudeCode, workflow, workflowz, git, commit, push, pull, merge, branch, rebase, TypeScript, Svelte, SvelteKit, Bun, ElysiaJS, Drizzle, xterm, paneforge, WebSocket, PTY, SQLite, Tailwind, Claude, FFmpeg, npm, API, endpoint, schema, router, service, middleware, terminal, transcription.`
 			: "Transcribe this audio exactly as spoken. Output only words that are clearly audible.";
 		if (language) {
 			prompt += ` The audio is in ${language}.`;
