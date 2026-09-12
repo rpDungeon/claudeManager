@@ -1,5 +1,13 @@
 # Claude Manager deployment
 
+For an installation with an existing proxy or direct HTTP access, build with `bun run build`
+and run `bun run start:app`. This starts the compiled backend and SvelteKit production
+server without starting Caddy. The frontend uses `PORT`, falling back to `PUBLIC_PORT`
+and then `4035`, so it can retain the development server's address.
+
+The systemd deployment below requires a working user systemd bus in the environment
+where the app runs; it is not available inside every Distrobox container.
+
 Run from this checkout when ready to ship an update:
 
 ```bash

@@ -36,7 +36,7 @@ $effect(() => {
 </script>
 
 <div
-	class="terminal-body relative flex flex-1 cursor-pointer flex-col overflow-hidden bg-bg-void transition-shadow duration-[120ms] ease-out"
+	class="terminal-body relative flex min-h-0 flex-1 cursor-pointer flex-col overflow-hidden bg-bg-void p-1 transition-shadow duration-[120ms] ease-out sm:p-3"
 	class:ring-2={isActive || hasBorderColor}
 	class:ring-inset={isActive || hasBorderColor}
 	class:ring-terminal-green={isActive && !hasBorderColor}
@@ -53,7 +53,7 @@ $effect(() => {
 >
 	<div class="scanlines pointer-events-none absolute inset-0 z-10 opacity-50"></div>
 
-	<div bind:this={containerRef} class="xterm-container relative z-0 flex-1 overflow-hidden p-1 sm:p-3">
+	<div bind:this={containerRef} class="xterm-container relative z-0 min-h-0 flex-1 overflow-hidden">
 	</div>
 </div>
 

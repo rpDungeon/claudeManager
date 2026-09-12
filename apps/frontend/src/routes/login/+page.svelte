@@ -37,7 +37,7 @@ async function handleSubmit(event: SubmitEvent) {
 	<title>Login | Claude Manager</title>
 </svelte:head>
 
-<div class="flex h-[100dvh] w-full min-w-0 items-center justify-center bg-bg-void">
+<div class="flex h-full w-full min-w-0 items-center justify-center overflow-y-auto bg-bg-void">
 	<div class="w-full max-w-sm p-6">
 		<div class="border border-border-default bg-bg-surface p-6">
 			<div class="mb-6 border-b border-border-default pb-3">

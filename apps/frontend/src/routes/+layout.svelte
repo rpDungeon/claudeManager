@@ -7,10 +7,14 @@ import fontLicenseUrl from "$lib/assets/fonts/LICENSE.txt?url";
 import "$lib/assets/fonts/blex-mono-nerd-font-mono.css";
 import "./layout.css";
 import favicon from "$lib/assets/favicon.svg";
+import { onMount } from "svelte";
+import { appViewportTrack } from "$lib/viewport/appViewport";
 
 let { children } = $props();
 let isCheckingAuth = $state(true);
 let isAuthenticated = $state(false);
+
+onMount(appViewportTrack);
 
 $effect(() => {
 	if (!browser) return;
@@ -45,10 +49,12 @@ $effect(() => {
 	<link rel="license" href={fontLicenseUrl} />
 </svelte:head>
 
-{#if isCheckingAuth}
-	<div class="flex h-[100dvh] w-full min-w-0 items-center justify-center bg-bg-void">
-		<div class="font-mono text-xs text-text-tertiary">Verifying session...</div>
-	</div>
-{:else if isAuthenticated}
-	{@render children()}
-{/if}
+<div class="app-viewport">
+	{#if isCheckingAuth}
+		<div class="flex h-full w-full min-w-0 items-center justify-center bg-bg-void">
+			<div class="font-mono text-xs text-text-tertiary">Verifying session...</div>
+		</div>
+	{:else if isAuthenticated}
+		{@render children()}
+	{/if}
+</div>

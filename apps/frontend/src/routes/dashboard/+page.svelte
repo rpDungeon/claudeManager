@@ -248,8 +248,8 @@ function handleDiffOpen(filePath: string, repoPath: string, staged: boolean) {
 	<title>Dashboard | Claude Manager</title>
 </svelte:head>
 
-<div class="flex h-[100dvh] w-full min-w-0 flex-col overflow-x-hidden bg-bg-void">
-	<div class="flex flex-1 overflow-hidden" class:select-none={isResizing}>
+<div class="flex h-full w-full min-w-0 flex-col overflow-hidden bg-bg-void">
+	<div class="flex min-h-0 flex-1 overflow-hidden" class:select-none={isResizing}>
 		<!-- Mobile sidebar backdrop -->
 		{#if !isSidebarCollapsed}
 			<button

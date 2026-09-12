@@ -81,7 +81,7 @@
 		"dev": "../../scripts/with-clean-env.sh bun --env-file=../../.env vite dev --host",
 		"prepare": "svelte-kit sync || echo ''",
 		"preview": "../../scripts/with-clean-env.sh bun --env-file=../../.env vite preview",
-		"start": "../../scripts/with-clean-env.sh bun --env-file=../../.env build/index.js",
+		"start": "../../scripts/with-clean-env.sh bun --env-file=../../.env -e 'process.env.PORT ??= process.env.PUBLIC_PORT || \"4035\"; await import(\"./build/index.js\")'",
 		"storybook": "../../scripts/with-clean-env.sh bun --env-file=../../.env storybook dev -p $STORYBOOK_PORT",
 		"test": "npm run test:unit -- --run && npm run test:e2e",
 		"test:e2e": "playwright test",

@@ -660,7 +660,7 @@ onDestroy(() => {
 	{/if}
 {/snippet}
 
-<div class="relative flex h-full flex-col">
+<div class="relative flex h-full min-h-0 flex-col">
   <TerminalHeader
     title={displayTitle}
     {info}
@@ -714,7 +714,7 @@ onDestroy(() => {
     />
 
     {#if isActive}
-    <div use:portalToBody class="pointer-events-auto fixed right-3 bottom-[calc(env(safe-area-inset-bottom)+2rem)] z-[2147483647] flex flex-col items-end gap-3 md:hidden">
+    <div use:portalToBody class="pointer-events-auto fixed right-3 bottom-[calc(var(--app-viewport-bottom,0px)+env(safe-area-inset-bottom)+2rem)] z-[2147483647] flex flex-col items-end gap-3 md:hidden">
       <div class="flex flex-col gap-2 md:hidden">
         <button
           type="button"

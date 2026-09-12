@@ -47,6 +47,7 @@
 		"pre:commit": "bun run typecheck && bun run lint",
 		"prepare": "husky",
 		"start": "bun-tasks start:backend ::: start:frontend ::: start:caddy",
+		"start:app": "bun-tasks start:backend ::: start:frontend",
 		"start:backend": "bun run --filter '@claude-manager/backend' start",
 		"start:caddy": "caddy run --config Caddyfile",
 		"start:frontend": "bun run --filter '@claude-manager/frontend' start",
